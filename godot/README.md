@@ -14,3 +14,6 @@ This is the first 3D prototype foundation, not the finished game. It does not ye
 
 ## Validation
 The `Validate GENERAL 3D prototype` workflow imports the Godot project and checks its scripts.
+
+
+Android preview export workflow added; APK build is being validated separately.
