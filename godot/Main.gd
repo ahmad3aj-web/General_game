@@ -514,7 +514,7 @@ func _refresh_board() -> void:
 		var lane: int = item["lane"]
 		var root: Node3D = item["root"]
 		var is_dead: bool = destroyed[side][lane]
-		var available := side == current_player and waiting_for_weapon and not is_dead and progress[side][lane] + die_value <= STEPS
+		var available: bool = side == current_player and waiting_for_weapon and not is_dead and progress[side][lane] + die_value <= STEPS
 		var fire := root.get_node("DestroyedFire") as Node3D
 		fire.visible = is_dead
 		for child in root.get_children():
