@@ -15,6 +15,7 @@ var game_mode := -1 # 0: two players, 1: General AI
 var bullet_nodes: Array = []
 var weapon_roots: Array = []
 var weapon_areas: Array = []
+var game_camera: Camera3D
 var weapon_buttons: Array = []
 var ui_label: Label
 var roll_button: Button
@@ -125,6 +126,7 @@ func _build_world() -> void:
 	camera.look_at(Vector3(0.0, 0.0, 0.0), Vector3.UP)
 	camera.make_current()
 	add_child(camera)
+	game_camera = camera
 
 func _build_tracks() -> void:
 	for side in range(2):
@@ -246,6 +248,10 @@ func _make_weapon(side: int, lane: int, x: float) -> void:
 	var area := Area3D.new()
 	area.position = Vector3(0, 0.55, 0)
 	area.input_ray_pickable = true
+	area.collision_layer = 1
+	area.collision_mask = 0
+	area.set_meta("weapon_side", side)
+	area.set_meta("weapon_lane", lane)
 	var collision := CollisionShape3D.new()
 	var shape := SphereShape3D.new()
 	shape.radius = 1.25
@@ -432,6 +438,33 @@ func _on_roll_pressed() -> void:
 	else:
 		_refresh_board()
 
+func _unhandled_input(event: InputEvent) -> void:
+	var screen_position := Vector2.ZERO
+	var pressed := false
+	if event is InputEventScreenTouch and event.pressed:
+		screen_position = event.position
+		pressed = true
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		screen_position = event.position
+		pressed = true
+	if pressed:
+		_pick_weapon_at_screen_position(screen_position)
+
+func _pick_weapon_at_screen_position(screen_position: Vector2) -> void:
+	if game_camera == null:
+		return
+	var ray_origin := game_camera.project_ray_origin(screen_position)
+	var ray_direction := game_camera.project_ray_normal(screen_position)
+	var query := PhysicsRayQueryParameters3D.create(ray_origin, ray_origin + ray_direction * 100.0)
+	query.collision_mask = 1
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return
+	var collider := hit.get("collider") as Node
+	if collider is Area3D and collider.has_meta("weapon_side") and collider.has_meta("weapon_lane"):
+		_try_choose_weapon(int(collider.get_meta("weapon_side")), int(collider.get_meta("weapon_lane")))
+		get_viewport().set_input_as_handled()
+
 func _on_weapon_area_input(_camera: Node, event: InputEvent, _position: Vector3, _normal: Vector3, _shape_idx: int, side: int, lane: int) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_try_choose_weapon(side, lane)
@@ -522,8 +555,7 @@ func _refresh_board() -> void:
 				child.material_override = child.get_meta("original_material") if not is_dead and (not waiting_for_weapon or available) else gray_material
 		var area := root.get_node_or_null("Area3D") as Area3D
 		if area:
-			area.monitoring = available
-			area.input_ray_pickable = available
+			area.input_ray_pickable = true
 		if available:
 			root.scale = Vector3(1.12, 1.12, 1.12)
 		else:
