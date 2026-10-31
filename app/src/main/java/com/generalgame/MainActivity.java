@@ -131,6 +131,15 @@ public class MainActivity extends Activity {
                 txt(c,"جنيرال يلعب وحده ويتخذ قراراته",w*.5f,h*.73f,h*.035f,dark,false);
                 return;
             }
+            if(winner!=0) {
+                box(c,w*.20f,h*.25f,w*.80f,h*.78f,Color.rgb(245,249,239));
+                txt(c,winner==1?"مبروك! أنت الفائز":"انتهت المباراة — جنيرال فاز",w*.5f,h*.39f,h*.065f,winner==1?blue:red,true);
+                txt(c,"تم تدمير الأسلحة الثلاثة",w*.5f,h*.49f,h*.038f,dark,true);
+                txt(c,"انتهت المعركة بنجاح",w*.5f,h*.56f,h*.032f,dark,false);
+                btn(c,"إعادة المباراة",w*.27f,h*.63f,w*.49f,h*.73f,blue);
+                btn(c,"القائمة الرئيسية",w*.52f,h*.63f,w*.74f,h*.73f,dark);
+                return;
+            }
             txt(c,message,w*.5f,h*.145f,h*.036f,dark,true);
             float trackL=w*.18f, trackR=w*.82f, trackW=trackR-trackL;
             float[] rows={h*.29f,h*.49f,h*.69f};
@@ -187,7 +196,10 @@ public class MainActivity extends Activity {
                 invalidate();return true;
             }
             if(winner!=0) {
-                if(x>=w*.76f&&x<=w*.96f&&y>=h*.82f&&y<=h*.93f){resetMatch();}
+                if(y>=h*.63f&&y<=h*.73f) {
+                    if(x>=w*.27f&&x<=w*.49f) resetMatch();
+                    else if(x>=w*.52f&&x<=w*.74f) { mode=0; stage=0; winner=0; die=0; choosing=false; message="اختر طريقة اللعب"; }
+                }
                 invalidate();return true;
             }
             if(!choosing && !diceTapped)return true;
