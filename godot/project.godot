@@ -1,7 +1,8 @@
 config_version=5
 
 [application]
-config/name="GENERAL 3D Prototype"
+config/name="GENERAL"
+boot_splash/show_image=false
 run/main_scene="res://Main.tscn"
 
 [display]
