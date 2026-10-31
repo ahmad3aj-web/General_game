@@ -64,10 +64,14 @@ public class MainActivity extends Activity {
             message= mode==2 ? "أنت ضد جنيرال — اضغط لبدء القرعة" : "قرعة البداية: اللاعب 1 يرمي";
         }
         private void finishCheck() {
-            boolean p1=dead1[0]&&dead1[1]&&dead1[2];
-            boolean p2=dead2[0]&&dead2[1]&&dead2[2];
-            if(p1) winner=2;
-            if(p2) winner=1;
+            int p1Destroyed=0, p2Destroyed=0;
+            for(int i=0;i<3;i++) {
+                if(dead1[i]) p1Destroyed++;
+                if(dead2[i]) p2Destroyed++;
+            }
+            // الفوز يتحقق عند تدمير سلاحين من أصل ثلاثة لدى الخصم.
+            if(p1Destroyed>=2) winner=2;
+            if(p2Destroyed>=2) winner=1;
             if(winner!=0){die=0;choosing=false;message=winner==1?"انتهت المباراة — أنت الفائز!":"انتهت المباراة — فاز جنيرال!";}
         }
         private void afterTurn() {
@@ -134,7 +138,7 @@ public class MainActivity extends Activity {
             if(winner!=0) {
                 box(c,w*.20f,h*.25f,w*.80f,h*.78f,Color.rgb(245,249,239));
                 txt(c,winner==1?"مبروك! أنت الفائز":"انتهت المباراة — جنيرال فاز",w*.5f,h*.39f,h*.065f,winner==1?blue:red,true);
-                txt(c,"تم تدمير الأسلحة الثلاثة",w*.5f,h*.49f,h*.038f,dark,true);
+                txt(c,"تم تدمير سلاحين من أصل ثلاثة",w*.5f,h*.49f,h*.038f,dark,true);
                 txt(c,"انتهت المعركة بنجاح",w*.5f,h*.56f,h*.032f,dark,false);
                 btn(c,"إعادة المباراة",w*.27f,h*.63f,w*.49f,h*.73f,blue);
                 btn(c,"القائمة الرئيسية",w*.52f,h*.63f,w*.74f,h*.73f,dark);
