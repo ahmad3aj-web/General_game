@@ -217,13 +217,13 @@ func _make_weapon(side: int, lane: int, x: float) -> void:
 					_add_cylinder_axis(root, Vector3(wheel_x, 0.25, z * 1.23 + sign(z) * 0.06), 0.075, 0.025, trim_mat, Vector3.FORWARD)
 			_add_box(root, Vector3(-0.02, 0.49, 0), Vector3(1.72, 0.42, 0.82), team_mat)
 			_add_box(root, Vector3(-0.12, 0.72, 0), Vector3(1.20, 0.18, 0.70), _material(Color("#526f4c"), 0.32, 0.5))
-			_add_cylinder(root, Vector3(0.10, 0.84, 0), 0.34, 0.12, dark_mat)
+			_add_cylinder(root, Vector3(0.10, 0.84, 0), 0.34, 0.12, dark_mat.albedo_color)
 			_add_box(root, Vector3(0.08, 0.94, 0), Vector3(0.82, 0.30, 0.60), team_mat)
 			_add_sphere(root, Vector3(-0.16, 1.12, 0), Vector3(0.22, 0.12, 0.22), trim_mat)
 			_add_cylinder_axis(root, Vector3(0.68, 0.99, 0), 0.075, 0.88, dark_mat, Vector3.RIGHT)
 			_add_cylinder_axis(root, Vector3(1.12, 0.99, 0), 0.105, 0.16, trim_mat, Vector3.RIGHT)
 			for z in [-0.31, 0.31]:
-				_add_sphere(root, Vector3(0.78, 0.65, z), Vector3(0.10, 0.10, 0.10), Color("#f4d36b"))
+				_add_sphere(root, Vector3(0.78, 0.65, z), Vector3(0.10, 0.10, 0.10), _material(Color("#f4d36b"), 0.15, 0.4))
 			_add_box(root, Vector3(-0.72, 0.73, 0), Vector3(0.12, 0.11, 0.50), dark_mat)
 	elif lane == 1:
 		# Fighter jet with swept wings, cockpit, twin engines and tail fins.
@@ -241,7 +241,7 @@ func _make_weapon(side: int, lane: int, x: float) -> void:
 	else:
 		# Field cannon with armored shield, recoil barrel, wheels and spokes.
 		_add_box(root, Vector3(-0.12, 0.38, 0), Vector3(1.02, 0.30, 0.68), team_mat)
-		_add_cylinder(root, Vector3(0.02, 0.58, 0), 0.25, 0.18, dark_mat)
+		_add_cylinder(root, Vector3(0.02, 0.58, 0), 0.25, 0.18, dark_mat.albedo_color)
 		_add_box(root, Vector3(-0.38, 0.66, 0), Vector3(0.15, 0.62, 0.86), team_mat)
 		_add_cylinder_axis(root, Vector3(0.48, 0.78, 0), 0.095, 1.30, dark_mat, Vector3.RIGHT)
 		_add_cylinder_axis(root, Vector3(1.13, 0.78, 0), 0.14, 0.18, trim_mat, Vector3.RIGHT)
@@ -431,7 +431,7 @@ func _make_flag(color: Color, pos: Vector3, player_name: String) -> Node3D:
 	root.position = pos
 	_add_cylinder(root, Vector3(0, 1.05, 0), 0.035, 2.2, Color("#d8d8c8"))
 	_add_box(root, Vector3(0.43, 1.73, 0), Vector3(0.86, 0.50, 0.055), _material(color, 0.05, 0.55))
-	_add_sphere(root, Vector3(0.44, 1.74, 0.04), Vector3(0.16, 0.16, 0.07), Color("#f4e6b2"))
+	_add_sphere(root, Vector3(0.44, 1.74, 0.04), Vector3(0.16, 0.16, 0.07), _material(Color("#f4e6b2"), 0.15, 0.4))
 	var label := Label3D.new()
 	label.text = player_name
 	label.position = Vector3(0.0, 2.42, 0)
