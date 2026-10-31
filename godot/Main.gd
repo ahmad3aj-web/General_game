@@ -84,7 +84,7 @@ func _build_world() -> void:
 func _build_tracks() -> void:
 	for side in range(2):
 		for lane in range(3):
-			var z := ROW_Z[lane] + (0.34 if side == 0 else -0.34)
+			var z: float = ROW_Z[lane] + (0.34 if side == 0 else -0.34)
 			for step in range(STEPS):
 				var bullet := _make_bullet()
 				var x := -TRACK_X + (step * (TRACK_X * 2.0 / float(STEPS - 1)))
@@ -205,7 +205,7 @@ func _on_roll_pressed() -> void:
 	ui_label.text = "اللاعب %d — نتيجة النرد: %d — اختر سلاحاً" % [current_player + 1, die_value]
 	var possible := false
 	for lane in range(3):
-		var can_use := not destroyed[current_player][lane] and progress[current_player][lane] + die_value <= STEPS
+		var can_use: bool = (not destroyed[current_player][lane]) and (progress[current_player][lane] + die_value <= STEPS)
 		weapon_buttons[lane].disabled = not can_use
 		possible = possible or can_use
 	if not possible:
@@ -255,7 +255,7 @@ func _refresh_board() -> void:
 		var lane: int = item["lane"]
 		var step: int = item["step"]
 		var mesh_node: Node3D = item["node"]
-		var filled := step < progress[side][lane]
+		var filled: bool = step < progress[side][lane]
 		var target_color := (Color("#238be6") if side == 0 else Color("#e34e43")) if filled else Color("#b9c0c1")
 		for child in mesh_node.get_children():
 			if child is MeshInstance3D:
