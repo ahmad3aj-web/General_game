@@ -183,7 +183,7 @@ public class MainActivity extends Activity {
                 if(y>=by&&y<=buttonBottom){resetMatch();}
                 invalidate();return true;
             }
-            if(y<by||y>buttonBottom)return true;
+            if(!choosing && (y<by||y>buttonBottom))return true;
             if(stage<2) {
                 int r=random.nextInt(6)+1;
                 if(mode==2) {
