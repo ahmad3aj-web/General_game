@@ -33,7 +33,7 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           accept-android-sdk-licenses: true
-          packages: 'platform-tools platforms;android-35 build-tools;35.0.0 cmdline-tools;latest ndk;23.2.8568313 cmake;3.10.2.4988404'
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.1 cmdline-tools;latest ndk;23.2.8568313 cmake;3.10.2.4988404'
 
       - name: Install Godot 4.4.1 editor
         run: |
@@ -71,7 +71,7 @@ jobs:
           EOF
           echo "Installed Android build tools:"
           ls -1 "$ANDROID_HOME/build-tools"
-          test -x "$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          test -x "$ANDROID_HOME/build-tools/35.0.1/apksigner"
 
       - name: Import Godot project
         run: godot --headless --editor --path godot --quit
