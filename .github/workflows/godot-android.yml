@@ -1,0 +1,43 @@
+name: Build GENERAL 3D Android APK
+
+on:
+  push:
+    branches: [ "3d-prototype" ]
+    paths:
+      - "godot/**"
+      - ".github/workflows/godot-android.yml"
+      - "general-debug.keystore.b64"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.4.1
+    env:
+      GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/general-debug.keystore
+      GODOT_ANDROID_KEYSTORE_DEBUG_USER: generaldebug
+      GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: general-debug-pass
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Restore stable debug signing key
+        run: base64 --decode general-debug.keystore.b64 > general-debug.keystore
+      - name: Import Godot project
+        run: godot --headless --editor --path godot --quit
+      - name: Export Android APK
+        run: |
+          mkdir -p godot/build
+          godot --headless --path godot --export-debug "Android" build/GENERAL-3D-preview.apk
+      - name: Verify APK exists
+        run: test -s godot/build/GENERAL-3D-preview.apk
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GENERAL-3D-Android-APK
+          path: godot/build/GENERAL-3D-preview.apk
+          if-no-files-found: error
+          retention-days: 14
