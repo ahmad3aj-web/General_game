@@ -133,7 +133,7 @@ public class MainActivity extends Activity {
             }
             txt(c,message,w*.5f,h*.145f,h*.036f,dark,true);
             float trackL=w*.16f, trackR=w*.84f, trackW=trackR-trackL;
-            float[] rows={h*.29f,h*.43f,h*.57f,h*.70f,h*.81f,h*.92f};
+            float[] rows={h*.25f,h*.36f,h*.47f,h*.62f,h*.73f,h*.84f};
             for(int side=1;side<=2;side++) for(int lane=0;lane<3;lane++) {
                 boolean right=side==1;
                 float y=rows[(right?3:0)+lane];
@@ -154,7 +154,7 @@ public class MainActivity extends Activity {
             txt(c,mode==2?"أنت":"اللاعب 1",w*.92f,h*.62f,h*.035f,blue,true);
             box(c,w*.46f,h*.045f,w*.54f,h*.13f,Color.WHITE);
             txt(c,die==0?"النرد":String.valueOf(die),w*.5f,h*.115f,h*.06f,dark,true);
-            float by=h*.935f,bh=h*.055f;
+            float by=h*.88f,bh=h*.055f;
             if(winner!=0) btn(c,"إعادة المباراة",w*.35f,by-h*.055f,w*.65f,by, dark);
             else if(stage<2 || !choosing) btn(c,"ارمِ النرد",w*.39f,by-h*.055f,w*.61f,by,player==1?blue:red);
             else {
@@ -164,16 +164,16 @@ public class MainActivity extends Activity {
 
         @Override public boolean onTouchEvent(MotionEvent e) {
             if(e.getAction()!=MotionEvent.ACTION_UP)return true;
-            float x=e.getX(),y=e.getY(),by=h*.88f;
+            float x=e.getX(),y=e.getY(),by=h*.88f, buttonBottom=h*.935f;
             if(mode==0) {
                 if(y>=h*.42f&&y<=h*.62f){mode=x<w*.5f?1:2;resetMatch();if(mode==2)message="أنت ضد جنيرال — اضغط النرد لقرعة البداية";}
                 invalidate();return true;
             }
             if(winner!=0) {
-                if(y>=by-h*.07f&&y<=by+h*.02f){resetMatch();}
+                if(y>=by&&y<=buttonBottom){resetMatch();}
                 invalidate();return true;
             }
-            if(y<by-h*.07f||y>by+h*.02f)return true;
+            if(y<by||y>buttonBottom)return true;
             if(stage<2) {
                 int r=random.nextInt(6)+1;
                 if(mode==2) {
@@ -192,7 +192,7 @@ public class MainActivity extends Activity {
                 if(mode==2&&player==2){computerTurn();}
                 else {
                     die=random.nextInt(6)+1;choosing=true;
-                    if(!anyMove(player)){message="لا توجد حركة ممكنة — انتهى الدور";afterTurn();}
+                    if(!anyMove(player)){message="لا توجد حركة ممكنة — انتهى الدور";if(mode==2){player=2;computerTurn();}else afterTurn();}
                     else message=(mode==2?"أنت":"اللاعب "+player)+" رمى "+die+" — اختر سلاحاً";
                 }
             } else {
