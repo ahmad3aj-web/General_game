@@ -33,7 +33,7 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           accept-android-sdk-licenses: true
-          packages: 'platform-tools platforms;android-34 build-tools;34.0.0 cmdline-tools;latest ndk;23.2.8568313 cmake;3.10.2.4988404'
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0 cmdline-tools;latest ndk;23.2.8568313 cmake;3.10.2.4988404'
 
       - name: Install Godot 4.4.1 editor
         run: |
@@ -69,6 +69,9 @@ jobs:
           export/android/debug_keystore_user = "generaldebug"
           export/android/debug_keystore_pass = "general-debug-pass"
           EOF
+          echo "Installed Android build tools:"
+          ls -1 "$ANDROID_HOME/build-tools"
+          test -x "$ANDROID_HOME/build-tools/35.0.0/apksigner"
 
       - name: Import Godot project
         run: godot --headless --editor --path godot --quit
@@ -76,7 +79,7 @@ jobs:
       - name: Export Android APK
         run: |
           mkdir -p godot/build
-          godot --headless --path godot --export-debug "Android" build/GENERAL-3D-preview.apk
+          godot --headless --verbose --path godot --export-debug "Android" build/GENERAL-3D-preview.apk
 
       - name: Verify APK exists
         run: test -s godot/build/GENERAL-3D-preview.apk
