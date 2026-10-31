@@ -198,22 +198,31 @@ func _make_weapon(side: int, lane: int, x: float) -> void:
 	var glass_mat := _material(Color("#7bc5dc"), 0.55, 0.16)
 
 	if lane == 0:
-		# Detailed cartoon tank: twin tracks, six road wheels, turret, hatch and cannon.
-		for z in [-0.48, 0.48]:
-			_add_box(root, Vector3(0, 0.25, z), Vector3(1.82, 0.34, 0.20), dark_mat)
-			for wheel_x in [-0.68, -0.42, -0.14, 0.14, 0.42, 0.68]:
-				_add_cylinder_axis(root, Vector3(wheel_x, 0.25, z * 1.23), 0.145, 0.11, dark_mat, Vector3.FORWARD)
-				_add_cylinder_axis(root, Vector3(wheel_x, 0.25, z * 1.23 + sign(z) * 0.06), 0.075, 0.025, trim_mat, Vector3.FORWARD)
-		_add_box(root, Vector3(-0.02, 0.49, 0), Vector3(1.72, 0.42, 0.82), team_mat)
-		_add_box(root, Vector3(-0.12, 0.72, 0), Vector3(1.20, 0.18, 0.70), _material(Color("#526f4c"), 0.32, 0.5))
-		_add_cylinder(root, Vector3(0.10, 0.84, 0), 0.34, 0.12, dark_mat)
-		_add_box(root, Vector3(0.08, 0.94, 0), Vector3(0.82, 0.30, 0.60), team_mat)
-		_add_sphere(root, Vector3(-0.16, 1.12, 0), Vector3(0.22, 0.12, 0.22), trim_mat)
-		_add_cylinder_axis(root, Vector3(0.68, 0.99, 0), 0.075, 0.88, dark_mat, Vector3.RIGHT)
-		_add_cylinder_axis(root, Vector3(1.12, 0.99, 0), 0.105, 0.16, trim_mat, Vector3.RIGHT)
-		for z in [-0.31, 0.31]:
-			_add_sphere(root, Vector3(0.78, 0.65, z), Vector3(0.10, 0.10, 0.10), Color("#f4d36b"))
-		_add_box(root, Vector3(-0.72, 0.73, 0), Vector3(0.12, 0.11, 0.50), dark_mat)
+		# Use the licensed Quaternius GLB tank; keep a detailed procedural fallback.
+		var tank_scene := load("res://assets/models/tank_basic.glb") as PackedScene
+		if tank_scene:
+			var tank_model := tank_scene.instantiate() as Node3D
+			tank_model.position = Vector3(0, 0.05, 0)
+			tank_model.rotation_degrees.y = 90
+			tank_model.scale = Vector3(0.78, 0.78, 0.78)
+			root.add_child(tank_model)
+		else:
+			# Detailed cartoon tank: twin tracks, six road wheels, turret, hatch and cannon.
+			for z in [-0.48, 0.48]:
+				_add_box(root, Vector3(0, 0.25, z), Vector3(1.82, 0.34, 0.20), dark_mat)
+				for wheel_x in [-0.68, -0.42, -0.14, 0.14, 0.42, 0.68]:
+					_add_cylinder_axis(root, Vector3(wheel_x, 0.25, z * 1.23), 0.145, 0.11, dark_mat, Vector3.FORWARD)
+					_add_cylinder_axis(root, Vector3(wheel_x, 0.25, z * 1.23 + sign(z) * 0.06), 0.075, 0.025, trim_mat, Vector3.FORWARD)
+			_add_box(root, Vector3(-0.02, 0.49, 0), Vector3(1.72, 0.42, 0.82), team_mat)
+			_add_box(root, Vector3(-0.12, 0.72, 0), Vector3(1.20, 0.18, 0.70), _material(Color("#526f4c"), 0.32, 0.5))
+			_add_cylinder(root, Vector3(0.10, 0.84, 0), 0.34, 0.12, dark_mat)
+			_add_box(root, Vector3(0.08, 0.94, 0), Vector3(0.82, 0.30, 0.60), team_mat)
+			_add_sphere(root, Vector3(-0.16, 1.12, 0), Vector3(0.22, 0.12, 0.22), trim_mat)
+			_add_cylinder_axis(root, Vector3(0.68, 0.99, 0), 0.075, 0.88, dark_mat, Vector3.RIGHT)
+			_add_cylinder_axis(root, Vector3(1.12, 0.99, 0), 0.105, 0.16, trim_mat, Vector3.RIGHT)
+			for z in [-0.31, 0.31]:
+				_add_sphere(root, Vector3(0.78, 0.65, z), Vector3(0.10, 0.10, 0.10), Color("#f4d36b"))
+			_add_box(root, Vector3(-0.72, 0.73, 0), Vector3(0.12, 0.11, 0.50), dark_mat)
 	elif lane == 1:
 		# Fighter jet with swept wings, cockpit, twin engines and tail fins.
 		_add_box(root, Vector3(0.0, 0.58, 0), Vector3(1.95, 0.20, 0.25), team_mat)
