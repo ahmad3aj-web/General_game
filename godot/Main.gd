@@ -397,7 +397,7 @@ func _make_soldier(primary: Color, secondary: Color, is_general: bool) -> Node3D
 		_add_cylinder_axis(root, Vector3(0.12, 1.10, z * 1.22), 0.095, 0.42, uniform, Vector3(0.4, -1.0, 0.0))
 		_add_sphere(root, Vector3(0.28, 0.91, z * 1.22), Vector3(0.17, 0.15, 0.17), skin)
 	# Neck, face, ears, eyes and helmet.
-	_add_cylinder(root, Vector3(0, 1.47, 0), 0.105, 0.20, skin.color)
+	_add_cylinder(root, Vector3(0, 1.47, 0), 0.105, 0.20, Color("#c98e68"))
 	_add_sphere(root, Vector3(0.04, 1.72, 0), Vector3(0.48, 0.55, 0.43), skin)
 	for z in [-0.10, 0.10]:
 		_add_sphere(root, Vector3(0.255, 1.79, z), Vector3(0.055, 0.065, 0.045), _material(Color("#202523"), 0.0, 0.35))
@@ -558,6 +558,10 @@ func _show_mode_menu() -> void:
 	_reset_state()
 	game_panel.visible = false
 	mode_panel.visible = true
+	if showcase_root:
+		showcase_root.visible = true
+		showcase_root.position = Vector3.ZERO
+		showcase_root.scale = Vector3.ONE
 
 func _reset_state() -> void:
 	progress = [[0, 0, 0], [0, 0, 0]]
