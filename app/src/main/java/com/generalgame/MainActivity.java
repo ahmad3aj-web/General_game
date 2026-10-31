@@ -133,24 +133,26 @@ public class MainActivity extends Activity {
             }
             txt(c,message,w*.5f,h*.145f,h*.036f,dark,true);
             float trackL=w*.18f, trackR=w*.82f, trackW=trackR-trackL;
-            float[] rows={h*.30f,h*.49f,h*.68f};
+            float[] rows={h*.29f,h*.49f,h*.69f};
             txt(c,mode==2?"جنيرال":"اللاعب 2",w*.08f,h*.19f,h*.035f,red,true);
             txt(c,mode==2?"أنت":"اللاعب 1",w*.92f,h*.19f,h*.035f,blue,true);
             for(int lane=0;lane<3;lane++) {
-                float y=rows[lane];
-                // خط واحد لكل نوع سلاح، والطلقات تتقدم من الطرفين باتجاه بعضهما.
-                p.setColor(Color.rgb(115,145,105));
-                c.drawRoundRect(new RectF(trackL,y-h*.023f,trackR,y+h*.023f),8,8,p);
-                for(int i=0;i<15;i++) {
-                    float cell=trackW/15f;
-                    float lx=trackL+i*cell;
-                    float rx=trackR-(i+1)*cell;
-                    int leftFill=dead2[lane]?Color.rgb(125,125,120):(i<pos2[lane]?red:Color.rgb(242,247,235));
-                    int rightFill=dead1[lane]?Color.rgb(125,125,120):(i<pos1[lane]?blue:Color.rgb(242,247,235));
-                    p.setColor(leftFill);
-                    c.drawRoundRect(new RectF(lx+1,y-h*.018f,lx+cell-2,y+h*.018f),5,5,p);
-                    p.setColor(rightFill);
-                    c.drawRoundRect(new RectF(rx+1,y-h*.018f,rx+cell-2,y+h*.018f),5,5,p);
+                float y=rows[lane], gap=h*.012f, laneH=h*.012f;
+                // مساران مستقلان لكل سلاح: 6 خطوط إجمالاً، واحد لكل لاعب.
+                for(int side=1;side<=2;side++) {
+                    float lineY=y+(side==1?gap:-gap);
+                    int color=side==1?blue:red;
+                    boolean dead=destroyed(side)[lane];
+                    int progress=positions(side)[lane];
+                    p.setColor(Color.rgb(115,145,105));
+                    c.drawRoundRect(new RectF(trackL,lineY-laneH,trackR,lineY+laneH),5,5,p);
+                    for(int i=0;i<15;i++) {
+                        float cell=trackW/15f;
+                        float x=side==1?trackR-(i+1)*cell:trackL+i*cell;
+                        int fill=dead?Color.rgb(125,125,120):(i<progress?color:Color.rgb(242,247,235));
+                        p.setColor(fill);
+                        c.drawRoundRect(new RectF(x+1,lineY-laneH+1,x+cell-2,lineY+laneH-1),4,4,p);
+                    }
                 }
                 drawWeapon(c,lane,w*.075f,y,red);
                 drawWeapon(c,lane,w*.925f,y,blue);
@@ -164,27 +166,32 @@ public class MainActivity extends Activity {
                     }
                 }
             }
-            box(c,w*.46f,h*.045f,w*.54f,h*.13f,Color.WHITE);
-            txt(c,die==0?"النرد":String.valueOf(die),w*.5f,h*.115f,h*.06f,dark,true);
-            float by=h*.88f,bh=h*.055f;
-            if(winner!=0) btn(c,"إعادة المباراة",w*.35f,by-h*.055f,w*.65f,by, dark);
-            else if(stage<2 || !choosing) btn(c,"ارمِ النرد",w*.39f,by-h*.055f,w*.61f,by,player==1?blue:red);
-            else txt(c,"اضغط على رسم السلاح الذي تريد تحريكه",w*.5f,by-h*.018f,h*.032f,dark,true);
+            float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
+            int diceColor=winner!=0?dark:(player==1?blue:red);
+            box(c,diceCx-diceSize/2,diceCy-diceSize/2,diceCx+diceSize/2,diceCy+diceSize/2,diceColor);
+            txt(c,die==0?(stage<2?"ارمِ":"ارمِ"):String.valueOf(die),diceCx,diceCy+h*.018f,diceSize*.48f,Color.WHITE,true);
+            if(choosing) txt(c,"اختر السلاح",w*.5f,h*.965f,h*.026f,dark,true);
+            if(winner!=0) {
+                box(c,w*.76f,h*.82f,w*.96f,h*.93f,dark);
+                txt(c,"إعادة",w*.86f,h*.89f,h*.035f,Color.WHITE,true);
+            }
         }
 
         @Override public boolean onTouchEvent(MotionEvent e) {
             if(e.getAction()!=MotionEvent.ACTION_UP)return true;
-            float x=e.getX(),y=e.getY(),by=h*.88f, buttonBottom=h*.935f;
+            float x=e.getX(),y=e.getY(),by=h*.795f, buttonBottom=h*.935f;
+            float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
+            boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
             if(mode==0) {
                 if(y>=h*.42f&&y<=h*.62f){mode=x<w*.5f?1:2;resetMatch();if(mode==2)message="أنت ضد جنيرال — اضغط النرد لقرعة البداية";}
                 invalidate();return true;
             }
             if(winner!=0) {
-                if(y>=by&&y<=buttonBottom){resetMatch();}
+                if(x>=w*.76f&&x<=w*.96f&&y>=h*.82f&&y<=h*.93f){resetMatch();}
                 invalidate();return true;
             }
-            if(!choosing && (y<by||y>buttonBottom))return true;
-            if(stage<2) {
+            if(!choosing && !diceTapped)return true;
+            if(stage<2 && diceTapped) {
                 int r=random.nextInt(6)+1;
                 if(mode==2) {
                     int ai=random.nextInt(6)+1;
@@ -198,7 +205,7 @@ public class MainActivity extends Activity {
                     else if(r<firstRoll){player=2;stage=2;message="اللاعب 2 يبدأ";}
                     else {stage=0;firstRoll=0;message="تعادل — أعيدوا القرعة";}
                 }
-            } else if(!choosing) {
+            } else if(!choosing && diceTapped) {
                 if(mode==2&&player==2){computerTurn();}
                 else {
                     die=random.nextInt(6)+1;choosing=true;
