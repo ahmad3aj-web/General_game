@@ -123,9 +123,9 @@ func _build_world() -> void:
 	camera.size = 18.0
 	camera.near = 0.1
 	camera.far = 100.0
-	camera.look_at(Vector3(0.0, 0.0, 0.0), Vector3.UP)
-	camera.make_current()
 	add_child(camera)
+	camera.look_at(Vector3.ZERO, Vector3.UP)
+	camera.make_current()
 	game_camera = camera
 
 func _build_tracks() -> void:
