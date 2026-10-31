@@ -76,6 +76,12 @@ jobs:
       - name: Import Godot project
         run: godot --headless --editor --path godot --quit
 
+      - name: Set absolute Android signing key path
+        run: |
+          sed -i "s|^keystore/debug=.*|keystore/debug=\"$GITHUB_WORKSPACE/general-debug.keystore\"|" godot/export_presets.cfg
+          grep "^keystore/debug=" godot/export_presets.cfg
+          test -s "$GITHUB_WORKSPACE/general-debug.keystore"
+
       - name: Export Android APK
         run: |
           mkdir -p godot/build
