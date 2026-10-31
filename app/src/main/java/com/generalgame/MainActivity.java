@@ -29,8 +29,8 @@ public class MainActivity extends Activity {
         private final Random random = new Random();
         private final int[] pos1 = {0,0,0};
         private final int[] pos2 = {0,0,0};
-        private final boolean[] won1 = {false,false,false};
-        private final boolean[] won2 = {false,false,false};
+        private final boolean[] dead1 = {false,false,false};
+        private final boolean[] dead2 = {false,false,false};
         private int stage = 0; // 0/1: opening draw, 2: normal turn
         private int firstRoll = 0;
         private int player = 1;
@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
             text(c,label,(l+r)/2,(t+b)/2+ h*0.012f,h*0.045f,Color.WHITE,true);
         }
         private boolean alive(int side, int lane) {
-            return side == 1 ? pos2[lane] < 15 : pos1[lane] < 15;
+            return side == 1 ? (!dead1[lane] && !dead2[lane]) : (!dead2[lane] && !dead1[lane]);
         }
         private int[] ownPositions(int side) { return side == 1 ? pos1 : pos2; }
         private int[] enemyPositions(int side) { return side == 1 ? pos2 : pos1; }
@@ -78,8 +78,8 @@ public class MainActivity extends Activity {
             message = "دور اللاعب " + player + " — اضغط النرد";
         }
         private void checkWin() {
-            int[] enemy = enemyPositions(player);
-            if (enemy[0] == 15 && enemy[1] == 15 && enemy[2] == 15) {
+            boolean[] enemyDead = player == 1 ? dead2 : dead1;
+            if (enemyDead[0] && enemyDead[1] && enemyDead[2]) {
                 winner = player;
                 message = "فاز اللاعب " + player + "!";
             }
@@ -157,6 +157,7 @@ public class MainActivity extends Activity {
 
             if(winner!=0) {
                 pos1[0]=pos1[1]=pos1[2]=0; pos2[0]=pos2[1]=pos2[2]=0;
+                for(int i=0;i<3;i++){ dead1[i]=false; dead2[i]=false; }
                 winner=0; stage=0; firstRoll=0; die=0; choosing=false; player=1;
                 message="قرعة البداية: اضغط زر النرد";
                 invalidate(); return true;
@@ -189,6 +190,9 @@ public class MainActivity extends Activity {
                         message="هذه الحركة غير ممكنة — اختر سلاحاً آخر";
                     } else {
                         ownPositions(player)[lane]+=die;
+                        if(ownPositions(player)[lane] == 15) {
+                            if(player==1) dead2[lane]=true; else dead1[lane]=true;
+                        }
                         checkWin();
                         if(winner==0) nextTurn();
                     }
