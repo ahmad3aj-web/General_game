@@ -31,6 +31,7 @@ var flame_material: StandardMaterial3D
 
 func _ready() -> void:
 	randomize()
+	get_viewport().physics_object_picking = true
 	_setup_materials()
 	_build_world()
 	_build_tracks()
@@ -304,7 +305,6 @@ func _update_die_face(count: int) -> void:
 		bullet_mesh.bottom_radius = 0.055
 		bullet_mesh.height = 0.19
 		bullet.mesh = bullet_mesh
-		bullet.rotation_degrees.x = 90
 		bullet.position = Vector3(p.x, 0.38, p.y)
 		bullet.material_override = _material(Color("#b97828"), 0.65, 0.2)
 		die_root.add_child(bullet)
