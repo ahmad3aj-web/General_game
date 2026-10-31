@@ -60,7 +60,8 @@ func _material(color: Color, metallic: float, roughness: float) -> StandardMater
 func _build_world() -> void:
 	var env := WorldEnvironment.new()
 	var environment := Environment.new()
-	environment.background_mode = Environment.BG_SKY
+	environment.background_mode = Environment.BG_COLOR
+	environment.background_color = Color("#a9c5d2")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color("#c5d8e7")
 	environment.ambient_light_energy = 0.85
@@ -117,10 +118,12 @@ func _build_world() -> void:
 
 	var camera := Camera3D.new()
 	camera.position = Vector3(0, 15.5, 18.5)
-	camera.rotation_degrees = Vector3(-39, 0, 0)
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 20.0
-	camera.current = true
+	camera.size = 18.0
+	camera.near = 0.1
+	camera.far = 100.0
+	camera.look_at(Vector3(0.0, 0.0, 0.0), Vector3.UP)
+	camera.make_current()
 	add_child(camera)
 
 func _build_tracks() -> void:
