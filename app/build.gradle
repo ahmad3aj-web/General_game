@@ -6,6 +6,19 @@ android {
     namespace 'com.generalgame'
     compileSdk 35
 
+    signingConfigs {
+        debug {
+            storeFile rootProject.file('general-debug.keystore')
+            storePassword 'general-debug-pass'
+            keyAlias 'generaldebug'
+            keyPassword 'general-debug-pass'
+        }
+    }
+
+    buildTypes {
+        debug { signingConfig signingConfigs.debug }
+    }
+
     defaultConfig {
         applicationId 'com.generalgame'
         minSdk 23
