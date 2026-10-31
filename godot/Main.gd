@@ -30,6 +30,13 @@ var bullet_material: StandardMaterial3D
 var gray_material: StandardMaterial3D
 var flame_material: StandardMaterial3D
 
+var showcase_root: Node3D
+var blue_character: Node3D
+var red_character: Node3D
+var general_character: Node3D
+var blue_flag: Node3D
+var red_flag: Node3D
+
 func _ready() -> void:
 	randomize()
 	get_viewport().physics_object_picking = true
@@ -39,6 +46,7 @@ func _ready() -> void:
 	_build_weapons()
 	_build_die()
 	_build_ui()
+	_build_showcase()
 	_refresh_board()
 
 func _setup_materials() -> void:
@@ -185,39 +193,60 @@ func _make_weapon(side: int, lane: int, x: float) -> void:
 	root.rotation_degrees.y = 0 if side == 0 else 180
 	add_child(root)
 	var team_mat := blue_material if side == 0 else red_material
+	var dark_mat := _material(Color("#27342f"), 0.38, 0.62)
+	var trim_mat := _material(Color("#d4c28a"), 0.42, 0.42)
+	var glass_mat := _material(Color("#7bc5dc"), 0.55, 0.16)
 
 	if lane == 0:
-		# Tank: hull, tracks, road wheels, turret and barrel.
-		_add_box(root, Vector3(0, 0.28, 0), Vector3(1.5, 0.38, 0.82), team_mat)
-		_add_box(root, Vector3(0, 0.51, 0), Vector3(0.83, 0.25, 0.59), _material(Color("#53684a"), 0.32, 0.55))
-		_add_box(root, Vector3(0.52, 0.57, 0), Vector3(0.92, 0.105, 0.13), team_mat)
-		for wheel_x in [-0.55, -0.19, 0.19, 0.55]:
-			_add_cylinder(root, Vector3(wheel_x, 0.16, 0.44), 0.145, 0.12, Color("#26342d"))
-			_add_cylinder(root, Vector3(wheel_x, 0.16, -0.44), 0.145, 0.12, Color("#26342d"))
-		_add_box(root, Vector3(-0.1, 0.73, 0), Vector3(0.28, 0.12, 0.35), _material(Color("#d4b56a"), 0.35, 0.45))
+		# Detailed cartoon tank: twin tracks, six road wheels, turret, hatch and cannon.
+		for z in [-0.48, 0.48]:
+			_add_box(root, Vector3(0, 0.25, z), Vector3(1.82, 0.34, 0.20), dark_mat)
+			for wheel_x in [-0.68, -0.42, -0.14, 0.14, 0.42, 0.68]:
+				_add_cylinder_axis(root, Vector3(wheel_x, 0.25, z * 1.23), 0.145, 0.11, dark_mat, Vector3.FORWARD)
+				_add_cylinder_axis(root, Vector3(wheel_x, 0.25, z * 1.23 + sign(z) * 0.06), 0.075, 0.025, trim_mat, Vector3.FORWARD)
+		_add_box(root, Vector3(-0.02, 0.49, 0), Vector3(1.72, 0.42, 0.82), team_mat)
+		_add_box(root, Vector3(-0.12, 0.72, 0), Vector3(1.20, 0.18, 0.70), _material(Color("#526f4c"), 0.32, 0.5))
+		_add_cylinder(root, Vector3(0.10, 0.84, 0), 0.34, 0.12, dark_mat)
+		_add_box(root, Vector3(0.08, 0.94, 0), Vector3(0.82, 0.30, 0.60), team_mat)
+		_add_sphere(root, Vector3(-0.16, 1.12, 0), Vector3(0.22, 0.12, 0.22), trim_mat)
+		_add_cylinder_axis(root, Vector3(0.68, 0.99, 0), 0.075, 0.88, dark_mat, Vector3.RIGHT)
+		_add_cylinder_axis(root, Vector3(1.12, 0.99, 0), 0.105, 0.16, trim_mat, Vector3.RIGHT)
+		for z in [-0.31, 0.31]:
+			_add_sphere(root, Vector3(0.78, 0.65, z), Vector3(0.10, 0.10, 0.10), Color("#f4d36b"))
+		_add_box(root, Vector3(-0.72, 0.73, 0), Vector3(0.12, 0.11, 0.50), dark_mat)
 	elif lane == 1:
-		# Fighter aircraft: fuselage, swept wings, tail and cockpit.
-		_add_box(root, Vector3(0, 0.48, 0), Vector3(1.72, 0.16, 0.23), team_mat)
-		_add_box(root, Vector3(0.0, 0.43, 0), Vector3(0.66, 0.12, 1.5), team_mat)
-		_add_box(root, Vector3(-0.62, 0.43, 0), Vector3(0.34, 0.12, 0.66), team_mat)
-		_add_box(root, Vector3(-0.22, 0.61, 0), Vector3(0.43, 0.20, 0.20), _material(Color("#8fd0e5"), 0.4, 0.18))
-		_add_box(root, Vector3(0.78, 0.45, 0), Vector3(0.18, 0.10, 0.42), _material(Color("#d6d9d6"), 0.45, 0.28))
+		# Fighter jet with swept wings, cockpit, twin engines and tail fins.
+		_add_box(root, Vector3(0.0, 0.58, 0), Vector3(1.95, 0.20, 0.25), team_mat)
+		_add_sphere(root, Vector3(1.00, 0.58, 0), Vector3(0.28, 0.15, 0.15), trim_mat)
+		_add_box(root, Vector3(0.00, 0.53, 0), Vector3(0.65, 0.13, 1.70), team_mat)
+		_add_box(root, Vector3(0.32, 0.54, 0), Vector3(0.40, 0.10, 1.28), team_mat)
+		_add_box(root, Vector3(-0.72, 0.54, 0), Vector3(0.42, 0.12, 0.78), team_mat)
+		_add_box(root, Vector3(-0.78, 0.72, 0), Vector3(0.38, 0.46, 0.10), team_mat)
+		_add_sphere(root, Vector3(0.15, 0.72, 0), Vector3(0.30, 0.19, 0.18), glass_mat)
+		for z in [-0.62, 0.62]:
+			_add_cylinder_axis(root, Vector3(-0.20, 0.43, z), 0.13, 0.62, dark_mat, Vector3.RIGHT)
+			_add_cylinder_axis(root, Vector3(0.14, 0.43, z), 0.09, 0.08, trim_mat, Vector3.RIGHT)
+			_add_cylinder_axis(root, Vector3(0.18, 0.39, z * 1.30), 0.045, 0.52, trim_mat, Vector3.RIGHT)
 	else:
-		# Field cannon: carriage, shield, barrel and wheels.
-		_add_box(root, Vector3(-0.08, 0.29, 0), Vector3(0.92, 0.28, 0.66), team_mat)
-		_add_cylinder(root, Vector3(0, 0.48, 0), 0.28, 0.18, Color("#56634b"))
-		_add_box(root, Vector3(0.46, 0.61, 0), Vector3(1.08, 0.12, 0.13), team_mat)
-		_add_box(root, Vector3(-0.32, 0.48, 0), Vector3(0.12, 0.58, 0.72), _material(Color("#43563e"), 0.28, 0.58))
-		for wheel_z in [-0.46, 0.46]:
-			_add_cylinder(root, Vector3(-0.25, 0.17, wheel_z), 0.22, 0.13, Color("#26342d"))
-			_add_cylinder(root, Vector3(0.25, 0.17, wheel_z), 0.22, 0.13, Color("#26342d"))
+		# Field cannon with armored shield, recoil barrel, wheels and spokes.
+		_add_box(root, Vector3(-0.12, 0.38, 0), Vector3(1.02, 0.30, 0.68), team_mat)
+		_add_cylinder(root, Vector3(0.02, 0.58, 0), 0.25, 0.18, dark_mat)
+		_add_box(root, Vector3(-0.38, 0.66, 0), Vector3(0.15, 0.62, 0.86), team_mat)
+		_add_cylinder_axis(root, Vector3(0.48, 0.78, 0), 0.095, 1.30, dark_mat, Vector3.RIGHT)
+		_add_cylinder_axis(root, Vector3(1.13, 0.78, 0), 0.14, 0.18, trim_mat, Vector3.RIGHT)
+		for z in [-0.52, 0.52]:
+			_add_cylinder_axis(root, Vector3(-0.12, 0.24, z), 0.28, 0.14, dark_mat, Vector3.FORWARD)
+			_add_cylinder_axis(root, Vector3(-0.12, 0.24, z + sign(z) * 0.08), 0.12, 0.035, trim_mat, Vector3.FORWARD)
+			for spoke in range(6):
+				var angle := TAU * float(spoke) / 6.0
+				_add_box(root, Vector3(-0.12 + cos(angle) * 0.16, 0.24 + sin(angle) * 0.16, z + sign(z) * 0.105), Vector3(0.035, 0.20, 0.025), trim_mat)
 
 	var label := Label3D.new()
 	label.text = WEAPON_NAMES[lane]
-	label.position = Vector3(0, 1.12, 0)
-	label.font_size = 34
-	label.outline_size = 8
-	label.modulate = Color("#f5f5e8")
+	label.position = Vector3(0, 1.40, 0)
+	label.font_size = 38
+	label.outline_size = 9
+	label.modulate = Color("#fff7df")
 	root.add_child(label)
 
 	var fire := Node3D.new()
@@ -225,14 +254,14 @@ func _make_weapon(side: int, lane: int, x: float) -> void:
 	fire.visible = false
 	fire.position = Vector3(0, 0.95, 0)
 	root.add_child(fire)
-	for i in range(4):
+	for i in range(5):
 		var flame := MeshInstance3D.new()
 		var flame_mesh := CylinderMesh.new()
 		flame_mesh.top_radius = 0.0
 		flame_mesh.bottom_radius = 0.13 + float(i % 2) * 0.06
 		flame_mesh.height = 0.58 + float(i % 2) * 0.2
 		flame.mesh = flame_mesh
-		flame.position = Vector3(-0.28 + float(i) * 0.18, 0.18, 0.0 if i % 2 == 0 else 0.16)
+		flame.position = Vector3(-0.34 + float(i) * 0.17, 0.18, 0.0 if i % 2 == 0 else 0.16)
 		flame.material_override = flame_material
 		fire.add_child(flame)
 	var smoke := MeshInstance3D.new()
@@ -246,7 +275,7 @@ func _make_weapon(side: int, lane: int, x: float) -> void:
 
 	weapon_roots.append({"root": root, "side": side, "lane": lane})
 	var area := Area3D.new()
-	area.position = Vector3(0, 0.55, 0)
+	area.position = Vector3(0, 0.58, 0)
 	area.input_ray_pickable = true
 	area.monitoring = true
 	area.monitorable = true
@@ -256,12 +285,37 @@ func _make_weapon(side: int, lane: int, x: float) -> void:
 	area.set_meta("weapon_lane", lane)
 	var collision := CollisionShape3D.new()
 	var shape := SphereShape3D.new()
-	shape.radius = 1.8
+	shape.radius = 1.95
 	collision.shape = shape
 	area.add_child(collision)
 	root.add_child(area)
 	area.input_event.connect(_on_weapon_area_input.bind(side, lane))
 	weapon_areas.append(area)
+
+func _add_sphere(parent: Node3D, pos: Vector3, scale_value: Vector3, mat: Material) -> void:
+	var instance := MeshInstance3D.new()
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.5
+	mesh.height = 1.0
+	instance.mesh = mesh
+	instance.position = pos
+	instance.scale = scale_value
+	instance.material_override = mat
+	instance.set_meta("original_material", mat)
+	parent.add_child(instance)
+
+func _add_cylinder_axis(parent: Node3D, pos: Vector3, radius: float, height: float, mat: Material, axis: Vector3) -> void:
+	var instance := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = radius
+	mesh.bottom_radius = radius
+	mesh.height = height
+	instance.mesh = mesh
+	instance.position = pos
+	instance.quaternion = Quaternion(Vector3.UP, axis.normalized())
+	instance.material_override = mat
+	instance.set_meta("original_material", mat)
+	parent.add_child(instance)
 
 func _add_box(parent: Node3D, pos: Vector3, size: Vector3, mat: Material) -> void:
 	var mesh_instance := MeshInstance3D.new()
@@ -284,6 +338,97 @@ func _add_cylinder(parent: Node3D, pos: Vector3, radius: float, height: float, c
 	mesh_instance.material_override = _material(color, 0.45, 0.55)
 	mesh_instance.set_meta("original_material", mesh_instance.material_override)
 	parent.add_child(mesh_instance)
+
+
+func _build_showcase() -> void:
+	showcase_root = Node3D.new()
+	showcase_root.name = "OpeningShowcase"
+	add_child(showcase_root)
+	blue_character = _make_soldier(Color("#276fc1"), Color("#405c42"), false)
+	blue_character.position = Vector3(-3.8, 0.0, -5.0)
+	showcase_root.add_child(blue_character)
+	red_character = _make_soldier(Color("#b83b3e"), Color("#6b5540"), false)
+	red_character.position = Vector3(3.8, 0.0, -5.0)
+	red_character.rotation_degrees.y = 180
+	showcase_root.add_child(red_character)
+	general_character = _make_soldier(Color("#283e58"), Color("#d5ae57"), true)
+	general_character.position = Vector3(3.8, 0.0, -5.0)
+	general_character.rotation_degrees.y = 180
+	showcase_root.add_child(general_character)
+	general_character.visible = false
+	blue_flag = _make_flag(Color("#087cf0"), Vector3(-3.8, 0.0, -6.5), "اللاعب الأزرق")
+	red_flag = _make_flag(Color("#f02f3d"), Vector3(3.8, 0.0, -6.5), "الخصم")
+	showcase_root.add_child(blue_flag)
+	showcase_root.add_child(red_flag)
+	var title := Label3D.new()
+	title.text = "GENERAL"
+	title.position = Vector3(0, 3.3, -5.8)
+	title.font_size = 68
+	title.outline_size = 12
+	title.modulate = Color("#fff4d4")
+	showcase_root.add_child(title)
+	var subtitle := Label3D.new()
+	subtitle.text = "قوّاتك جاهزة للمعركة"
+	subtitle.position = Vector3(0, 2.65, -5.8)
+	subtitle.font_size = 28
+	subtitle.outline_size = 7
+	subtitle.modulate = Color("#253a2d")
+	showcase_root.add_child(subtitle)
+
+func _make_soldier(primary: Color, secondary: Color, is_general: bool) -> Node3D:
+	var root := Node3D.new()
+	var uniform := _material(primary, 0.08, 0.72)
+	var armor := _material(secondary, 0.16, 0.66)
+	var skin := _material(Color("#c98e68"), 0.0, 0.86)
+	var boots := _material(Color("#252d2b"), 0.10, 0.84)
+	var metal := _material(Color("#c8b77b") if is_general else Color("#8c9d83"), 0.58, 0.35)
+	# Boots, articulated-looking legs and knee pads.
+	for z in [-0.15, 0.15]:
+		_add_box(root, Vector3(0.08, 0.13, z), Vector3(0.34, 0.22, 0.29), boots)
+		_add_cylinder_axis(root, Vector3(0.0, 0.48, z), 0.105, 0.58, uniform, Vector3.UP)
+		_add_sphere(root, Vector3(0.0, 0.55, z), Vector3(0.25, 0.19, 0.25), armor)
+	# Torso, vest, belt, radio and shoulder armor.
+	_add_box(root, Vector3(0, 1.05, 0), Vector3(0.62, 0.68, 0.42), uniform)
+	_add_box(root, Vector3(0.17, 1.08, 0), Vector3(0.25, 0.55, 0.45), armor)
+	_add_box(root, Vector3(0, 0.76, 0), Vector3(0.66, 0.10, 0.45), metal)
+	_add_box(root, Vector3(-0.34, 1.13, -0.12), Vector3(0.20, 0.44, 0.27), armor)
+	for z in [-0.34, 0.34]:
+		_add_sphere(root, Vector3(0, 1.30, z), Vector3(0.28, 0.25, 0.28), armor)
+		_add_cylinder_axis(root, Vector3(0.12, 1.10, z * 1.22), 0.095, 0.42, uniform, Vector3(0.4, -1.0, 0.0))
+		_add_sphere(root, Vector3(0.28, 0.91, z * 1.22), Vector3(0.17, 0.15, 0.17), skin)
+	# Neck, face, ears, eyes and helmet.
+	_add_cylinder(root, Vector3(0, 1.47, 0), 0.105, 0.20, skin.color)
+	_add_sphere(root, Vector3(0.04, 1.72, 0), Vector3(0.48, 0.55, 0.43), skin)
+	for z in [-0.10, 0.10]:
+		_add_sphere(root, Vector3(0.255, 1.79, z), Vector3(0.055, 0.065, 0.045), _material(Color("#202523"), 0.0, 0.35))
+	_add_sphere(root, Vector3(0.29, 1.68, 0), Vector3(0.09, 0.12, 0.10), skin)
+	_add_cylinder(root, Vector3(0, 1.96, 0), 0.30, 0.09, primary)
+	_add_sphere(root, Vector3(0, 2.07, 0), Vector3(0.56, 0.30, 0.50), uniform)
+	_add_box(root, Vector3(0.27, 2.06, 0), Vector3(0.04, 0.15, 0.14), metal)
+	# Decorative rifle and ammunition pouches.
+	_add_cylinder_axis(root, Vector3(0.24, 1.18, 0.28), 0.035, 0.95, boots, Vector3.RIGHT)
+	_add_box(root, Vector3(0.0, 1.15, 0.28), Vector3(0.28, 0.12, 0.11), boots)
+	for z in [-0.18, 0.18]:
+		_add_box(root, Vector3(0.20, 0.89, z), Vector3(0.16, 0.18, 0.15), metal)
+	if is_general:
+		_add_box(root, Vector3(0.34, 1.33, 0), Vector3(0.08, 0.10, 0.28), metal)
+		_add_sphere(root, Vector3(0.35, 1.22, 0), Vector3(0.12, 0.12, 0.12), metal)
+	return root
+
+func _make_flag(color: Color, pos: Vector3, player_name: String) -> Node3D:
+	var root := Node3D.new()
+	root.position = pos
+	_add_cylinder(root, Vector3(0, 1.05, 0), 0.035, 2.2, Color("#d8d8c8"))
+	_add_box(root, Vector3(0.43, 1.73, 0), Vector3(0.86, 0.50, 0.055), _material(color, 0.05, 0.55))
+	_add_sphere(root, Vector3(0.44, 1.74, 0.04), Vector3(0.16, 0.16, 0.07), Color("#f4e6b2"))
+	var label := Label3D.new()
+	label.text = player_name
+	label.position = Vector3(0.0, 2.42, 0)
+	label.font_size = 30
+	label.outline_size = 7
+	label.modulate = Color("#fff6dc")
+	root.add_child(label)
+	return root
 
 func _build_die() -> void:
 	die_root = Node3D.new()
@@ -386,6 +531,16 @@ func _start_match(mode: int) -> void:
 	game_mode = mode
 	mode_panel.visible = false
 	game_panel.visible = true
+	if showcase_root:
+		red_character.visible = mode == 0
+		general_character.visible = mode == 1
+		red_flag.get_node("Label3D").text = "جنيرال" if mode == 1 else "اللاعب الأحمر"
+		var intro := create_tween()
+		intro.tween_property(showcase_root, "scale", Vector3(1.04, 1.04, 1.04), 0.35)
+		intro.tween_property(showcase_root, "scale", Vector3.ONE, 0.35)
+		intro.tween_interval(0.7)
+		intro.tween_property(showcase_root, "position:y", -9.0, 0.55)
+		intro.tween_callback(func(): showcase_root.visible = false)
 	_reset_state()
 	# Opening toss: highest of two fair dice starts; ties are rerolled.
 	var first := randi_range(1, 6)
