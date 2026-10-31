@@ -85,7 +85,12 @@ jobs:
       - name: Export Android APK
         run: |
           mkdir -p godot/build
-          godot --headless --verbose --path godot --export-debug "Android" build/GENERAL-3D-preview.apk
+          set -o pipefail
+          godot --headless --verbose --path godot --export-debug "Android" build/GENERAL-3D-preview.apk 2>&1 | tee /tmp/godot-export.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script" /tmp/godot-export.log; then
+            echo "Godot reported a script error; refusing to publish this APK."
+            exit 1
+          fi
 
       - name: Verify APK exists
         run: test -s godot/build/GENERAL-3D-preview.apk
