@@ -1,5 +1,7 @@
 extends Node3D
 
+# The current branch includes a licensed Quaternius tank GLB under assets/models.
+
 const TRACK_X := 6.2
 const STEPS := 15
 const ROW_Z := [-3.2, 0.0, 3.2]
