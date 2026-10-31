@@ -35,6 +35,8 @@ public class MainActivity extends Activity {
         private boolean choosing = false;
         private String message = "اختر طريقة اللعب";
         private float w, h;
+        private long explosionAt = 0;
+        private float explosionX = 0, explosionY = 0;
         private final int bg = Color.rgb(190,225,165), dark = Color.rgb(36,67,43);
         private final int blue = Color.rgb(35,112,205), red = Color.rgb(205,69,54);
         private final int gold = Color.rgb(245,190,65);
@@ -95,13 +97,43 @@ public class MainActivity extends Activity {
             for(int i=0;i<3;i++) if(canMove(2,i) && (pick<0 || pos2[i]>pos2[pick])) pick=i;
             if(pick>=0) {
                 pos2[pick]+=die;
-                if(pos2[pick]==15) dead1[pick]=true;
+                if(pos2[pick]==15) { dead1[pick]=true; spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[pick]); }
                 message="جنيرال رمى "+die+" وحرّك "+names[pick];
                 finishCheck();
             } else {
                 message="جنيرال لا يملك حركة ممكنة — انتهى دوره";
             }
             if(winner==0){player=1;die=0;choosing=false;message="دورك — اضغط النرد";}
+        }
+        private void spawnExplosion(float x,float y) {
+            explosionX=x; explosionY=y; explosionAt=System.currentTimeMillis();
+            invalidate();
+        }
+        private void drawExplosion(Canvas c) {
+            if(explosionAt==0)return;
+            float age=(System.currentTimeMillis()-explosionAt)/700f;
+            if(age>=1f){explosionAt=0;return;}
+            float radius=h*(.025f+age*.105f);
+            int alpha=(int)(255*(1f-age));
+            p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(h*(.008f*(1f-age)+.001f));
+            p.setColor(Color.argb(alpha,255,190,45));
+            c.drawCircle(explosionX,explosionY,radius,p);
+            p.setStrokeWidth(h*.003f); p.setColor(Color.argb(alpha,255,245,190));
+            c.drawCircle(explosionX,explosionY,radius*.58f,p);
+            p.setStyle(Paint.Style.FILL);
+            for(int i=0;i<18;i++) {
+                double angle=(Math.PI*2*i/18.0)+(i%3)*.09;
+                float distance=radius*(.75f+(i%4)*.13f);
+                float sx=explosionX+(float)Math.cos(angle)*distance;
+                float sy=explosionY+(float)Math.sin(angle)*distance;
+                float size=h*(.004f+(i%3)*.0015f)*(1f-age);
+                p.setColor(Color.argb(alpha,255,i%3==0?90:190,35));
+                c.drawCircle(sx,sy,Math.max(1,size),p);
+                p.setStrokeWidth(Math.max(1,h*.0025f));
+                c.drawLine(explosionX,explosionY,sx,sy,p);
+            }
+            p.setStyle(Paint.Style.FILL);
+            postInvalidateDelayed(35);
         }
         private int shade(int color,float factor) {
             return Color.rgb(Math.min(255,(int)(Color.red(color)*factor)),Math.min(255,(int)(Color.green(color)*factor)),Math.min(255,(int)(Color.blue(color)*factor)));
@@ -205,6 +237,7 @@ public class MainActivity extends Activity {
                     }
                 }
             }
+            drawExplosion(c);
             float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
             int diceColor=winner!=0?dark:(player==1?blue:red);
             box(c,diceCx-diceSize/2,diceCy-diceSize/2,diceCx+diceSize/2,diceCy+diceSize/2,diceColor);
@@ -267,7 +300,7 @@ public class MainActivity extends Activity {
                     else {
                         positions(player)[lane]+=die;
                         if(positions(player)[lane]==15) {
-                            if(player==1)dead2[lane]=true;else dead1[lane]=true;
+                            if(player==1) { dead2[lane]=true; spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]); } else { dead1[lane]=true; spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]); }
                         }
                         finishCheck();
                         if(winner==0) {
