@@ -15,6 +15,7 @@ var bullet_nodes: Array = []
 var ui_label: Label
 var roll_button: Button
 var weapon_buttons: Array = []
+var reset_button: Button
 
 var blue_material: StandardMaterial3D
 var red_material: StandardMaterial3D
@@ -190,6 +191,10 @@ func _build_ui() -> void:
 		button.pressed.connect(_on_weapon_pressed.bind(lane))
 		column.add_child(button)
 		weapon_buttons.append(button)
+	reset_button = Button.new()
+	reset_button.text = "إعادة المباراة"
+	reset_button.pressed.connect(_reset_match)
+	column.add_child(reset_button)
 
 func _on_roll_pressed() -> void:
 	if game_over or waiting_for_weapon:
@@ -198,8 +203,16 @@ func _on_roll_pressed() -> void:
 	waiting_for_weapon = true
 	roll_button.disabled = true
 	ui_label.text = "اللاعب %d — نتيجة النرد: %d — اختر سلاحاً" % [current_player + 1, die_value]
+	var possible := false
 	for lane in range(3):
-		weapon_buttons[lane].disabled = destroyed[current_player][lane] or progress[current_player][lane] + die_value > STEPS
+		var can_use := not destroyed[current_player][lane] and progress[current_player][lane] + die_value <= STEPS
+		weapon_buttons[lane].disabled = not can_use
+		possible = possible or can_use
+	if not possible:
+		ui_label.text = "لا توجد حركة ممكنة — خسر اللاعب دوره"
+		waiting_for_weapon = false
+		current_player = 1 - current_player
+		roll_button.disabled = false
 
 func _on_weapon_pressed(lane: int) -> void:
 	if not waiting_for_weapon or game_over:
@@ -223,6 +236,19 @@ func _on_weapon_pressed(lane: int) -> void:
 		button.disabled = true
 	_refresh_board()
 
+func _reset_match() -> void:
+	progress = [[0, 0, 0], [0, 0, 0]]
+	destroyed = [[false, false, false], [false, false, false]]
+	current_player = 0
+	die_value = 0
+	waiting_for_weapon = false
+	game_over = false
+	ui_label.text = "بدأت معركة جديدة — اللاعب 1 يرمي النرد"
+	roll_button.disabled = false
+	for button in weapon_buttons:
+		button.disabled = true
+	_refresh_board()
+
 func _refresh_board() -> void:
 	for item in bullet_nodes:
 		var side: int = item["side"]
@@ -230,7 +256,13 @@ func _refresh_board() -> void:
 		var step: int = item["step"]
 		var mesh_node: Node3D = item["node"]
 		var filled := step < progress[side][lane]
-		var mat := blue_material if side == 0 else red_material
+		var target_color := (Color("#238be6") if side == 0 else Color("#e34e43")) if filled else Color("#b9c0c1")
 		for child in mesh_node.get_children():
 			if child is MeshInstance3D:
-				child.material_override = mat if filled else bullet_material
+				var animated_material := StandardMaterial3D.new()
+				animated_material.albedo_color = Color("#b9c0c1")
+				animated_material.metallic = 0.72
+				animated_material.roughness = 0.18
+				child.material_override = animated_material
+				var tween := create_tween()
+				tween.tween_property(animated_material, "albedo_color", target_color, 0.22).set_delay(float(step) * 0.018 if filled else 0.0)
