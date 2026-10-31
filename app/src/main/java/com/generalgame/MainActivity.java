@@ -132,34 +132,44 @@ public class MainActivity extends Activity {
                 return;
             }
             txt(c,message,w*.5f,h*.145f,h*.036f,dark,true);
-            float trackL=w*.16f, trackR=w*.84f, trackW=trackR-trackL;
-            float[] rows={h*.25f,h*.36f,h*.47f,h*.62f,h*.73f,h*.84f};
-            for(int side=1;side<=2;side++) for(int lane=0;lane<3;lane++) {
-                boolean right=side==1;
-                float y=rows[(right?3:0)+lane];
-                int color=right?blue:red;
-                float iconX=right?w*.93f:w*.07f;
-                drawWeapon(c,lane,iconX,y,color);
-                txt(c,names[lane],iconX,y+h*.045f,h*.025f,color,true);
-                boolean dead=destroyed(side)[lane];
+            float trackL=w*.18f, trackR=w*.82f, trackW=trackR-trackL;
+            float[] rows={h*.30f,h*.49f,h*.68f};
+            txt(c,mode==2?"جنيرال":"اللاعب 2",w*.08f,h*.19f,h*.035f,red,true);
+            txt(c,mode==2?"أنت":"اللاعب 1",w*.92f,h*.19f,h*.035f,blue,true);
+            for(int lane=0;lane<3;lane++) {
+                float y=rows[lane];
+                // خط واحد لكل نوع سلاح، والطلقات تتقدم من الطرفين باتجاه بعضهما.
+                p.setColor(Color.rgb(115,145,105));
+                c.drawRoundRect(new RectF(trackL,y-h*.023f,trackR,y+h*.023f),8,8,p);
                 for(int i=0;i<15;i++) {
-                    float x=right ? trackR-(i+1)*(trackW/15f) : trackL+i*(trackW/15f);
-                    boolean filled=i<positions(side)[lane];
-                    int fill=dead?Color.rgb(130,130,125):(filled?color:Color.rgb(242,247,235));
-                    p.setColor(fill); c.drawRoundRect(new RectF(x,y-h*.018f,x+trackW/15f-3,y+h*.018f),6,6,p);
-                    if(dead) { txt(c,"×",iconX,y+h*.012f,h*.065f,Color.RED,true); }
+                    float cell=trackW/15f;
+                    float lx=trackL+i*cell;
+                    float rx=trackR-(i+1)*cell;
+                    int leftFill=dead2[lane]?Color.rgb(125,125,120):(i<pos2[lane]?red:Color.rgb(242,247,235));
+                    int rightFill=dead1[lane]?Color.rgb(125,125,120):(i<pos1[lane]?blue:Color.rgb(242,247,235));
+                    p.setColor(leftFill);
+                    c.drawRoundRect(new RectF(lx+1,y-h*.018f,lx+cell-2,y+h*.018f),5,5,p);
+                    p.setColor(rightFill);
+                    c.drawRoundRect(new RectF(rx+1,y-h*.018f,rx+cell-2,y+h*.018f),5,5,p);
+                }
+                drawWeapon(c,lane,w*.075f,y,red);
+                drawWeapon(c,lane,w*.925f,y,blue);
+                if(dead2[lane]) txt(c,"×",w*.075f,y+h*.012f,h*.07f,Color.RED,true);
+                if(dead1[lane]) txt(c,"×",w*.925f,y+h*.012f,h*.07f,Color.RED,true);
+                if(choosing && winner==0) {
+                    float ownX=player==1?w*.925f:w*.075f;
+                    if(canMove(player,lane)) {
+                        p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(4); p.setColor(gold);
+                        c.drawCircle(ownX,y,h*.055f,p); p.setStyle(Paint.Style.FILL);
+                    }
                 }
             }
-            txt(c,mode==2?"جنيرال":"اللاعب 2",w*.08f,h*.20f,h*.035f,red,true);
-            txt(c,mode==2?"أنت":"اللاعب 1",w*.92f,h*.62f,h*.035f,blue,true);
             box(c,w*.46f,h*.045f,w*.54f,h*.13f,Color.WHITE);
             txt(c,die==0?"النرد":String.valueOf(die),w*.5f,h*.115f,h*.06f,dark,true);
             float by=h*.88f,bh=h*.055f;
             if(winner!=0) btn(c,"إعادة المباراة",w*.35f,by-h*.055f,w*.65f,by, dark);
             else if(stage<2 || !choosing) btn(c,"ارمِ النرد",w*.39f,by-h*.055f,w*.61f,by,player==1?blue:red);
-            else {
-                for(int i=0;i<3;i++) btn(c,names[i],w*(.08f+i*.28f),by-h*.055f,w*(.32f+i*.28f),by,canMove(player,i)?(player==1?blue:red):Color.GRAY);
-            }
+            else txt(c,"اضغط على رسم السلاح الذي تريد تحريكه",w*.5f,by-h*.018f,h*.032f,dark,true);
         }
 
         @Override public boolean onTouchEvent(MotionEvent e) {
@@ -196,9 +206,14 @@ public class MainActivity extends Activity {
                     else message=(mode==2?"أنت":"اللاعب "+player)+" رمى "+die+" — اختر سلاحاً";
                 }
             } else {
-                float left=w*.08f,gap=w*.02f,bw=w*.26f;
-                int lane=(int)((x-left)/(bw+gap));
-                if(lane>=0&&lane<3&&x<=left+lane*(bw+gap)+bw) {
+                float ownX=player==1?w*.925f:w*.075f;
+                int lane=-1;
+                float[] weaponRows={h*.30f,h*.49f,h*.68f};
+                // اختيار السلاح بالضغط على رسمه نفسه، وليس على زر يحمل اسمه.
+                if(Math.abs(x-ownX)<w*.075f) {
+                    for(int i=0;i<3;i++) if(Math.abs(y-weaponRows[i])<h*.085f) lane=i;
+                }
+                if(lane>=0) {
                     if(!canMove(player,lane))message="هذه الحركة غير ممكنة — اختر سلاحاً آخر";
                     else {
                         positions(player)[lane]+=die;
