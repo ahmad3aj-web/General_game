@@ -42,9 +42,9 @@ func _ready() -> void:
 	_refresh_board()
 
 func _setup_materials() -> void:
-	blue_material = _material(Color("#2589e8"), 0.28, 0.3)
-	red_material = _material(Color("#e34d3f"), 0.24, 0.32)
-	bullet_material = _material(Color("#b9c5c8"), 0.72, 0.2)
+	blue_material = _material(Color("#087cf0"), 0.18, 0.24)
+	red_material = _material(Color("#f02f3d"), 0.18, 0.24)
+	bullet_material = _material(Color("#d7e4ea"), 0.82, 0.16)
 	gray_material = _material(Color("#777d7c"), 0.12, 0.82)
 	flame_material = _material(Color("#ff7b16"), 0.0, 0.3)
 	flame_material.emission_enabled = true
@@ -75,7 +75,7 @@ func _build_world() -> void:
 	ground_mesh.size = Vector2(27.0, 20.0)
 	ground.mesh = ground_mesh
 	ground.position.y = -0.22
-	ground.material_override = _material(Color("#557d42"), 0.0, 1.0)
+	ground.material_override = _material(Color("#347c32"), 0.0, 0.95)
 	add_child(ground)
 
 	var arena := MeshInstance3D.new()
@@ -83,7 +83,7 @@ func _build_world() -> void:
 	arena_mesh.size = Vector3(17.0, 0.2, 12.5)
 	arena.mesh = arena_mesh
 	arena.position.y = -0.08
-	arena.material_override = _material(Color("#b1b98b"), 0.0, 0.92)
+	arena.material_override = _material(Color("#d6c58d"), 0.0, 0.88)
 	add_child(arena)
 
 	# Decorative runway edges and lane markings.
@@ -248,13 +248,15 @@ func _make_weapon(side: int, lane: int, x: float) -> void:
 	var area := Area3D.new()
 	area.position = Vector3(0, 0.55, 0)
 	area.input_ray_pickable = true
+	area.monitoring = true
+	area.monitorable = true
 	area.collision_layer = 1
 	area.collision_mask = 0
 	area.set_meta("weapon_side", side)
 	area.set_meta("weapon_lane", lane)
 	var collision := CollisionShape3D.new()
 	var shape := SphereShape3D.new()
-	shape.radius = 1.25
+	shape.radius = 1.8
 	collision.shape = shape
 	area.add_child(collision)
 	root.add_child(area)
@@ -285,7 +287,7 @@ func _add_cylinder(parent: Node3D, pos: Vector3, radius: float, height: float, c
 
 func _build_die() -> void:
 	die_root = Node3D.new()
-	die_root.position = Vector3(0, 0.72, 0)
+	die_root.position = Vector3(8.35, 0.72, 5.0)
 	add_child(die_root)
 	var cube := MeshInstance3D.new()
 	var cube_mesh := BoxMesh.new()
@@ -356,20 +358,22 @@ func _build_ui() -> void:
 	menu.add_child(local_button)
 
 	game_panel = PanelContainer.new()
-	game_panel.position = Vector2(18, 16)
-	game_panel.size = Vector2(370, 220)
+	game_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	game_panel.position = Vector2(-300, -210)
+	game_panel.size = Vector2(280, 190)
 	screen.add_child(game_panel)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)
 	game_panel.add_child(column)
 	ui_label = Label.new()
-	ui_label.text = "GENERAL — ساحة ثلاثية الأبعاد"
+	ui_label.text = "اللاعب الأزرق"
 	ui_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ui_label.add_theme_font_size_override("font_size", 22)
+	ui_label.add_theme_font_size_override("font_size", 26)
 	column.add_child(ui_label)
 	roll_button = Button.new()
 	roll_button.text = "ارمِ حجر النرد"
-	roll_button.custom_minimum_size = Vector2(0, 58)
+	roll_button.custom_minimum_size = Vector2(0, 72)
+	roll_button.add_theme_font_size_override("font_size", 26)
 	roll_button.pressed.connect(_on_roll_pressed)
 	column.add_child(roll_button)
 	reset_button = Button.new()
@@ -451,6 +455,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_pick_weapon_at_screen_position(screen_position)
 
 func _pick_weapon_at_screen_position(screen_position: Vector2) -> void:
+	if not waiting_for_weapon or game_over:
+		return
 	if game_camera == null:
 		return
 	var ray_origin := game_camera.project_ray_origin(screen_position)
@@ -528,13 +534,17 @@ func _ai_turn() -> void:
 	_on_weapon_pressed(chosen)
 
 func _refresh_board() -> void:
+	if die_root:
+		die_root.position = Vector3(8.35 if current_player == 0 else -8.35, 0.72, 5.0)
+	if ui_label and game_mode >= 0 and not game_over:
+		ui_label.text = ("اللاعب الأزرق" if current_player == 0 else ("جنيرال الأحمر" if game_mode == 1 else "اللاعب الأحمر"))
 	for item in bullet_nodes:
 		var side: int = item["side"]
 		var lane: int = item["lane"]
 		var step: int = item["step"]
 		var mesh_node: Node3D = item["node"]
 		var filled: bool = step < progress[side][lane]
-		var target_color := (Color("#2589e8") if side == 0 else Color("#e34d3f")) if filled else Color("#aeb7b5")
+		var target_color := (Color("#087cf0") if side == 0 else Color("#f02f3d")) if filled else Color("#aeb7b5")
 		for child in mesh_node.get_children():
 			if child is MeshInstance3D:
 				var mat := child.material_override as StandardMaterial3D
