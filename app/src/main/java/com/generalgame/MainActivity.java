@@ -7,6 +7,8 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Path;
+import android.graphics.LinearGradient;
+import android.graphics.Shader;
 import android.view.MotionEvent;
 import android.view.View;
 import java.util.Random;
@@ -101,32 +103,56 @@ public class MainActivity extends Activity {
             }
             if(winner==0){player=1;die=0;choosing=false;message="دورك — اضغط النرد";}
         }
+        private int shade(int color,float factor) {
+            return Color.rgb(Math.min(255,(int)(Color.red(color)*factor)),Math.min(255,(int)(Color.green(color)*factor)),Math.min(255,(int)(Color.blue(color)*factor)));
+        }
         private void drawWeapon(Canvas c,int lane,float cx,float cy,int color) {
-            p.setColor(color); p.setStyle(Paint.Style.FILL);
-            if(lane==0) { // tank
-                c.drawRoundRect(new RectF(cx-w*.026f,cy-h*.012f,cx+w*.026f,cy+h*.012f),8,8,p);
-                c.drawCircle(cx-w*.016f,cy+h*.012f,h*.009f,p);
-                c.drawCircle(cx+w*.016f,cy+h*.012f,h*.009f,p);
-                c.drawRoundRect(new RectF(cx-w*.012f,cy-h*.026f,cx+w*.012f,cy-h*.006f),6,6,p);
-                c.drawRect(cx,cy-h*.02f,cx+w*.03f,cy-h*.014f,p);
-            } else if(lane==1) { // plane
-                Path a=new Path(); a.moveTo(cx,cy-h*.03f); a.lineTo(cx+w*.012f,cy+h*.004f);
-                a.lineTo(cx+w*.04f,cy+h*.02f); a.lineTo(cx+w*.04f,cy+h*.028f);
-                a.lineTo(cx+w*.008f,cy+h*.018f); a.lineTo(cx,cy+h*.03f);
-                a.lineTo(cx-w*.008f,cy+h*.018f); a.lineTo(cx-w*.04f,cy+h*.028f);
-                a.lineTo(cx-w*.04f,cy+h*.02f); a.lineTo(cx-w*.012f,cy+h*.004f); a.close(); c.drawPath(a,p);
-            } else { // cannon
-                c.drawRoundRect(new RectF(cx-w*.023f,cy-h*.012f,cx+w*.023f,cy+h*.015f),6,6,p);
-                c.drawRect(cx-w*.004f,cy-h*.033f,cx+w*.004f,cy-h*.004f,p);
-                c.drawCircle(cx-w*.015f,cy+h*.015f,h*.008f,p);
-                c.drawCircle(cx+w*.015f,cy+h*.015f,h*.008f,p);
+            int darkColor=shade(color,.48f), lightColor=shade(color,1.35f);
+            p.setStyle(Paint.Style.FILL); p.setShader(null);
+            p.setColor(Color.argb(65,20,35,20));
+            c.drawOval(new RectF(cx-w*.047f,cy+h*.026f,cx+w*.047f,cy+h*.043f),p);
+            if(lane==0) {
+                p.setColor(Color.rgb(42,52,43));
+                c.drawRoundRect(new RectF(cx-w*.043f,cy-h*.004f,cx+w*.043f,cy+h*.027f),h*.014f,h*.014f,p);
+                for(int i=0;i<5;i++){p.setColor(i%2==0?Color.rgb(135,145,112):Color.rgb(75,88,69));c.drawCircle(cx-w*.031f+i*w*.0155f,cy+h*.012f,h*.009f,p);}
+                p.setShader(new LinearGradient(cx,cy-h*.02f,cx,cy+h*.018f,lightColor,color,Shader.TileMode.CLAMP));
+                c.drawRoundRect(new RectF(cx-w*.037f,cy-h*.018f,cx+w*.037f,cy+h*.014f),h*.009f,h*.009f,p);p.setShader(null);
+                p.setColor(darkColor);c.drawRoundRect(new RectF(cx-w*.016f,cy-h*.034f,cx+w*.017f,cy-h*.002f),h*.009f,h*.009f,p);
+                p.setColor(color);c.drawRoundRect(new RectF(cx-w*.012f,cy-h*.031f,cx+w*.012f,cy-h*.006f),h*.008f,h*.008f,p);
+                p.setColor(darkColor);c.drawRoundRect(new RectF(cx+w*.006f,cy-h*.025f,cx+w*.047f,cy-h*.016f),h*.004f,h*.004f,p);
+                p.setColor(lightColor);c.drawRect(cx+w*.018f,cy-h*.024f,cx+w*.043f,cy-h*.021f,p);
+            } else if(lane==1) {
+                p.setColor(darkColor);Path wing=new Path();
+                wing.moveTo(cx,cy-h*.009f);wing.lineTo(cx+w*.045f,cy+h*.022f);wing.lineTo(cx+w*.012f,cy+h*.015f);
+                wing.lineTo(cx,cy+h*.028f);wing.lineTo(cx-w*.012f,cy+h*.015f);wing.lineTo(cx-w*.045f,cy+h*.022f);wing.close();c.drawPath(wing,p);
+                p.setShader(new LinearGradient(cx-w*.04f,cy,cx+w*.04f,cy,lightColor,color,Shader.TileMode.CLAMP));c.drawPath(wing,p);p.setShader(null);
+                p.setColor(darkColor);Path body=new Path();body.moveTo(cx,cy-h*.038f);body.quadTo(cx+w*.009f,cy-h*.006f,cx+w*.006f,cy+h*.025f);
+                body.lineTo(cx,cy+h*.033f);body.lineTo(cx-w*.006f,cy+h*.025f);body.quadTo(cx-w*.009f,cy-h*.006f,cx,cy-h*.038f);body.close();c.drawPath(body,p);
+                p.setColor(lightColor);c.drawLine(cx-w*.002f,cy-h*.027f,cx-w*.001f,cy+h*.019f,p);
+                p.setColor(Color.rgb(135,205,220));c.drawOval(new RectF(cx-w*.005f,cy-h*.018f,cx+w*.005f,cy-h*.002f),p);
+            } else {
+                p.setColor(Color.rgb(48,56,43));c.drawCircle(cx-w*.022f,cy+h*.014f,h*.016f,p);c.drawCircle(cx+w*.022f,cy+h*.014f,h*.016f,p);
+                p.setColor(Color.rgb(180,185,155));c.drawCircle(cx-w*.022f,cy+h*.014f,h*.007f,p);c.drawCircle(cx+w*.022f,cy+h*.014f,h*.007f,p);
+                p.setShader(new LinearGradient(cx,cy-h*.01f,cx,cy+h*.02f,lightColor,color,Shader.TileMode.CLAMP));
+                c.drawRoundRect(new RectF(cx-w*.027f,cy-h*.009f,cx+w*.027f,cy+h*.016f),h*.006f,h*.006f,p);p.setShader(null);
+                p.setColor(darkColor);Path shield=new Path();shield.moveTo(cx-w*.018f,cy-h*.009f);shield.lineTo(cx+w*.018f,cy-h*.009f);
+                shield.lineTo(cx+w*.014f,cy+h*.012f);shield.lineTo(cx-w*.014f,cy+h*.012f);shield.close();c.drawPath(shield,p);
+                p.setColor(color);c.drawRoundRect(new RectF(cx-w*.007f,cy-h*.031f,cx+w*.007f,cy-h*.003f),h*.004f,h*.004f,p);
+                p.setColor(darkColor);c.drawRoundRect(new RectF(cx-w*.004f,cy-h*.041f,cx+w*.004f,cy-h*.025f),h*.003f,h*.003f,p);
             }
+            p.setShader(null);p.setStyle(Paint.Style.FILL);
         }
 
         @Override protected void onDraw(Canvas c) {
-            super.onDraw(c); w=getWidth(); h=getHeight(); c.drawColor(bg);
-            p.setColor(Color.rgb(220,240,207)); c.drawCircle(w*.1f,h*.08f,h*.15f,p);
-            p.setColor(Color.rgb(165,211,140)); c.drawRect(0,h*.91f,w,h,p);
+            super.onDraw(c); w=getWidth(); h=getHeight();
+            p.setShader(new LinearGradient(0,0,0,h*.9f,Color.rgb(205,233,183),Color.rgb(126,177,105),Shader.TileMode.CLAMP));
+            c.drawRect(0,0,w,h,p);p.setShader(null);
+            p.setColor(Color.rgb(190,220,166));c.drawCircle(w*.10f,h*.08f,h*.15f,p);
+            p.setColor(Color.rgb(151,196,125));c.drawOval(new RectF(-w*.12f,h*.12f,w*.48f,h*.36f),p);
+            p.setColor(Color.rgb(137,184,111));c.drawOval(new RectF(w*.52f,h*.10f,w*1.12f,h*.34f),p);
+            p.setColor(Color.rgb(105,157,91));c.drawRect(0,h*.91f,w,h,p);
+            p.setColor(Color.argb(45,255,255,255));
+            for(int i=0;i<18;i++)c.drawCircle((i*73%1000)/1000f*w,h*(.22f+(i*37%620)/1000f),h*.0025f,p);
             txt(c,"GENERAL  •  جينيرال",w*.5f,h*.075f,h*.06f,dark,true);
             if(mode==0) {
                 txt(c,"اختر طريقة اللعب",w*.5f,h*.31f,h*.065f,dark,true);
