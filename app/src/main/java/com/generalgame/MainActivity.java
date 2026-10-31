@@ -78,10 +78,16 @@ public class MainActivity extends Activity {
             message = "دور اللاعب " + player + " — اضغط النرد";
         }
         private void checkWin() {
-            boolean[] enemyDead = player == 1 ? dead2 : dead1;
-            if (enemyDead[0] && enemyDead[1] && enemyDead[2]) {
-                winner = player;
-                message = "فاز اللاعب " + player + "!";
+            // dead1: أسلحة اللاعب 1 دُمّرت، وdead2: أسلحة اللاعب 2 دُمّرت.
+            boolean player1Lost = dead1[0] && dead1[1] && dead1[2];
+            boolean player2Lost = dead2[0] && dead2[1] && dead2[2];
+            if (player1Lost) winner = 2;
+            else if (player2Lost) winner = 1;
+
+            if (winner != 0) {
+                choosing = false;
+                die = 0;
+                message = "انتهت المباراة — فاز اللاعب " + winner + "!";
             }
         }
 
@@ -153,6 +159,19 @@ public class MainActivity extends Activity {
             if(e.getAction()!=MotionEvent.ACTION_UP) return true;
             float x=e.getX(), y=e.getY();
             float by=h*0.88f, bh=h*0.105f;
+
+            // بعد إعلان الفائز تُرفض كل اللمسات، باستثناء زر إعادة المباراة.
+            if (winner != 0) {
+                if (y >= by && y <= by + bh && x >= w*0.34f && x <= w*0.66f) {
+                    pos1[0]=pos1[1]=pos1[2]=0; pos2[0]=pos2[1]=pos2[2]=0;
+                    for(int i=0;i<3;i++){ dead1[i]=false; dead2[i]=false; }
+                    winner=0; stage=0; firstRoll=0; die=0; choosing=false; player=1;
+                    message="قرعة البداية: اضغط زر النرد";
+                }
+                invalidate();
+                return true;
+            }
+
             if(y<by || y>by+bh) return true;
 
             if(winner!=0) {
