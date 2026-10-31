@@ -535,9 +535,16 @@ func _ai_turn() -> void:
 
 func _refresh_board() -> void:
 	if die_root:
-		die_root.position = Vector3(8.35 if current_player == 0 else -8.35, 0.72, 5.0)
+		die_root.position = Vector3(-8.35 if current_player == 0 else 8.35, 0.72, 5.0)
 	if ui_label and game_mode >= 0 and not game_over:
 		ui_label.text = ("اللاعب الأزرق" if current_player == 0 else ("جنيرال الأحمر" if game_mode == 1 else "اللاعب الأحمر"))
+	if game_panel and game_mode >= 0:
+		if current_player == 0:
+			game_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+			game_panel.position = Vector2(18, -210)
+		else:
+			game_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+			game_panel.position = Vector2(-300, -210)
 	for item in bullet_nodes:
 		var side: int = item["side"]
 		var lane: int = item["lane"]
