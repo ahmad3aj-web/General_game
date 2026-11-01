@@ -30,6 +30,9 @@ var die_pips: Array = []
 var blue_material: StandardMaterial3D
 var red_material: StandardMaterial3D
 var bullet_material: StandardMaterial3D
+var bullet_blue_material: StandardMaterial3D
+var bullet_red_material: StandardMaterial3D
+var art_texture_cache: Dictionary = {}
 var gray_material: StandardMaterial3D
 var flame_material: StandardMaterial3D
 
@@ -55,7 +58,9 @@ func _ready() -> void:
 func _setup_materials() -> void:
 	blue_material = _material(Color("#087cf0"), 0.18, 0.24)
 	red_material = _material(Color("#f02f3d"), 0.18, 0.24)
-	bullet_material = _material(Color("#d7e4ea"), 0.82, 0.16)
+	bullet_material = _art_material(3, Color("#aeb7b5"))
+	bullet_blue_material = _art_material(3, Color("#4d9be7"))
+	bullet_red_material = _art_material(3, Color("#e45b5b"))
 	gray_material = _material(Color("#777d7c"), 0.12, 0.82)
 	flame_material = _material(Color("#ff7b16"), 0.0, 0.3)
 	flame_material.emission_enabled = true
@@ -150,12 +155,46 @@ func _build_tracks() -> void:
 				bullet_nodes.append({"node": bullet, "side": side, "lane": lane, "step": step})
 
 func _make_bullet() -> Node3D:
-	# Flat shell icon viewed from directly above.
 	var root := Node3D.new()
-	_add_box(root, Vector3(0, 0.025, 0), Vector3(0.25, 0.035, 0.085), bullet_material)
-	_add_cylinder(root, Vector3(0.135, 0.045, 0), 0.043, 0.035, Color("#d8dedb"))
-	_add_cylinder(root, Vector3(-0.13, 0.045, 0), 0.052, 0.035, Color("#7e8988"))
+	var visual := MeshInstance3D.new()
+	var mesh := QuadMesh.new()
+	mesh.size = Vector2(0.62, 0.30)
+	visual.mesh = mesh
+	visual.rotation_degrees.x = -90
+	visual.material_override = bullet_material
+	visual.set_meta("original_material", bullet_material)
+	root.add_child(visual)
 	return root
+
+func _art_material(kind: int, tint: Color) -> StandardMaterial3D:
+	var key := "%d_%s" % [kind, tint.to_html(false)]
+	if art_texture_cache.has(key):
+		var cached := StandardMaterial3D.new()
+		cached.albedo_texture = art_texture_cache[key]
+		cached.albedo_color = Color.WHITE
+		cached.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		cached.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		cached.cull_mode = BaseMaterial3D.CULL_DISABLED
+		return cached
+	var sub := SubViewport.new()
+	sub.size = Vector2i(256, 160)
+	sub.transparent_bg = true
+	sub.disable_3d = true
+	sub.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	var painter := Node2D.new()
+	painter.set_script(load("res://ArtPainter.gd"))
+	painter.set("kind", kind)
+	painter.set("team_color", tint)
+	sub.add_child(painter)
+	add_child(sub)
+	art_texture_cache[key] = sub.get_texture()
+	var mat := StandardMaterial3D.new()
+	mat.albedo_texture = sub.get_texture()
+	mat.albedo_color = Color.WHITE
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return mat
 
 func _build_weapons() -> void:
 	for lane in range(3):
@@ -163,94 +202,43 @@ func _build_weapons() -> void:
 		_make_weapon(1, lane, 7.35)
 
 func _make_weapon(side: int, lane: int, x: float) -> void:
-	# Stylized 2D top-down sprites built from flat shapes, not imported 3D models.
 	var root := Node3D.new()
 	root.position = Vector3(x, 0.16, ROW_Z[lane])
 	root.rotation_degrees.y = 0 if side == 0 else 180
 	add_child(root)
-	var team_mat := blue_material if side == 0 else red_material
-	var dark_mat := _material(Color("#293832"), 0.0, 1.0)
-	var trim_mat := _material(Color("#d8c58b"), 0.0, 1.0)
-	var glass_mat := _material(Color("#a6e0e8"), 0.0, 1.0)
-	var shadow_mat := _material(Color("#58604c"), 0.0, 1.0)
-
-	if lane == 0:
-		# Tank silhouette: twin tracks, road wheels, angular hull, turret and cannon.
-		for z in [-0.40, 0.40]:
-			_add_box(root, Vector3(0, 0.025, z), Vector3(1.95, 0.055, 0.27), dark_mat)
-			for wheel_x in [-0.72, -0.43, -0.14, 0.15, 0.44, 0.73]:
-				_add_cylinder(root, Vector3(wheel_x, 0.065, z), 0.105, 0.055, trim_mat.albedo_color)
-				_add_cylinder(root, Vector3(wheel_x, 0.097, z), 0.055, 0.025, dark_mat.albedo_color)
-		_add_box(root, Vector3(-0.03, 0.105, 0), Vector3(1.52, 0.10, 0.68), dark_mat)
-		_add_box(root, Vector3(-0.03, 0.165, 0), Vector3(1.38, 0.075, 0.57), team_mat)
-		_add_box(root, Vector3(-0.40, 0.210, -0.20), Vector3(0.45, 0.018, 0.045), trim_mat)
-		_add_box(root, Vector3(-0.40, 0.210, 0.20), Vector3(0.45, 0.018, 0.045), trim_mat)
-		_add_cylinder(root, Vector3(-0.06, 0.225, 0), 0.30, 0.075, dark_mat.albedo_color)
-		_add_cylinder(root, Vector3(-0.06, 0.270, 0), 0.245, 0.045, team_mat.albedo_color)
-		_add_box(root, Vector3(0.42, 0.285, 0), Vector3(0.92, 0.055, 0.12), dark_mat)
-		_add_box(root, Vector3(0.43, 0.318, 0), Vector3(0.78, 0.025, 0.065), trim_mat)
-		_add_cylinder(root, Vector3(-0.17, 0.300, 0), 0.085, 0.025, glass_mat.albedo_color)
-		for z in [-0.23, 0.23]:
-			_add_cylinder(root, Vector3(0.58, 0.225, z), 0.055, 0.025, trim_mat.albedo_color)
-	elif lane == 1:
-		# Fighter aircraft silhouette with broad swept wings and a clear cockpit.
-		_add_box(root, Vector3(-0.02, 0.075, 0), Vector3(2.05, 0.045, 0.18), dark_mat)
-		_add_box(root, Vector3(-0.10, 0.105, 0), Vector3(1.86, 0.035, 0.12), team_mat)
-		_add_box(root, Vector3(-0.02, 0.115, 0), Vector3(0.58, 0.035, 1.48), dark_mat)
-		_add_box(root, Vector3(-0.02, 0.140, 0), Vector3(0.48, 0.025, 1.34), team_mat)
-		_add_box(root, Vector3(-0.70, 0.155, 0), Vector3(0.42, 0.025, 0.66), dark_mat)
-		_add_box(root, Vector3(-0.70, 0.175, 0), Vector3(0.34, 0.025, 0.56), team_mat)
-		_add_box(root, Vector3(-0.88, 0.190, 0), Vector3(0.10, 0.12, 0.46), team_mat)
-		_add_sphere(root, Vector3(0.30, 0.180, 0), Vector3(0.40, 0.035, 0.13), glass_mat)
-		for z in [-0.48, 0.48]:
-			_add_box(root, Vector3(-0.10, 0.160, z), Vector3(0.42, 0.025, 0.07), trim_mat)
-	else:
-		# Field cannon: broad wheels, compact carriage, shield and long barrel.
-		_add_box(root, Vector3(-0.24, 0.075, 0), Vector3(1.08, 0.07, 0.56), dark_mat)
-		_add_box(root, Vector3(-0.24, 0.120, 0), Vector3(0.96, 0.045, 0.46), team_mat)
-		for z in [-0.43, 0.43]:
-			_add_cylinder(root, Vector3(-0.36, 0.095, z), 0.27, 0.075, dark_mat.albedo_color)
-			_add_cylinder(root, Vector3(-0.36, 0.140, z), 0.13, 0.035, trim_mat.albedo_color)
-			_add_cylinder(root, Vector3(-0.36, 0.163, z), 0.055, 0.020, dark_mat.albedo_color)
-		_add_box(root, Vector3(-0.02, 0.180, 0), Vector3(0.18, 0.075, 0.76), dark_mat)
-		_add_box(root, Vector3(-0.02, 0.222, 0), Vector3(0.13, 0.055, 0.66), team_mat)
-		_add_cylinder(root, Vector3(0.04, 0.245, 0), 0.16, 0.035, trim_mat.albedo_color)
-		_add_box(root, Vector3(0.53, 0.265, 0), Vector3(1.12, 0.06, 0.12), dark_mat)
-		_add_box(root, Vector3(0.54, 0.302, 0), Vector3(0.95, 0.025, 0.065), trim_mat)
+	var team_color := Color("#66865a") if side == 0 else Color("#6689b5")
+	var art := _art_material(lane, team_color)
+	var visual := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(2.55, 1.60)
+	visual.mesh = quad
+	visual.rotation_degrees.x = -90
+	visual.material_override = art
+	visual.set_meta("original_material", art)
+	root.add_child(visual)
 
 	var label := Label3D.new()
 	label.text = WEAPON_NAMES[lane]
-	label.position = Vector3(0, 0.42, -0.76)
-	label.font_size = 34
-	label.outline_size = 8
+	label.position = Vector3(0, 0.48, -1.02)
+	label.font_size = 30
+	label.outline_size = 7
 	label.modulate = Color("#fff7df")
 	root.add_child(label)
 
-	# Flat flame/smoke markers appear only after a weapon is destroyed.
 	var fire := Node3D.new()
 	fire.name = "DestroyedFire"
 	fire.visible = false
-	fire.position = Vector3(0, 0.34, 0)
+	fire.position = Vector3(0, 0.18, 0)
+	var explosion := MeshInstance3D.new()
+	var explosion_quad := QuadMesh.new()
+	explosion_quad.size = Vector2(1.8, 1.5)
+	explosion.mesh = explosion_quad
+	explosion.rotation_degrees.x = -90
+	var explosion_mat := _art_material(4, Color.WHITE)
+	explosion.material_override = explosion_mat
+	explosion.set_meta("original_material", explosion_mat)
+	fire.add_child(explosion)
 	root.add_child(fire)
-	for i in range(5):
-		var spark := MeshInstance3D.new()
-		var spark_mesh := CylinderMesh.new()
-		spark_mesh.top_radius = 0.0
-		spark_mesh.bottom_radius = 0.12 + float(i % 2) * 0.05
-		spark_mesh.height = 0.035
-		spark.mesh = spark_mesh
-		spark.position = Vector3(-0.34 + float(i) * 0.17, 0.02, 0.0 if i % 2 == 0 else 0.16)
-		spark.material_override = flame_material
-		fire.add_child(spark)
-	var smoke := MeshInstance3D.new()
-	var smoke_mesh := CylinderMesh.new()
-	smoke_mesh.top_radius = 0.20
-	smoke_mesh.bottom_radius = 0.20
-	smoke_mesh.height = 0.025
-	smoke.mesh = smoke_mesh
-	smoke.position = Vector3(0, 0.04, -0.12)
-	smoke.material_override = _material(Color("#555a54"), 0.0, 1.0)
-	fire.add_child(smoke)
 
 	weapon_roots.append({"root": root, "side": side, "lane": lane})
 	var area := Area3D.new()
@@ -783,11 +771,7 @@ func _refresh_board() -> void:
 		var target_color := (Color("#087cf0") if side == 0 else Color("#f02f3d")) if filled else Color("#aeb7b5")
 		for child in mesh_node.get_children():
 			if child is MeshInstance3D:
-				var mat := child.material_override as StandardMaterial3D
-				if mat:
-					mat.albedo_color = target_color if filled else Color("#aeb7b5")
-					mat.emission_enabled = filled
-					mat.emission = target_color * 0.16 if filled else Color.BLACK
+				child.material_override = (bullet_blue_material if side == 0 else bullet_red_material) if filled else bullet_material
 	for item in weapon_roots:
 		var side: int = item["side"]
 		var lane: int = item["lane"]
