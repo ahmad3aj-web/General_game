@@ -16,6 +16,7 @@ public final class LanMatchSession implements LanConnection.Listener {
         void onPeerInfo(int side, String name, int avatar);
         void onOpeningRolls(int blueValue, int redValue, boolean tied);
         void onOpeningWinner(int startingSide);
+        void onRematchReady();
         void onTurnStarted(int turnId, int activeSide, boolean localTurn);
         void onCountdown(int secondsRemaining);
         void onRoll(int side, int value, boolean automatic);
@@ -39,6 +40,9 @@ public final class LanMatchSession implements LanConnection.Listener {
     private int openingRound;
     private int localOpeningValue;
     private int remoteOpeningValue;
+    private boolean localRematchRequested;
+    private boolean remoteRematchRequested;
+    private boolean rematchStarted;
 
     public LanMatchSession(int localSide, Listener listener) {
         if (localSide != 1 && localSide != 2) throw new IllegalArgumentException("localSide");
@@ -117,6 +121,30 @@ public final class LanMatchSession implements LanConnection.Listener {
                 }
             }, 2600L);
         }
+    }
+
+    /** Wait until both players request a rematch; only the host starts its new toss. */
+    public synchronized void requestRematch() {
+        if (!connected || localRematchRequested) return;
+        localRematchRequested = true;
+        try {
+            JSONObject message = new JSONObject();
+            message.put("version", LanGameProtocol.VERSION);
+            message.put("type", LanGameProtocol.REMATCH);
+            message.put("side", localSide);
+            connection.send(message);
+        } catch (Exception error) {
+            listener.onProtocolError("تعذر طلب إعادة المباراة");
+            return;
+        }
+        maybeStartRematch();
+    }
+
+    private synchronized void maybeStartRematch() {
+        if (!connected || !localRematchRequested || !remoteRematchRequested || rematchStarted) return;
+        rematchStarted = true;
+        listener.onRematchReady();
+        if (localSide == 1) startOpeningToss();
     }
 
     /** Called on both devices after the opening toss has selected the first player. */
@@ -203,6 +231,15 @@ public final class LanMatchSession implements LanConnection.Listener {
             }
             listener.onPeerInfo(side, message.optString("name", "لاعب"),
                     Math.max(0, Math.min(5, message.optInt("avatar", 0))));
+            return;
+        }
+        if (LanGameProtocol.REMATCH.equals(type)) {
+            if (side != (localSide == 1 ? 2 : 1)) {
+                listener.onProtocolError("طلب إعادة مباراة غير صالح");
+                return;
+            }
+            remoteRematchRequested = true;
+            maybeStartRematch();
             return;
         }
         if (LanGameProtocol.OPENING_ROLL.equals(type)) {
