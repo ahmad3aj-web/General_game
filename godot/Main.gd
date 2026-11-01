@@ -746,7 +746,23 @@ func _try_choose_weapon(side: int, lane: int) -> void:
 		return
 	_on_weapon_pressed(lane)
 
+func _animate_weapon_action(side: int, lane: int) -> void:
+	for item in weapon_roots:
+		if int(item["side"]) == side and int(item["lane"]) == lane:
+			var root: Node3D = item["root"]
+			var start_position := root.position
+			var direction := 0.42 if side == 0 else -0.42
+			var tween := create_tween()
+			tween.set_trans(Tween.TRANS_BACK)
+			tween.set_ease(Tween.EASE_OUT)
+			tween.tween_property(root, "position:x", start_position.x + direction, 0.18)
+			tween.tween_property(root, "position:x", start_position.x, 0.22)
+			tween.parallel().tween_property(root, "scale", Vector3(1.16, 1.16, 1.16), 0.16)
+			tween.tween_property(root, "scale", Vector3.ONE, 0.20)
+			break
+
 func _on_weapon_pressed(lane: int) -> void:
+	_animate_weapon_action(current_player, lane)
 	progress[current_player][lane] += die_value
 	if progress[current_player][lane] == STEPS:
 		destroyed[1 - current_player][lane] = true
