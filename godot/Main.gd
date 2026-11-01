@@ -627,10 +627,35 @@ func _unhandled_input(event: InputEvent) -> void:
 		_pick_weapon_at_screen_position(screen_position)
 
 func _pick_weapon_at_screen_position(screen_position: Vector2) -> void:
-	if not waiting_for_weapon or game_over:
+	if not waiting_for_weapon or game_over or game_camera == null:
 		return
-	if game_camera == null:
+
+	# Android touch picking can miss 3D Area3D events on some devices.
+	# First test the projected screen position of each selectable weapon.
+	var viewport_size := get_viewport().get_visible_rect().size
+	var tap_radius := minf(viewport_size.x, viewport_size.y) * 0.105
+	var best_distance := tap_radius
+	var best_lane := -1
+	for item in weapon_roots:
+		var side: int = item["side"]
+		var lane: int = item["lane"]
+		if side != current_player:
+			continue
+		if destroyed[side][lane] or progress[side][lane] + die_value > STEPS:
+			continue
+		var root: Node3D = item["root"]
+		var world_target := root.global_position + Vector3(0, 0.85, 0)
+		var screen_target := game_camera.unproject_position(world_target)
+		var distance := screen_position.distance_to(screen_target)
+		if distance < best_distance:
+			best_distance = distance
+			best_lane = lane
+	if best_lane >= 0:
+		_try_choose_weapon(current_player, best_lane)
+		get_viewport().set_input_as_handled()
 		return
+
+	# Keep the 3D physics ray as a secondary fallback.
 	var ray_origin := game_camera.project_ray_origin(screen_position)
 	var ray_direction := game_camera.project_ray_normal(screen_position)
 	var query := PhysicsRayQueryParameters3D.create(ray_origin, ray_origin + ray_direction * 100.0)
