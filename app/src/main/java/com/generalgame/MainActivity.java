@@ -315,6 +315,47 @@ public class MainActivity extends Activity {
             p.setColor(Color.argb(210,245,225,160));c.drawCircle(cx+radius*.34f,cy+radius*.60f,radius*.075f,p);
             c.restore();
         }
+        private void drawGeneralAvatar(Canvas c,float cx,float cy,float radius,boolean selected,boolean monochrome) {
+            // General has a unique veteran commander portrait; rank details evolve with difficulty.
+            int level=Math.max(0,Math.min(3,difficulty));
+            int ink=monochrome?Color.DKGRAY:Color.rgb(39,43,39);
+            int goldTone=monochrome?Color.GRAY:Color.rgb(224,180,72);
+            int uniform=monochrome?Color.GRAY:new int[]{Color.rgb(91,119,91),Color.rgb(73,105,79),Color.rgb(58,83,68),Color.rgb(48,65,57)}[level];
+            drawAvatar(c,5,cx,cy,radius,selected,monochrome);
+            c.save();
+            p.setShader(null);p.setStyle(Paint.Style.FILL);
+            // Distinct commander beard and strong moustache.
+            p.setColor(ink);
+            if(level>=1) {
+                Path beard=new Path();beard.moveTo(cx-radius*.24f,cy+radius*.19f);
+                beard.quadTo(cx,cy+radius*.43f,cx+radius*.24f,cy+radius*.19f);
+                beard.quadTo(cx+radius*.17f,cy+radius*.48f,cx,cy+radius*.48f);
+                beard.quadTo(cx-radius*.17f,cy+radius*.48f,cx-radius*.24f,cy+radius*.19f);
+                c.drawPath(beard,p);
+                c.drawOval(new RectF(cx-radius*.23f,cy+radius*.12f,cx+radius*.23f,cy+radius*.27f),p);
+            }
+            // Commander's peaked cap, with progressively richer insignia.
+            p.setColor(ink);c.drawRoundRect(new RectF(cx-radius*.43f,cy-radius*.57f,cx+radius*.43f,cy-radius*.31f),radius*.10f,radius*.10f,p);
+            p.setColor(uniform);c.drawRoundRect(new RectF(cx-radius*.39f,cy-radius*.54f,cx+radius*.39f,cy-radius*.34f),radius*.08f,radius*.08f,p);
+            p.setColor(ink);c.drawOval(new RectF(cx-radius*.48f,cy-radius*.37f,cx+radius*.48f,cy-radius*.27f),p);
+            p.setColor(goldTone);c.drawCircle(cx,cy-radius*.43f,radius*(level==3?.105f:.075f),p);
+            p.setColor(Color.rgb(255,235,170));c.drawCircle(cx,cy-radius*.43f,radius*.035f,p);
+            // Rank bars and decorations.
+            p.setColor(goldTone);
+            for(int i=0;i<=level;i++) c.drawRoundRect(new RectF(cx-radius*.32f+i*radius*.13f,cy+radius*.56f,cx-radius*.25f+i*radius*.13f,cy+radius*.66f),radius*.02f,radius*.02f,p);
+            if(level>=2) {
+                p.setColor(goldTone);
+                Path medal=new Path();medal.moveTo(cx+radius*.34f,cy+radius*.48f);medal.lineTo(cx+radius*.43f,cy+radius*.61f);medal.lineTo(cx+radius*.34f,cy+radius*.73f);medal.lineTo(cx+radius*.25f,cy+radius*.61f);medal.close();c.drawPath(medal,p);
+                p.setColor(Color.rgb(255,235,170));c.drawCircle(cx+radius*.34f,cy+radius*.61f,radius*.045f,p);
+            }
+            if(level==3) {
+                p.setColor(Color.argb(monochrome?80:180,235,205,120));
+                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1.5f,radius*.045f));
+                c.drawArc(new RectF(cx-radius*.52f,cy-radius*.68f,cx+radius*.52f,cy+radius*.02f),205,130,false,p);
+                p.setStyle(Paint.Style.FILL);
+            }
+            c.restore();
+        }
         private void drawSetup(Canvas c) {
             txt(c,"إعداد اللاعبين",w*.5f,h*.16f,h*.065f,dark,true);
             txt(c,setupSide==1?"اللاعب الأول — الأزرق":"اللاعب الثاني — الأحمر",w*.5f,h*.25f,h*.043f,setupSide==1?blue:red,true);
@@ -756,8 +797,8 @@ public class MainActivity extends Activity {
                 int winnerAvatar=winner==1?avatars[0]:(mode==2?5:avatars[1]);
                 int loserAvatar=winner==1?(mode==2?5:avatars[1]):avatars[0];
                 float portraitY=h*.39f, portraitR=h*.085f;
-                drawAvatar(c,winnerAvatar,w*.34f,portraitY,portraitR,true);
-                drawAvatar(c,loserAvatar,w*.66f,portraitY,portraitR,false,true);
+                if(mode==2 && winner==2) drawGeneralAvatar(c,w*.34f,portraitY,portraitR,true,false); else drawAvatar(c,winnerAvatar,w*.34f,portraitY,portraitR,true);
+                if(mode==2 && winner==1) drawGeneralAvatar(c,w*.66f,portraitY,portraitR,false,true); else drawAvatar(c,loserAvatar,w*.66f,portraitY,portraitR,false,true);
                 txt(c,winnerName,w*.34f,h*.52f,h*.038f,blue,true);
                 txt(c,loserName,w*.66f,h*.52f,h*.038f,dark,true);
                 txt(c,"الفائز: "+winnerName,w*.5f,h*.60f,h*.05f,dark,true);
@@ -775,7 +816,7 @@ public class MainActivity extends Activity {
             txt(c,mode==2?"جنيرال":playerNames[1],w*.92f,h*.19f,h*.035f,red,true);
             txt(c,playerNames[0],w*.08f,h*.19f,h*.035f,blue,true);
             drawAvatar(c,avatars[0],w*.08f,h*.105f,h*.035f,false);
-            drawAvatar(c,mode==2?5:avatars[1],w*.92f,h*.105f,h*.035f,false);
+            if(mode==2) drawGeneralAvatar(c,w*.92f,h*.105f,h*.035f,false,false); else drawAvatar(c,avatars[1],w*.92f,h*.105f,h*.035f,false);
             if(openingToss){
                 float ds=h*.075f;
                 box(c,w*.19f-ds/2,h*.145f,w*.19f+ds/2,h*.145f+ds,red);
