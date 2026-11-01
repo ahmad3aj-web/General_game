@@ -129,7 +129,7 @@ public class MainActivity extends Activity {
             lanSession=new LanMatchSession(lanLocalSide,new LanMatchSession.Listener(){
                 @Override public void onConnected(){runOnUiThread(()->{
                     message="تم الاتصال — جارٍ تحديد من يبدأ";
-                    if(!lanOpeningStarted){lanOpeningStarted=true;lanSession.sendHello(playerNames[lanLocalSide-1],avatars[lanLocalSide-1]);lanSession.startOpeningToss();}
+                    if(!lanOpeningStarted){lanOpeningStarted=true;lanSession.sendHello(playerNames[lanLocalSide-1],avatars[lanLocalSide-1]);if(lanLocalSide==1)lanSession.startOpeningToss();else message="تم الاتصال — بانتظار قرعة البداية";}
                     invalidate();
                 });}
                 @Override public void onPeerInfo(int side,String name,int avatar){runOnUiThread(()->{playerNames[side-1]=name;avatars[side-1]=avatar;invalidate();});}
