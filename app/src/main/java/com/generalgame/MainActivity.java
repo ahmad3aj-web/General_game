@@ -15,6 +15,11 @@ import android.view.View;
 import android.widget.EditText;
 import android.text.InputType;
 import java.util.Random;
+import java.util.Date;
+import java.util.Locale;
+import java.text.SimpleDateFormat;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
@@ -34,6 +39,8 @@ public class MainActivity extends Activity {
         private final String[] names = {"الدبابة","الطائرة","المدفع"};
         private int mode = 0; // 0 menu, 1 local two-player, 2 vs General
         private boolean setup = false;
+        private boolean historyScreen = false;
+        private boolean recorded = false;
         private int setupSide = 1;
         private int difficulty = 1; // 0 beginner, 1 medium, 2 professional, 3 legendary
         private final String[] playerNames = {"أنت","اللاعب 2"};
@@ -131,9 +138,70 @@ public class MainActivity extends Activity {
             btn(c,setupSide==1 && mode==1?"التالي":"ابدأ المباراة",w*.36f,h*.90f,w*.64f,h*.985f,setupSide==1?blue:red);
         }
 
+
+        private JSONArray loadHistory() {
+            try { return new JSONArray(getSharedPreferences("GENERAL_STATS",MODE_PRIVATE).getString("matches","[]")); }
+            catch(Exception ex) { return new JSONArray(); }
+        }
+        private void saveMatchResult() {
+            if(recorded || winner==0)return;
+            recorded=true;
+            try {
+                JSONArray old=loadHistory(), updated=new JSONArray();
+                JSONObject item=new JSONObject();
+                String opponent=mode==2?"جنيرال":(winner==1?playerNames[1]:playerNames[0]);
+                String winnerName=winner==1?playerNames[0]:(mode==2?"جنيرال":playerNames[1]);
+                String loserName=winner==1?(mode==2?"جنيرال":playerNames[1]):playerNames[0];
+                item.put("opponent",opponent); item.put("winner",winnerName); item.put("loser",loserName);
+                item.put("result",mode==2?(winner==1?"فوز":"خسارة"):(winner==1?"فوز اللاعب الأول":"فوز اللاعب الثاني"));
+                item.put("mode",mode);
+                item.put("date",new SimpleDateFormat("EEEE dd/MM/yyyy HH:mm",new Locale("ar","JO")).format(new Date()));
+                updated.put(item);
+                int start=Math.max(0,old.length()-99);
+                for(int i=start;i<old.length();i++)updated.put(old.getJSONObject(i));
+                getSharedPreferences("GENERAL_STATS",MODE_PRIVATE).edit().putString("matches",updated.toString()).apply();
+            } catch(Exception ignored) { }
+        }
+        private void drawHistory(Canvas c) {
+            txt(c,"سجل مباريات GENERAL",w*.5f,h*.16f,h*.06f,dark,true);
+            JSONArray data=loadHistory(); int total=data.length(),wins=0,losses=0;
+            for(int i=0;i<total;i++)try {
+                JSONObject o=data.getJSONObject(i);
+                if("فوز".equals(o.optString("result")))wins++;
+                else if("خسارة".equals(o.optString("result")))losses++;
+            } catch(Exception ignored) { }
+            box(c,w*.10f,h*.23f,w*.90f,h*.36f,Color.rgb(245,249,239));
+            txt(c,"إجمالي المباريات: "+total,w*.5f,h*.275f,h*.036f,dark,true);
+            txt(c,"فوز ضد جنيرال: "+wins+"     خسارة: "+losses,w*.5f,h*.33f,h*.032f,blue,true);
+            txt(c,"السجل حسب الخصم",w*.5f,h*.42f,h*.038f,dark,true);
+            java.util.LinkedHashMap<String,int[]> byOpponent=new java.util.LinkedHashMap<>();
+            for(int i=total-1;i>=0;i--)try {
+                JSONObject o=data.getJSONObject(i); String opponent=o.optString("opponent","غير معروف");
+                int[] counts=byOpponent.get(opponent);
+                if(counts==null){counts=new int[2];byOpponent.put(opponent,counts);}
+                String result=o.optString("result");
+                if("فوز".equals(result))counts[0]++; else if("خسارة".equals(result))counts[1]++;
+            } catch(Exception ignored) { }
+            int row=0;
+            for(java.util.Map.Entry<String,int[]> entry:byOpponent.entrySet()) {
+                if(row>=4)break;
+                float y=h*(.49f+row*.075f);
+                txt(c,entry.getKey(),w*.30f,y,h*.029f,dark,true);
+                txt(c,"فوز "+entry.getValue()[0]+"  |  خسارة "+entry.getValue()[1],w*.70f,y,h*.029f,blue,false);
+                row++;
+            }
+            if(total==0)txt(c,"لا توجد مباريات مسجلة حتى الآن",w*.5f,h*.58f,h*.032f,dark,false);
+            txt(c,"آخر المباريات",w*.5f,h*.81f,h*.034f,dark,true);
+            for(int i=0;i<Math.min(3,total);i++)try {
+                JSONObject o=data.getJSONObject(total-1-i);
+                txt(c,o.optString("winner")+" فاز على "+o.optString("loser"),w*.5f,h*(.855f+i*.04f),h*.025f,dark,false);
+            } catch(Exception ignored) { }
+            btn(c,"عودة",w*.40f,h*.94f,w*.60f,h*.995f,dark);
+        }
+
         private void resetMatch() {
             for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}
-            stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false;
+            stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false; recorded=false;
             openingRoll1=0; openingRoll2=0; openingToss=false;
             message="استعدوا — النظام يحدد من يبدأ";
             startOpeningToss();
@@ -164,7 +232,7 @@ public class MainActivity extends Activity {
             // الفوز يتحقق عند تدمير سلاحين من أصل ثلاثة لدى الخصم.
             if(p1Destroyed>=2) winner=2;
             if(p2Destroyed>=2) winner=1;
-            if(winner!=0){die=0;choosing=false;message=winner==1?"انتهت المباراة — أنت الفائز!":"انتهت المباراة — فاز جنيرال!";}
+            if(winner!=0){die=0;choosing=false;message=winner==1?"انتهت المباراة — أنت الفائز!":"انتهت المباراة — فاز جنيرال!";saveMatchResult();}
         }
         private void afterTurn() {
             if(winner!=0)return;
@@ -382,10 +450,12 @@ public class MainActivity extends Activity {
             txt(c,"GENERAL  •  جينيرال",w*.5f,h*.075f,h*.06f,dark,true);
             if(setup) { drawSetup(c); return; }
             if(mode==0) {
+                if(historyScreen){drawHistory(c);return;}
                 txt(c,"اختر طريقة اللعب",w*.5f,h*.31f,h*.065f,dark,true);
                 btn(c,"لاعبان على نفس الجهاز",w*.12f,h*.42f,w*.48f,h*.62f,blue);
                 btn(c,"ضد جنيرال الكمبيوتر",w*.52f,h*.42f,w*.88f,h*.62f,red);
-                txt(c,"جنيرال يلعب وحده ويتخذ قراراته",w*.5f,h*.73f,h*.035f,dark,false);
+                btn(c,"سجل المباريات",w*.36f,h*.66f,w*.64f,h*.78f,dark);
+                txt(c,"جنيرال يلعب وحده ويتخذ قراراته",w*.5f,h*.85f,h*.035f,dark,false);
                 return;
             }
             if(winner!=0) {
@@ -466,7 +536,9 @@ public class MainActivity extends Activity {
             float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
             boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
             if(mode==0) {
-                if(y>=h*.42f&&y<=h*.62f){mode=x<w*.5f?1:2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                if(historyScreen) { if(y>=h*.93f)historyScreen=false; }
+                else if(y>=h*.42f&&y<=h*.62f){mode=x<w*.5f?1:2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.66f&&y<=h*.79f)historyScreen=true;
                 invalidate();return true;
             }
             if(setup) {
