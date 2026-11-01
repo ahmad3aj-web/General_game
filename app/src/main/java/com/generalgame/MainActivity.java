@@ -112,19 +112,41 @@ public class MainActivity extends Activity {
         }
         private void computerTurn() {
             if(mode!=2 || winner!=0 || player!=2)return;
+            choosing=false;
             die=random.nextInt(6)+1;
-            int pick=-1;
-            // يختار أقرب سلاح متاح للهدف، وإذا لم يناسبه الرقم يختار سلاحاً آخر.
-            for(int i=0;i<3;i++) if(canMove(2,i) && (pick<0 || pos2[i]>pos2[pick])) pick=i;
-            if(pick>=0) {
-                pos2[pick]+=die;
-                if(pos2[pick]==15) { dead1[pick]=true; spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[pick]); }
-                message="جنيرال رمى "+die+" وحرّك "+names[pick];
-                finishCheck();
-            } else {
-                message="جنيرال لا يملك حركة ممكنة — انتهى دوره";
-            }
-            if(winner==0){player=1;die=0;choosing=false;message="دورك — اضغط النرد";}
+            message="جنيرال يرمي النرد...";
+            invalidate();
+            postDelayed(new Runnable(){ @Override public void run(){
+                if(mode!=2 || winner!=0 || player!=2)return;
+                message="جنيرال حصل على "+die;
+                invalidate();
+                postDelayed(new Runnable(){ @Override public void run(){
+                    if(mode!=2 || winner!=0 || player!=2)return;
+                    int pick=-1;
+                    // يفضّل السلاح الأقرب إلى إكمال هجومه، مع عدم اختيار سلاح لا يستوعب رقم النرد.
+                    for(int i=0;i<3;i++) {
+                        if(canMove(2,i) && (pick<0 || pos2[i]>pos2[pick])) pick=i;
+                    }
+                    if(pick>=0) {
+                        message="جنيرال اختار "+names[pick];
+                        invalidate();
+                        final int selected=pick;
+                        postDelayed(new Runnable(){ @Override public void run(){
+                            if(mode==2 && winner==0 && player==2) animateMove(2,selected,die);
+                        }},650);
+                    } else {
+                        message="لا يوجد سلاح مناسب! الدور ملغي";
+                        invalidate();
+                        postDelayed(new Runnable(){ @Override public void run(){
+                            if(mode==2 && winner==0 && player==2) {
+                                player=1;die=0;choosing=false;
+                                message="دورك — اضغط النرد";
+                                invalidate();
+                            }
+                        }},1200);
+                    }
+                }},850);
+            }},850);
         }
         private void animateMove(final int side, final int lane, final int amount) {
             choosing=false;
@@ -368,7 +390,16 @@ public class MainActivity extends Activity {
                 if(mode==2&&player==2){computerTurn();}
                 else {
                     die=random.nextInt(6)+1;choosing=true;
-                    if(!anyMove(player)){message="لا توجد حركة ممكنة — انتهى الدور";if(mode==2){player=2;computerTurn();}else afterTurn();}
+                    if(!anyMove(player)){
+                        message="لا يوجد سلاح مناسب! الدور ملغي";
+                        choosing=false;die=0;invalidate();
+                        postDelayed(new Runnable(){ @Override public void run(){
+                            if(winner!=0)return;
+                            if(mode==2){player=2;message="دور جنيرال";invalidate();postDelayed(new Runnable(){@Override public void run(){computerTurn();}},500);}
+                            else afterTurn();
+                            invalidate();
+                        }},1200);
+                    }
                     else message=(mode==2?"أنت":"اللاعب "+player)+" رمى "+die+" — اختر سلاحاً";
                 }
             } else {
