@@ -99,7 +99,7 @@ public class MainActivity extends Activity {
                     showLanHostAddress();
                 })
                 .setNegativeButton("انضمام لمباراة", (d,which)->{
-                    mode=3; lanLocalSide=2; setup=true; setupSide=1;
+                    mode=3; lanLocalSide=2; setup=true; setupSide=2;
                     playerNames[0]="اللاعب الأزرق"; playerNames[1]="أنت";
                     showLanJoinDialog();
                 })
@@ -660,8 +660,8 @@ public class MainActivity extends Activity {
             }
             drawExplosion(c);
             float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
-            if(mode==1 && !choosing && die==0) {
-                btn(c,"أطلق",w*.39f,h*.80f,w*.61f,h*.93f,player==1?blue:red);
+            if((mode==1 || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected())) && !choosing && die==0) {
+                btn(c,mode==3?("أطلق ("+lanCountdown+")"):"أطلق",w*.39f,h*.80f,w*.61f,h*.93f,player==1?blue:red);
             } else {
                 int diceColor=winner!=0?dark:(player==1?blue:red);
                 box(c,diceCx-diceSize/2,diceCy-diceSize/2,diceCx+diceSize/2,diceCy+diceSize/2,diceColor);
