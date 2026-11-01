@@ -701,8 +701,6 @@ public class MainActivity extends Activity {
             // Clean comic ink outline; no national flags or symbols.
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2.2f);p.setColor(ink);
             if(lane==0)c.drawRoundRect(new RectF(7,39,94,68),13,13,p);
-            else if(lane==1)c.drawPath(wing,p);
-            else c.drawPath(shield,p);
             p.setStyle(Paint.Style.FILL);p.setShader(null);c.restore();
         }
 
