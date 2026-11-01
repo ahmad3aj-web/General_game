@@ -143,6 +143,10 @@ public class MainActivity extends Activity {
                     message=tied?"تعادل — إعادة القرعة تلقائياً":"قرعة البداية";
                     invalidate();
                 });}
+                @Override public void onRematchReady(){runOnUiThread(()->{
+                    message="اللاعبان جاهزان — قرعة البداية";
+                    invalidate();
+                });}
                 @Override public void onOpeningWinner(int side){runOnUiThread(()->{
                     if(!lanOpeningStarted || mode!=3)return;
                     openingToss=false;stage=2;player=side;die=0;choosing=false;lanTurnId=1;
@@ -352,9 +356,9 @@ public class MainActivity extends Activity {
             openingRoll1=0; openingRoll2=0; openingToss=false;
             if(mode==3 && lanSession!=null && lanSession.isConnected()) {
                 lanOpeningStarted=true;
-                message="إعادة المباراة — قرعة البداية";
-                if(lanLocalSide==1)lanSession.startOpeningToss();
-                else message="بانتظار قرعة البداية من اللاعب المضيف";
+                openingToss=false;
+                message="طلب إعادة المباراة — بانتظار موافقة اللاعب الآخر";
+                lanSession.requestRematch();
             } else {
                 message="استعدوا — النظام يحدد من يبدأ";
                 startOpeningToss();
