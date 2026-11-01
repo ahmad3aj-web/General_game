@@ -129,9 +129,10 @@ public class MainActivity extends Activity {
             lanSession=new LanMatchSession(lanLocalSide,new LanMatchSession.Listener(){
                 @Override public void onConnected(){runOnUiThread(()->{
                     message="تم الاتصال — جارٍ تحديد من يبدأ";
-                    if(!lanOpeningStarted){lanOpeningStarted=true;lanSession.startOpeningToss();}
+                    if(!lanOpeningStarted){lanOpeningStarted=true;lanSession.sendHello(playerNames[lanLocalSide-1],avatars[lanLocalSide-1]);lanSession.startOpeningToss();}
                     invalidate();
                 });}
+                @Override public void onPeerInfo(int side,String name,int avatar){runOnUiThread(()->{playerNames[side-1]=name;avatars[side-1]=avatar;invalidate();});}
                 @Override public void onOpeningRolls(int b,int r,boolean tied){runOnUiThread(()->{
                     openingRoll1=b;openingRoll2=r;openingToss=true;
                     message=tied?"تعادل — إعادة القرعة تلقائياً":"قرعة البداية";
@@ -337,8 +338,14 @@ public class MainActivity extends Activity {
             for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}
             stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false; recorded=false; explosionAt=0;
             openingRoll1=0; openingRoll2=0; openingToss=false;
-            message="استعدوا — النظام يحدد من يبدأ";
-            startOpeningToss();
+            if(mode==3 && lanSession!=null && lanSession.isConnected()) {
+                lanOpeningStarted=true;
+                message="إعادة المباراة — قرعة البداية";
+                lanSession.startOpeningToss();
+            } else {
+                message="استعدوا — النظام يحدد من يبدأ";
+                startOpeningToss();
+            }
         }
         private void startOpeningToss() {
             if(mode==0 || winner!=0)return;
@@ -706,7 +713,7 @@ public class MainActivity extends Activity {
             if(winner!=0) {
                 if(y>=h*.68f&&y<=h*.78f) {
                     if(x>=w*.25f&&x<=w*.48f) resetMatch();
-                    else if(x>=w*.52f&&x<=w*.75f) { matchEpoch++; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; explosionAt=0; message="اختر طريقة اللعب"; }
+                    else if(x>=w*.52f&&x<=w*.75f) { matchEpoch++; timerlessCloseLan(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; explosionAt=0; message="اختر طريقة اللعب"; }
                 }
                 invalidate();return true;
             }
