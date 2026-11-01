@@ -599,6 +599,17 @@ func _build_ui() -> void:
 	roll_button.add_theme_font_size_override("font_size", 26)
 	roll_button.pressed.connect(_on_roll_pressed)
 	column.add_child(roll_button)
+	# Reliable touch controls: choose a weapon from large Android UI buttons
+	# instead of relying only on 3D screen-space picking.
+	for lane in range(3):
+		var weapon_button := Button.new()
+		weapon_button.text = "اختر " + WEAPON_NAMES[lane]
+		weapon_button.custom_minimum_size = Vector2(0, 52)
+		weapon_button.add_theme_font_size_override("font_size", 21)
+		weapon_button.visible = false
+		weapon_button.pressed.connect(_on_weapon_pressed.bind(lane))
+		column.add_child(weapon_button)
+		weapon_buttons.append(weapon_button)
 	reset_button = Button.new()
 	reset_button.text = "إعادة المباراة"
 	reset_button.pressed.connect(_show_mode_menu)
@@ -648,6 +659,8 @@ func _reset_state() -> void:
 	die_value = 0
 	waiting_for_weapon = false
 	game_over = false
+	for weapon_button in weapon_buttons:
+		weapon_button.visible = false
 	roll_button.disabled = false
 	ui_label.text = "ابدأ مباراة جديدة"
 	_update_die_face(1)
@@ -823,8 +836,13 @@ func _ai_turn() -> void:
 func _refresh_board() -> void:
 	if die_root:
 		die_root.position = Vector3(-8.35 if current_player == 0 else 8.35, 0.72, 5.0)
-	if ui_label and game_mode >= 0 and not game_over:
+	if ui_label and game_mode >= 0 and not game_over and not waiting_for_weapon:
 		ui_label.text = ("اللاعب الأزرق" if current_player == 0 else ("جنيرال الأحمر" if game_mode == 1 else "اللاعب الأحمر"))
+	for lane in range(3):
+		if lane < weapon_buttons.size():
+			var can_use: bool = waiting_for_weapon and not destroyed[current_player][lane] and progress[current_player][lane] + die_value <= STEPS
+			weapon_buttons[lane].visible = waiting_for_weapon
+			weapon_buttons[lane].disabled = not can_use
 	if game_panel and game_mode >= 0:
 		if current_player == 0:
 			game_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
