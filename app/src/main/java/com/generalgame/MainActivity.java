@@ -58,6 +58,8 @@ public class MainActivity extends Activity {
         private float w, h;
         private long explosionAt = 0;
         private float explosionX = 0, explosionY = 0;
+        private long muzzleFlashAt = 0;
+        private float muzzleFlashX = 0, muzzleFlashY = 0;
         private final int bg = Color.rgb(190,225,165), dark = Color.rgb(36,67,43);
         private final int blue = Color.rgb(35,112,205), red = Color.rgb(205,69,54);
         private final int gold = Color.rgb(245,190,65);
@@ -524,6 +526,9 @@ public class MainActivity extends Activity {
         private void animateMove(final int side, final int lane, final int amount) {
             final int epoch=matchEpoch;
             choosing=false;
+            muzzleFlashAt=System.currentTimeMillis();
+            muzzleFlashX=side==1?w*.126f:w*.874f;
+            muzzleFlashY=new float[]{h*.29f,h*.49f,h*.69f}[lane];
             final int start=positions(side)[lane];
             final int target=Math.min(15,start+amount);
             message=(side==1?"الأزرق":"الأحمر")+" يطلق...";
@@ -556,6 +561,20 @@ public class MainActivity extends Activity {
         private void spawnExplosion(float x,float y) {
             explosionX=x; explosionY=y; explosionAt=System.currentTimeMillis();
             invalidate();
+        }
+        private void drawMuzzleFlash(Canvas c) {
+            if(muzzleFlashAt==0)return;
+            float age=(System.currentTimeMillis()-muzzleFlashAt)/260f;
+            if(age>=1f){muzzleFlashAt=0;return;}
+            float r=h*(.025f+.012f*(1f-age));
+            p.setStyle(Paint.Style.FILL);p.setColor(Color.argb((int)(190*(1f-age)),255,120,15));c.drawCircle(muzzleFlashX,muzzleFlashY,r*1.5f,p);
+            Path flame=new Path();boolean right=muzzleFlashX<w*.5f;
+            flame.moveTo(muzzleFlashX-r*.45f,muzzleFlashY-r*.55f);
+            flame.lineTo(muzzleFlashX+(right?r*2.2f:-r*2.2f),muzzleFlashY);
+            flame.lineTo(muzzleFlashX-r*.45f,muzzleFlashY+r*.55f);flame.close();
+            p.setColor(Color.argb((int)(255*(1f-age)),255,205,48));c.drawPath(flame,p);
+            p.setColor(Color.WHITE);c.drawCircle(muzzleFlashX,muzzleFlashY,r*.32f,p);
+            postInvalidateDelayed(30);
         }
         private void drawExplosion(Canvas c) {
             if(explosionAt==0)return;
@@ -780,6 +799,7 @@ public class MainActivity extends Activity {
                     }
                 }
             }
+            drawMuzzleFlash(c);
             drawExplosion(c);
             float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
             if((mode==1 || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected())) && !choosing && die==0) {
