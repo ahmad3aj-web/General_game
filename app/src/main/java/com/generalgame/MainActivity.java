@@ -41,6 +41,7 @@ public class MainActivity extends Activity {
         private boolean setup = false;
         private boolean historyScreen = false;
         private boolean recorded = false;
+        private int matchEpoch = 0;
         private int setupSide = 1;
         private int difficulty = 1; // 0 beginner, 1 medium, 2 professional, 3 legendary
         private final String[] playerNames = {"أنت","اللاعب 2"};
@@ -210,6 +211,7 @@ public class MainActivity extends Activity {
         }
 
         private void resetMatch() {
+            matchEpoch++;
             for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}
             stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false; recorded=false;
             openingRoll1=0; openingRoll2=0; openingToss=false;
@@ -218,19 +220,20 @@ public class MainActivity extends Activity {
         }
         private void startOpeningToss() {
             if(mode==0 || winner!=0)return;
+            final int epoch=matchEpoch;
             openingToss=true; stage=0; choosing=false; die=0;
             openingRoll1=random.nextInt(6)+1;
             openingRoll2=random.nextInt(6)+1;
             message=openingRoll1==openingRoll2 ? "تعادل — ستُعاد القرعة تلقائياً" : "قرعة البداية";
             invalidate();
             postDelayed(new Runnable(){ @Override public void run(){
-                if(!openingToss || mode==0 || winner!=0)return;
+                if(epoch!=matchEpoch || !openingToss || mode==0 || winner!=0)return;
                 if(openingRoll1==openingRoll2){ startOpeningToss(); return; }
                 player=openingRoll1>openingRoll2?1:2;
                 openingToss=false; stage=2;
                 message=player==1?(mode==2?"أنت تبدأ — دورك":"اللاعب 1 يبدأ"):(mode==2?"جنيرال يبدأ":"اللاعب 2 يبدأ");
                 invalidate();
-                if(mode==2 && player==2) postDelayed(new Runnable(){ @Override public void run(){ computerTurn(); invalidate(); }},700);
+                if(mode==2 && player==2) postDelayed(new Runnable(){ @Override public void run(){ if(epoch==matchEpoch){computerTurn();invalidate();} }},700);
             }},2600);
         }
         private void finishCheck() {
@@ -256,7 +259,8 @@ public class MainActivity extends Activity {
             }
         }
         private void computerTurn() {
-            if(mode!=2 || winner!=0 || player!=2)return;
+            if(epoch!=matchEpoch || mode!=2 || winner!=0 || player!=2)return;
+            final int epoch=matchEpoch;
             choosing=false;
             die=random.nextInt(6)+1;
             message="جنيرال يرمي النرد...";
@@ -290,13 +294,13 @@ public class MainActivity extends Activity {
                         invalidate();
                         final int selected=pick;
                         postDelayed(new Runnable(){ @Override public void run(){
-                            if(mode==2 && winner==0 && player==2) animateMove(2,selected,die);
+                            if(epoch==matchEpoch && mode==2 && winner==0 && player==2) animateMove(2,selected,die);
                         }},650);
                     } else {
                         message="لا يوجد سلاح مناسب! الدور ملغي";
                         invalidate();
                         postDelayed(new Runnable(){ @Override public void run(){
-                            if(mode==2 && winner==0 && player==2) {
+                            if(epoch==matchEpoch && mode==2 && winner==0 && player==2) {
                                 player=1;die=0;choosing=false;
                                 message="دورك — اضغط النرد";
                                 invalidate();
@@ -307,13 +311,14 @@ public class MainActivity extends Activity {
             }},850);
         }
         private void animateMove(final int side, final int lane, final int amount) {
+            final int epoch=matchEpoch;
             choosing=false;
             final int start=positions(side)[lane];
             final int target=Math.min(15,start+amount);
             message=(side==1?"الأزرق":"الأحمر")+" يطلق...";
             final Runnable[] step=new Runnable[1];
             step[0]=new Runnable(){ @Override public void run(){
-                if(winner!=0)return;
+                if(epoch!=matchEpoch || winner!=0)return;
                 if(positions(side)[lane]<target){
                     positions(side)[lane]++;
                     invalidate();
@@ -327,7 +332,7 @@ public class MainActivity extends Activity {
                     if(winner==0){
                         if(mode==2 && side==1){
                             player=2; die=0; message="دور جنيرال";
-                            postDelayed(new Runnable(){@Override public void run(){computerTurn();invalidate();}},650);
+                            postDelayed(new Runnable(){@Override public void run(){if(epoch==matchEpoch){computerTurn();invalidate();}}},650);
                         } else if(mode==2 && side==2){
                             player=1;die=0;choosing=false;message="دورك — اضغط النرد";
                         } else afterTurn();
