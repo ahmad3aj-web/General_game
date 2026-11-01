@@ -316,7 +316,8 @@ public class MainActivity extends Activity {
             java.util.LinkedHashMap<String,int[]> byOpponent=new java.util.LinkedHashMap<>();
             for(int i=total-1;i>=0;i--)try {
                 JSONObject o=data.getJSONObject(i);
-                if(o.optInt("mode",2)==1 && o.has("player1") && o.has("player2")) {
+                if((o.optInt("mode",2)==1 || o.optInt("mode",2)==3)
+                        && o.has("player1") && o.has("player2")) {
                     String p1=o.optString("player1"), p2=o.optString("player2");
                     int side=o.optInt("winnerSide",0);
                     int[] first=byOpponent.get(p1+" ضد "+p2);
