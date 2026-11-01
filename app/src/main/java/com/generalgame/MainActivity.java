@@ -278,6 +278,26 @@ public class MainActivity extends Activity {
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,radius*.035f));p.setColor(ink);
             c.drawArc(new RectF(cx-radius*.15f,cy+radius*.11f,cx+radius*.15f,cy+radius*.29f),15,150,false,p);
             p.setStyle(Paint.Style.FILL);p.setStrokeCap(Paint.Cap.BUTT);
+            // Portrait depth, hair highlights and individual hairstyle accents.
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.argb(monochrome?20:34,80,45,25));
+            c.drawOval(new RectF(cx+radius*.13f,cy-radius*.20f,cx+radius*.29f,cy+radius*.22f),p);
+            p.setColor(Color.argb(75,255,245,220));
+            c.drawOval(new RectF(cx-radius*.25f,cy-radius*.34f,cx-radius*.12f,cy-radius*.20f),p);
+            p.setColor(hair);
+            if(index%3==0) {
+                c.drawOval(new RectF(cx-radius*.36f,cy-radius*.56f,cx-radius*.16f,cy-radius*.28f),p);
+                c.drawOval(new RectF(cx+radius*.16f,cy-radius*.57f,cx+radius*.36f,cy-radius*.27f),p);
+            } else if(index%3==2) {
+                c.drawRoundRect(new RectF(cx-radius*.37f,cy-radius*.48f,cx+radius*.37f,cy-radius*.35f),radius*.07f,radius*.07f,p);
+            }
+            // Neckline and jacket seams.
+            p.setColor(ink);p.setStrokeWidth(Math.max(1.5f,radius*.025f));p.setStyle(Paint.Style.STROKE);
+            c.drawLine(cx-radius*.30f,cy+radius*.54f,cx-radius*.13f,cy+radius*.78f,p);
+            c.drawLine(cx+radius*.30f,cy+radius*.54f,cx+radius*.13f,cy+radius*.78f,p);
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.argb(100,255,255,255));
+            c.drawCircle(cx-radius*.46f,cy+radius*.52f,radius*.035f,p);
             // Small uniform badge.
             p.setColor(Color.argb(210,245,225,160));c.drawCircle(cx+radius*.34f,cy+radius*.60f,radius*.075f,p);
             c.restore();
