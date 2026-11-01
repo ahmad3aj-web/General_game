@@ -49,7 +49,7 @@ func _ready() -> void:
 	_build_weapons()
 	_build_die()
 	_build_ui()
-	_build_showcase()
+	# 2D battlefield mode: no 3D character showcase.
 	_refresh_board()
 
 func _setup_materials() -> void:
@@ -65,133 +65,65 @@ func _setup_materials() -> void:
 func _material(color: Color, metallic: float, roughness: float) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
-	mat.metallic = metallic
-	mat.roughness = roughness
+	mat.metallic = 0.0
+	mat.roughness = 1.0
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.disable_receive_shadows = true
 	return mat
 
 func _build_world() -> void:
+	# Flat, orthographic battlefield: all artwork sits on the XZ plane.
 	var env := WorldEnvironment.new()
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_COLOR
-	environment.background_color = Color("#91b8c6")
+	environment.background_color = Color("#8eae78")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color("#e1e8cf")
-	environment.ambient_light_energy = 0.95
-	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	environment.ambient_light_color = Color.WHITE
+	environment.ambient_light_energy = 1.0
 	env.environment = environment
 	add_child(env)
 
-	# Rich layered battlefield: turf, compacted earth, lane insets and painted edges.
 	var ground := MeshInstance3D.new()
 	var ground_mesh := PlaneMesh.new()
 	ground_mesh.size = Vector2(29.0, 23.0)
 	ground.mesh = ground_mesh
-	ground.position.y = -0.34
-	ground.material_override = _material(Color("#397b3d"), 0.0, 1.0)
+	ground.position.y = -0.30
+	ground.material_override = _material(Color("#6f9b59"), 0.0, 1.0)
 	add_child(ground)
 
-	var arena := MeshInstance3D.new()
-	var arena_mesh := BoxMesh.new()
-	arena_mesh.size = Vector3(17.8, 0.24, 13.0)
-	arena.mesh = arena_mesh
-	arena.position.y = -0.12
-	arena.material_override = _material(Color("#b89b67"), 0.0, 0.96)
-	add_child(arena)
-
-	var inner := MeshInstance3D.new()
-	var inner_mesh := BoxMesh.new()
-	inner_mesh.size = Vector3(16.8, 0.055, 12.0)
-	inner.mesh = inner_mesh
-	inner.position.y = 0.035
-	inner.material_override = _material(Color("#c5aa76"), 0.0, 1.0)
-	add_child(inner)
-
-	# Six inset battle lanes, with darker shoulders and warm center markings.
-	for side_x in [-8.42, 8.42]:
-		var edge := MeshInstance3D.new()
-		var edge_mesh := BoxMesh.new()
-		edge_mesh.size = Vector3(0.16, 0.07, 12.0)
-		edge.mesh = edge_mesh
-		edge.position = Vector3(side_x, 0.09, 0)
-		edge.material_override = _material(Color("#5b6847"), 0.0, 0.9)
-		add_child(edge)
-	for z in ROW_Z:
+	# Main arena and six clean, clearly separated progress lanes.
+	_add_box(self, Vector3(0, -0.12, 0), Vector3(18.0, 0.16, 13.0), _material(Color("#c7ad7a"), 0.0, 1.0))
+	_add_box(self, Vector3(0, -0.025, 0), Vector3(17.55, 0.035, 12.55), _material(Color("#d7c08f"), 0.0, 1.0))
+	for side_x in [-8.55, 8.55]:
+		_add_box(self, Vector3(side_x, 0.02, 0), Vector3(0.10, 0.035, 12.2), _material(Color("#5d704c"), 0.0, 1.0))
+	for lane in range(3):
+		var z: float = ROW_Z[lane]
 		for side in range(2):
-			var lane_bed := MeshInstance3D.new()
-			var lane_mesh := BoxMesh.new()
-			lane_mesh.size = Vector3(12.5, 0.035, 1.18)
-			lane_bed.mesh = lane_mesh
-			lane_bed.position = Vector3(0, 0.09, z + (0.38 if side == 0 else -0.38))
-			lane_bed.material_override = _material(Color("#9b835b"), 0.0, 1.0)
-			add_child(lane_bed)
-		var divider := MeshInstance3D.new()
-		var divider_mesh := BoxMesh.new()
-		divider_mesh.size = Vector3(12.8, 0.035, 0.055)
-		divider.mesh = divider_mesh
-		divider.position = Vector3(0, 0.13, z)
-		divider.material_override = _material(Color("#e5d2a0"), 0.0, 0.82)
-		add_child(divider)
+			var lane_z: float = z + (0.38 if side == 0 else -0.38)
+			_add_box(self, Vector3(0, 0.025, lane_z), Vector3(12.8, 0.035, 0.72), _material(Color("#ad956b"), 0.0, 1.0))
+			_add_box(self, Vector3(0, 0.047, lane_z), Vector3(12.4, 0.018, 0.035), _material(Color("#d9c493"), 0.0, 1.0))
+		_add_box(self, Vector3(0, 0.045, z), Vector3(13.0, 0.025, 0.045), _material(Color("#f0dfb7"), 0.0, 1.0))
 
-	# Turf patches, rocks, supply crates and sandbag cover give the arena scale.
-	for i in range(34):
-		var gx := -12.0 + float((i * 17) % 240) / 10.0
-		var gz := -9.2 + float((i * 29) % 184) / 10.0
-		if absf(gx) < 8.8 and absf(gz) < 6.5:
+	# Small flat field markings around the board; no raised 3D props.
+	for i in range(30):
+		var gx := -12.0 + float((i * 37) % 240) / 10.0
+		var gz := -9.0 + float((i * 23) % 180) / 10.0
+		if absf(gx) < 9.2 and absf(gz) < 6.8:
 			continue
-		var tuft := Node3D.new()
-		tuft.position = Vector3(gx, -0.08, gz)
-		add_child(tuft)
-		for blade in range(3):
-			var grass := MeshInstance3D.new()
-			var grass_mesh := BoxMesh.new()
-			grass_mesh.size = Vector3(0.10, 0.28 + float(blade % 2) * 0.12, 0.055)
-			grass.mesh = grass_mesh
-			grass.position = Vector3(float(blade - 1) * 0.09, 0.12, 0)
-			grass.rotation_degrees.z = float(blade - 1) * 17.0
-			grass.material_override = _material(Color("#78a94c") if blade % 2 == 0 else Color("#547f3c"), 0.0, 1.0)
-			tuft.add_child(grass)
-	for side_x in [-9.1, 9.1]:
-		for z in [-4.8, -1.6, 1.6, 4.8]:
-			_add_box(self, Vector3(side_x, 0.16, z), Vector3(0.62, 0.32, 0.62), _material(Color("#806342"), 0.0, 0.95))
-			for layer in range(2):
-				_add_sphere(self, Vector3(side_x + (0.34 if layer == 0 else -0.34), 0.20 + float(layer) * 0.19, z), Vector3(0.48, 0.30, 0.36), _material(Color("#c2a16b"), 0.0, 1.0))
-	# Boundary warning lamps and corner watch posts.
-	for x in [-10.8, 10.8]:
-		for z in [-7.2, 7.2]:
-			_add_box(self, Vector3(x, 0.72, z), Vector3(0.30, 1.4, 0.30), _material(Color("#53614b"), 0.25, 0.65))
-			_add_sphere(self, Vector3(x, 1.48, z), Vector3(0.28, 0.24, 0.28), _material(Color("#f5c45d"), 0.1, 0.25))
-	# A few low rocks outside the playable lanes.
-	for i in range(12):
-		var rock := MeshInstance3D.new()
-		var rock_mesh := SphereMesh.new()
-		rock_mesh.radius = 0.5
-		rock_mesh.height = 0.7
-		rock.mesh = rock_mesh
-		rock.position = Vector3(-11.5 + float((i * 19) % 230) / 10.0, -0.02, -8.5 if i % 2 == 0 else 8.5)
-		rock.scale = Vector3(1.0 + float(i % 3) * 0.4, 0.55, 0.8)
-		rock.material_override = _material(Color("#777d69"), 0.0, 1.0)
-		add_child(rock)
-
-	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-52, -28, 0)
-	sun.light_energy = 1.8
-	sun.shadow_enabled = true
-	add_child(sun)
-	var fill := OmniLight3D.new()
-	fill.position = Vector3(0, 8, 1)
-	fill.light_color = Color("#e5f0d4")
-	fill.light_energy = 0.62
-	fill.omni_range = 28
-	add_child(fill)
+		_add_sphere(self, Vector3(gx, -0.20, gz), Vector3(0.16, 0.025, 0.10), _material(Color("#83aa64") if i % 2 == 0 else Color("#5f8d4d"), 0.0, 1.0))
+	for x in [-8.9, 8.9]:
+		for z in [-5.4, -2.0, 2.0, 5.4]:
+			_add_box(self, Vector3(x, 0.025, z), Vector3(0.38, 0.06, 0.38), _material(Color("#96734d"), 0.0, 1.0))
+			_add_box(self, Vector3(x, 0.060, z), Vector3(0.28, 0.025, 0.28), _material(Color("#c5a16d"), 0.0, 1.0))
 
 	var camera := Camera3D.new()
-	camera.position = Vector3(0, 16.5, 19.5)
+	camera.position = Vector3(0, 23.0, 0.01)
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.size = 19.5
 	camera.near = 0.1
 	camera.far = 100.0
 	add_child(camera)
-	camera.look_at(Vector3.ZERO, Vector3.UP)
+	camera.look_at(Vector3.ZERO, Vector3.FORWARD)
 	camera.make_current()
 	game_camera = camera
 
@@ -218,36 +150,11 @@ func _build_tracks() -> void:
 				bullet_nodes.append({"node": bullet, "side": side, "lane": lane, "step": step})
 
 func _make_bullet() -> Node3D:
+	# Flat shell icon viewed from directly above.
 	var root := Node3D.new()
-	var casing := MeshInstance3D.new()
-	var cylinder := CylinderMesh.new()
-	cylinder.top_radius = 0.075
-	cylinder.bottom_radius = 0.095
-	cylinder.height = 0.29
-	casing.mesh = cylinder
-	casing.rotation_degrees.z = 90
-	casing.material_override = bullet_material
-	root.add_child(casing)
-	var nose := MeshInstance3D.new()
-	var cone := CylinderMesh.new()
-	cone.top_radius = 0.0
-	cone.bottom_radius = 0.075
-	cone.height = 0.16
-	nose.mesh = cone
-	nose.rotation_degrees.z = -90
-	nose.position.x = 0.21
-	nose.material_override = _material(Color("#d8dedb"), 0.82, 0.16)
-	root.add_child(nose)
-	var base := MeshInstance3D.new()
-	var base_mesh := CylinderMesh.new()
-	base_mesh.top_radius = 0.10
-	base_mesh.bottom_radius = 0.10
-	base_mesh.height = 0.045
-	base.mesh = base_mesh
-	base.rotation_degrees.z = 90
-	base.position.x = -0.16
-	base.material_override = _material(Color("#7e8988"), 0.75, 0.24)
-	root.add_child(base)
+	_add_box(root, Vector3(0, 0.025, 0), Vector3(0.25, 0.035, 0.085), bullet_material)
+	_add_cylinder(root, Vector3(0.135, 0.045, 0), 0.043, 0.035, Color("#d8dedb"))
+	_add_cylinder(root, Vector3(-0.13, 0.045, 0), 0.052, 0.035, Color("#7e8988"))
 	return root
 
 func _build_weapons() -> void:
@@ -256,100 +163,93 @@ func _build_weapons() -> void:
 		_make_weapon(1, lane, 7.35)
 
 func _make_weapon(side: int, lane: int, x: float) -> void:
+	# Stylized 2D top-down sprites built from flat shapes, not imported 3D models.
 	var root := Node3D.new()
 	root.position = Vector3(x, 0.16, ROW_Z[lane])
 	root.rotation_degrees.y = 0 if side == 0 else 180
 	add_child(root)
 	var team_mat := blue_material if side == 0 else red_material
-	var dark_mat := _material(Color("#27342f"), 0.38, 0.62)
-	var trim_mat := _material(Color("#d4c28a"), 0.42, 0.42)
-	var glass_mat := _material(Color("#7bc5dc"), 0.55, 0.16)
+	var dark_mat := _material(Color("#293832"), 0.0, 1.0)
+	var trim_mat := _material(Color("#d8c58b"), 0.0, 1.0)
+	var glass_mat := _material(Color("#a6e0e8"), 0.0, 1.0)
+	var shadow_mat := _material(Color("#58604c"), 0.0, 1.0)
 
 	if lane == 0:
-		# Use the licensed Quaternius GLB tank; keep a detailed procedural fallback.
-		var tank_scene := load("res://assets/models/tank_basic.glb") as PackedScene
-		if tank_scene:
-			var tank_model := tank_scene.instantiate() as Node3D
-			tank_model.position = Vector3(0, 0.02, 0)
-			tank_model.rotation_degrees.y = 90
-			# The source GLB uses a much larger world scale than the board.
-			# Keep the imported tank inside its lane and leave bullets visible.
-			tank_model.scale = Vector3(0.18, 0.18, 0.18)
-			root.add_child(tank_model)
-		else:
-			# Detailed cartoon tank: twin tracks, six road wheels, turret, hatch and cannon.
-			for z in [-0.48, 0.48]:
-				_add_box(root, Vector3(0, 0.25, z), Vector3(1.82, 0.34, 0.20), dark_mat)
-				for wheel_x in [-0.68, -0.42, -0.14, 0.14, 0.42, 0.68]:
-					_add_cylinder_axis(root, Vector3(wheel_x, 0.25, z * 1.23), 0.145, 0.11, dark_mat, Vector3.FORWARD)
-					_add_cylinder_axis(root, Vector3(wheel_x, 0.25, z * 1.23 + sign(z) * 0.06), 0.075, 0.025, trim_mat, Vector3.FORWARD)
-			_add_box(root, Vector3(-0.02, 0.49, 0), Vector3(1.72, 0.42, 0.82), team_mat)
-			_add_box(root, Vector3(-0.12, 0.72, 0), Vector3(1.20, 0.18, 0.70), _material(Color("#526f4c"), 0.32, 0.5))
-			_add_cylinder(root, Vector3(0.10, 0.84, 0), 0.34, 0.12, dark_mat.albedo_color)
-			_add_box(root, Vector3(0.08, 0.94, 0), Vector3(0.82, 0.30, 0.60), team_mat)
-			_add_sphere(root, Vector3(-0.16, 1.12, 0), Vector3(0.22, 0.12, 0.22), trim_mat)
-			_add_cylinder_axis(root, Vector3(0.68, 0.99, 0), 0.075, 0.88, dark_mat, Vector3.RIGHT)
-			_add_cylinder_axis(root, Vector3(1.12, 0.99, 0), 0.105, 0.16, trim_mat, Vector3.RIGHT)
-			for z in [-0.31, 0.31]:
-				_add_sphere(root, Vector3(0.78, 0.65, z), Vector3(0.10, 0.10, 0.10), _material(Color("#f4d36b"), 0.15, 0.4))
-			_add_box(root, Vector3(-0.72, 0.73, 0), Vector3(0.12, 0.11, 0.50), dark_mat)
+		# Tank silhouette: twin tracks, road wheels, angular hull, turret and cannon.
+		for z in [-0.40, 0.40]:
+			_add_box(root, Vector3(0, 0.025, z), Vector3(1.95, 0.055, 0.27), dark_mat)
+			for wheel_x in [-0.72, -0.43, -0.14, 0.15, 0.44, 0.73]:
+				_add_cylinder(root, Vector3(wheel_x, 0.065, z), 0.105, 0.055, trim_mat.albedo_color)
+				_add_cylinder(root, Vector3(wheel_x, 0.097, z), 0.055, 0.025, dark_mat.albedo_color)
+		_add_box(root, Vector3(-0.03, 0.105, 0), Vector3(1.52, 0.10, 0.68), dark_mat)
+		_add_box(root, Vector3(-0.03, 0.165, 0), Vector3(1.38, 0.075, 0.57), team_mat)
+		_add_box(root, Vector3(-0.40, 0.210, -0.20), Vector3(0.45, 0.018, 0.045), trim_mat)
+		_add_box(root, Vector3(-0.40, 0.210, 0.20), Vector3(0.45, 0.018, 0.045), trim_mat)
+		_add_cylinder(root, Vector3(-0.06, 0.225, 0), 0.30, 0.075, dark_mat.albedo_color)
+		_add_cylinder(root, Vector3(-0.06, 0.270, 0), 0.245, 0.045, team_mat.albedo_color)
+		_add_box(root, Vector3(0.42, 0.285, 0), Vector3(0.92, 0.055, 0.12), dark_mat)
+		_add_box(root, Vector3(0.43, 0.318, 0), Vector3(0.78, 0.025, 0.065), trim_mat)
+		_add_cylinder(root, Vector3(-0.17, 0.300, 0), 0.085, 0.025, glass_mat.albedo_color)
+		for z in [-0.23, 0.23]:
+			_add_cylinder(root, Vector3(0.58, 0.225, z), 0.055, 0.025, trim_mat.albedo_color)
 	elif lane == 1:
-		# Fighter jet with swept wings, cockpit, twin engines and tail fins.
-		_add_box(root, Vector3(0.0, 0.58, 0), Vector3(1.95, 0.20, 0.25), team_mat)
-		_add_sphere(root, Vector3(1.00, 0.58, 0), Vector3(0.28, 0.15, 0.15), trim_mat)
-		_add_box(root, Vector3(0.00, 0.53, 0), Vector3(0.65, 0.13, 1.70), team_mat)
-		_add_box(root, Vector3(0.32, 0.54, 0), Vector3(0.40, 0.10, 1.28), team_mat)
-		_add_box(root, Vector3(-0.72, 0.54, 0), Vector3(0.42, 0.12, 0.78), team_mat)
-		_add_box(root, Vector3(-0.78, 0.72, 0), Vector3(0.38, 0.46, 0.10), team_mat)
-		_add_sphere(root, Vector3(0.15, 0.72, 0), Vector3(0.30, 0.19, 0.18), glass_mat)
-		for z in [-0.62, 0.62]:
-			_add_cylinder_axis(root, Vector3(-0.20, 0.43, z), 0.13, 0.62, dark_mat, Vector3.RIGHT)
-			_add_cylinder_axis(root, Vector3(0.14, 0.43, z), 0.09, 0.08, trim_mat, Vector3.RIGHT)
-			_add_cylinder_axis(root, Vector3(0.18, 0.39, z * 1.30), 0.045, 0.52, trim_mat, Vector3.RIGHT)
+		# Fighter aircraft silhouette with broad swept wings and a clear cockpit.
+		_add_box(root, Vector3(-0.02, 0.075, 0), Vector3(2.05, 0.045, 0.18), dark_mat)
+		_add_box(root, Vector3(-0.10, 0.105, 0), Vector3(1.86, 0.035, 0.12), team_mat)
+		_add_box(root, Vector3(-0.02, 0.115, 0), Vector3(0.58, 0.035, 1.48), dark_mat)
+		_add_box(root, Vector3(-0.02, 0.140, 0), Vector3(0.48, 0.025, 1.34), team_mat)
+		_add_box(root, Vector3(-0.70, 0.155, 0), Vector3(0.42, 0.025, 0.66), dark_mat)
+		_add_box(root, Vector3(-0.70, 0.175, 0), Vector3(0.34, 0.025, 0.56), team_mat)
+		_add_box(root, Vector3(-0.88, 0.190, 0), Vector3(0.10, 0.12, 0.46), team_mat)
+		_add_sphere(root, Vector3(0.30, 0.180, 0), Vector3(0.40, 0.035, 0.13), glass_mat)
+		for z in [-0.48, 0.48]:
+			_add_box(root, Vector3(-0.10, 0.160, z), Vector3(0.42, 0.025, 0.07), trim_mat)
 	else:
-		# Field cannon with armored shield, recoil barrel, wheels and spokes.
-		_add_box(root, Vector3(-0.12, 0.38, 0), Vector3(1.02, 0.30, 0.68), team_mat)
-		_add_cylinder(root, Vector3(0.02, 0.58, 0), 0.25, 0.18, dark_mat.albedo_color)
-		_add_box(root, Vector3(-0.38, 0.66, 0), Vector3(0.15, 0.62, 0.86), team_mat)
-		_add_cylinder_axis(root, Vector3(0.48, 0.78, 0), 0.095, 1.30, dark_mat, Vector3.RIGHT)
-		_add_cylinder_axis(root, Vector3(1.13, 0.78, 0), 0.14, 0.18, trim_mat, Vector3.RIGHT)
-		for z in [-0.52, 0.52]:
-			_add_cylinder_axis(root, Vector3(-0.12, 0.24, z), 0.28, 0.14, dark_mat, Vector3.FORWARD)
-			_add_cylinder_axis(root, Vector3(-0.12, 0.24, z + sign(z) * 0.08), 0.12, 0.035, trim_mat, Vector3.FORWARD)
-			for spoke in range(6):
-				var angle := TAU * float(spoke) / 6.0
-				_add_box(root, Vector3(-0.12 + cos(angle) * 0.16, 0.24 + sin(angle) * 0.16, z + sign(z) * 0.105), Vector3(0.035, 0.20, 0.025), trim_mat)
+		# Field cannon: broad wheels, compact carriage, shield and long barrel.
+		_add_box(root, Vector3(-0.24, 0.075, 0), Vector3(1.08, 0.07, 0.56), dark_mat)
+		_add_box(root, Vector3(-0.24, 0.120, 0), Vector3(0.96, 0.045, 0.46), team_mat)
+		for z in [-0.43, 0.43]:
+			_add_cylinder(root, Vector3(-0.36, 0.095, z), 0.27, 0.075, dark_mat.albedo_color)
+			_add_cylinder(root, Vector3(-0.36, 0.140, z), 0.13, 0.035, trim_mat.albedo_color)
+			_add_cylinder(root, Vector3(-0.36, 0.163, z), 0.055, 0.020, dark_mat.albedo_color)
+		_add_box(root, Vector3(-0.02, 0.180, 0), Vector3(0.18, 0.075, 0.76), dark_mat)
+		_add_box(root, Vector3(-0.02, 0.222, 0), Vector3(0.13, 0.055, 0.66), team_mat)
+		_add_cylinder(root, Vector3(0.04, 0.245, 0), 0.16, 0.035, trim_mat.albedo_color)
+		_add_box(root, Vector3(0.53, 0.265, 0), Vector3(1.12, 0.06, 0.12), dark_mat)
+		_add_box(root, Vector3(0.54, 0.302, 0), Vector3(0.95, 0.025, 0.065), trim_mat)
 
 	var label := Label3D.new()
 	label.text = WEAPON_NAMES[lane]
-	label.position = Vector3(0, 1.40, 0)
-	label.font_size = 38
-	label.outline_size = 9
+	label.position = Vector3(0, 0.42, -0.76)
+	label.font_size = 34
+	label.outline_size = 8
 	label.modulate = Color("#fff7df")
 	root.add_child(label)
 
+	# Flat flame/smoke markers appear only after a weapon is destroyed.
 	var fire := Node3D.new()
 	fire.name = "DestroyedFire"
 	fire.visible = false
-	fire.position = Vector3(0, 0.95, 0)
+	fire.position = Vector3(0, 0.34, 0)
 	root.add_child(fire)
 	for i in range(5):
-		var flame := MeshInstance3D.new()
-		var flame_mesh := CylinderMesh.new()
-		flame_mesh.top_radius = 0.0
-		flame_mesh.bottom_radius = 0.13 + float(i % 2) * 0.06
-		flame_mesh.height = 0.58 + float(i % 2) * 0.2
-		flame.mesh = flame_mesh
-		flame.position = Vector3(-0.34 + float(i) * 0.17, 0.18, 0.0 if i % 2 == 0 else 0.16)
-		flame.material_override = flame_material
-		fire.add_child(flame)
+		var spark := MeshInstance3D.new()
+		var spark_mesh := CylinderMesh.new()
+		spark_mesh.top_radius = 0.0
+		spark_mesh.bottom_radius = 0.12 + float(i % 2) * 0.05
+		spark_mesh.height = 0.035
+		spark.mesh = spark_mesh
+		spark.position = Vector3(-0.34 + float(i) * 0.17, 0.02, 0.0 if i % 2 == 0 else 0.16)
+		spark.material_override = flame_material
+		fire.add_child(spark)
 	var smoke := MeshInstance3D.new()
-	var smoke_mesh := SphereMesh.new()
-	smoke_mesh.radius = 0.25
-	smoke_mesh.height = 0.5
+	var smoke_mesh := CylinderMesh.new()
+	smoke_mesh.top_radius = 0.20
+	smoke_mesh.bottom_radius = 0.20
+	smoke_mesh.height = 0.025
 	smoke.mesh = smoke_mesh
-	smoke.position = Vector3(0, 0.65, -0.12)
-	smoke.material_override = _material(Color("#454746"), 0.0, 1.0)
+	smoke.position = Vector3(0, 0.04, -0.12)
+	smoke.material_override = _material(Color("#555a54"), 0.0, 1.0)
 	fire.add_child(smoke)
 
 	weapon_roots.append({"root": root, "side": side, "lane": lane})
@@ -515,7 +415,7 @@ func _build_die() -> void:
 	add_child(die_root)
 	var cube := MeshInstance3D.new()
 	var cube_mesh := BoxMesh.new()
-	cube_mesh.size = Vector3(1.05, 0.72, 1.05)
+	cube_mesh.size = Vector3(1.05, 0.07, 1.05)
 	cube.mesh = cube_mesh
 	cube.material_override = _material(Color("#e7e5d8"), 0.12, 0.24)
 	die_root.add_child(cube)
@@ -538,9 +438,9 @@ func _update_die_face(count: int) -> void:
 		var bullet_mesh := CylinderMesh.new()
 		bullet_mesh.top_radius = 0.035
 		bullet_mesh.bottom_radius = 0.055
-		bullet_mesh.height = 0.19
+		bullet_mesh.height = 0.035
 		bullet.mesh = bullet_mesh
-		bullet.position = Vector3(p.x, 0.38, p.y)
+		bullet.position = Vector3(p.x, 0.10, p.y)
 		bullet.material_override = _material(Color("#b97828"), 0.65, 0.2)
 		die_root.add_child(bullet)
 		die_pips.append(bullet)
