@@ -32,6 +32,8 @@ public class MainActivity extends Activity {
         private int mode = 0; // 0 menu, 1 local two-player, 2 vs General
         private int stage = 0; // opening toss: 0 or 1; 2 means game
         private int firstRoll = 0, player = 1, die = 0, winner = 0;
+        private int openingRoll1 = 0, openingRoll2 = 0;
+        private boolean openingToss = false;
         private boolean choosing = false;
         private String message = "اختر طريقة اللعب";
         private float w, h;
@@ -65,7 +67,26 @@ public class MainActivity extends Activity {
         private void resetMatch() {
             for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}
             stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false;
-            message= mode==2 ? "أنت ضد جنيرال — اضغط لبدء القرعة" : "قرعة البداية: اللاعب 1 يرمي";
+            openingRoll1=0; openingRoll2=0; openingToss=false;
+            message="استعدوا — النظام يحدد من يبدأ";
+            startOpeningToss();
+        }
+        private void startOpeningToss() {
+            if(mode==0 || winner!=0)return;
+            openingToss=true; stage=0; choosing=false; die=0;
+            openingRoll1=random.nextInt(6)+1;
+            openingRoll2=random.nextInt(6)+1;
+            message=openingRoll1==openingRoll2 ? "تعادل — ستُعاد القرعة تلقائياً" : "قرعة البداية";
+            invalidate();
+            postDelayed(new Runnable(){ @Override public void run(){
+                if(!openingToss || mode==0 || winner!=0)return;
+                if(openingRoll1==openingRoll2){ startOpeningToss(); return; }
+                player=openingRoll1>openingRoll2?1:2;
+                openingToss=false; stage=2;
+                message=player==1?(mode==2?"أنت تبدأ — دورك":"اللاعب 1 يبدأ"):(mode==2?"جنيرال يبدأ":"اللاعب 2 يبدأ");
+                invalidate();
+                if(mode==2 && player==2) postDelayed(new Runnable(){ @Override public void run(){ computerTurn(); invalidate(); }},700);
+            }},2600);
         }
         private void finishCheck() {
             int p1Destroyed=0, p2Destroyed=0;
@@ -207,6 +228,13 @@ public class MainActivity extends Activity {
             float[] rows={h*.29f,h*.49f,h*.69f};
             txt(c,mode==2?"جنيرال":"اللاعب 2",w*.08f,h*.19f,h*.035f,red,true);
             txt(c,mode==2?"أنت":"اللاعب 1",w*.92f,h*.19f,h*.035f,blue,true);
+            if(openingToss){
+                float ds=h*.075f;
+                box(c,w*.19f-ds/2,h*.145f,w*.19f+ds/2,h*.145f+ds,red);
+                txt(c,String.valueOf(openingRoll2),w*.19f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
+                box(c,w*.81f-ds/2,h*.145f,w*.81f+ds/2,h*.145f+ds,blue);
+                txt(c,String.valueOf(openingRoll1),w*.81f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
+            }
             for(int lane=0;lane<3;lane++) {
                 float y=rows[lane], gap=h*.012f, laneH=h*.012f;
                 // مساران مستقلان لكل سلاح: 6 خطوط إجمالاً، واحد لكل لاعب.
@@ -255,9 +283,10 @@ public class MainActivity extends Activity {
             float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
             boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
             if(mode==0) {
-                if(y>=h*.42f&&y<=h*.62f){mode=x<w*.5f?1:2;resetMatch();if(mode==2)message="أنت ضد جنيرال — اضغط النرد لقرعة البداية";}
+                if(y>=h*.42f&&y<=h*.62f){mode=x<w*.5f?1:2;resetMatch();}
                 invalidate();return true;
             }
+            if(openingToss)return true;
             if(winner!=0) {
                 if(y>=h*.63f&&y<=h*.73f) {
                     if(x>=w*.27f&&x<=w*.49f) resetMatch();
@@ -267,19 +296,8 @@ public class MainActivity extends Activity {
             }
             if(!choosing && !diceTapped)return true;
             if(stage<2 && diceTapped) {
-                int r=random.nextInt(6)+1;
-                if(mode==2) {
-                    int ai=random.nextInt(6)+1;
-                    player=r>=ai?1:2; stage=2;
-                    message="قرعتك "+r+" — قرعة جنيرال "+ai+" — "+(player==1?"أنت تبدأ":"جنيرال يبدأ");
-                    if(player==2)computerTurn();
-                } else if(stage==0) {
-                    firstRoll=r;stage=1;message="نتيجة اللاعب 1: "+r+" — اللاعب 2 يرمي";
-                } else {
-                    if(r>firstRoll){player=1;stage=2;message="اللاعب 1 يبدأ";}
-                    else if(r<firstRoll){player=2;stage=2;message="اللاعب 2 يبدأ";}
-                    else {stage=0;firstRoll=0;message="تعادل — أعيدوا القرعة";}
-                }
+                // قرعة البداية أصبحت تلقائية وتُعرض بجانب كل لاعب.
+                return true;
             } else if(!choosing && diceTapped) {
                 if(mode==2&&player==2){computerTurn();}
                 else {
