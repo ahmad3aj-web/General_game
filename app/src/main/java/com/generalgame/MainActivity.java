@@ -438,9 +438,13 @@ public class MainActivity extends Activity {
             }
             drawExplosion(c);
             float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
-            int diceColor=winner!=0?dark:(player==1?blue:red);
-            box(c,diceCx-diceSize/2,diceCy-diceSize/2,diceCx+diceSize/2,diceCy+diceSize/2,diceColor);
-            txt(c,die==0?(stage<2?"ارمِ":"ارمِ"):String.valueOf(die),diceCx,diceCy+h*.018f,diceSize*.48f,Color.WHITE,true);
+            if(mode==1 && !choosing && die==0) {
+                btn(c,"أطلق",w*.39f,h*.80f,w*.61f,h*.93f,player==1?blue:red);
+            } else {
+                int diceColor=winner!=0?dark:(player==1?blue:red);
+                box(c,diceCx-diceSize/2,diceCy-diceSize/2,diceCx+diceSize/2,diceCy+diceSize/2,diceColor);
+                txt(c,die==0?"النرد":String.valueOf(die),diceCx,diceCy+h*.018f,diceSize*.48f,Color.WHITE,true);
+            }
             if(choosing) txt(c,"اختر السلاح",w*.5f,h*.965f,h*.026f,dark,true);
             if(winner!=0) {
                 box(c,w*.76f,h*.82f,w*.96f,h*.93f,dark);
@@ -480,11 +484,12 @@ public class MainActivity extends Activity {
                 }
                 invalidate();return true;
             }
-            if(!choosing && !diceTapped)return true;
+            boolean launchTapped=mode==1 && !choosing && die==0 && y>=h*.80f && y<=h*.94f && x>=w*.39f && x<=w*.61f;
+            if(!choosing && !diceTapped && !launchTapped)return true;
             if(stage<2 && diceTapped) {
                 // قرعة البداية أصبحت تلقائية وتُعرض بجانب كل لاعب.
                 return true;
-            } else if(!choosing && diceTapped) {
+            } else if(!choosing && (diceTapped || launchTapped)) {
                 if(mode==2&&player==2){computerTurn();}
                 else {
                     die=random.nextInt(6)+1;choosing=true;
