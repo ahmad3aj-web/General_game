@@ -3,6 +3,8 @@ package com.generalgame;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -37,7 +39,7 @@ public class MainActivity extends Activity {
         private final int[] pos1 = {0,0,0}, pos2 = {0,0,0};
         private final boolean[] dead1 = {false,false,false}, dead2 = {false,false,false};
         private final String[] names = {"الدبابة","الطائرة","المدفع"};
-        private int mode = 0; // 0 menu, 1 local two-player, 2 vs General
+        private int mode = 0; // 0 menu, 1 local two-player, 2 vs General, 3 Wi-Fi
         private boolean setup = false;
         private boolean historyScreen = false;
         private boolean recorded = false;
@@ -59,6 +61,9 @@ public class MainActivity extends Activity {
         private final int bg = Color.rgb(190,225,165), dark = Color.rgb(36,67,43);
         private final int blue = Color.rgb(35,112,205), red = Color.rgb(205,69,54);
         private final int gold = Color.rgb(245,190,65);
+        private LanMatchSession lanSession;
+        private int lanLocalSide=1, lanTurnId=0, lanCountdown=30;
+        private boolean lanOpeningStarted=false;
 
         GameView() { super(MainActivity.this); setLayerType(View.LAYER_TYPE_SOFTWARE,null); }
         private void txt(Canvas c,String s,float x,float y,float size,int color,boolean bold) {
@@ -80,6 +85,105 @@ public class MainActivity extends Activity {
         private boolean anyMove(int side) {
             for(int i=0;i<3;i++) if(canMove(side,i)) return true;
             return false;
+        }
+
+        private void showLanModeDialog() {
+            new AlertDialog.Builder(MainActivity.this)
+                .setTitle("اللعب عبر Wi-Fi")
+                .setMessage("يجب أن يكون الجهازان على شبكة Wi-Fi نفسها. اختر إنشاء مباراة أو الانضمام.")
+                .setPositiveButton("إنشاء مباراة", (d,which)->{
+                    mode=3; lanLocalSide=1; setup=true; setupSide=1;
+                    playerNames[0]="اللاعب الأزرق"; playerNames[1]="اللاعب الأحمر";
+                    showLanHostAddress();
+                })
+                .setNegativeButton("انضمام لمباراة", (d,which)->{
+                    mode=3; lanLocalSide=2; setup=true; setupSide=1;
+                    playerNames[0]="اللاعب الأزرق"; playerNames[1]="أنت";
+                    showLanJoinDialog();
+                })
+                .setNeutralButton("إلغاء",null).show();
+        }
+        private void showLanHostAddress() {
+            String ip=LanConnection.getLocalIpv4();
+            new AlertDialog.Builder(MainActivity.this).setTitle("عنوان الجهاز المضيف")
+                .setMessage((ip.isEmpty()?"تعذر تحديد عنوان IP تلقائياً":("أرسل هذا العنوان للاعب الآخر:\n"+ip))+"\n\nاضغط انتظار الاتصال بعد أن يصبح الجهازان على الشبكة نفسها.")
+                .setPositiveButton("انتظار الاتصال",(d,which)->startLanHost())
+                .setNegativeButton("إلغاء",(d,which)->{mode=0;setup=false;invalidate();}).show();
+        }
+        private void showLanJoinDialog() {
+            final EditText input=new EditText(MainActivity.this);
+            input.setSingleLine(true); input.setHint("مثال: 192.168.1.10");
+            input.setInputType(InputType.TYPE_CLASS_TEXT);
+            new AlertDialog.Builder(MainActivity.this).setTitle("عنوان الجهاز المضيف")
+                .setMessage("اكتب عنوان IP الذي يظهر على جهاز اللاعب الأول.")
+                .setView(input).setPositiveButton("اتصال",(d,which)->{
+                    String address=input.getText().toString().trim();
+                    if(address.isEmpty()){showLanJoinDialog();return;}
+                    startLanJoin(address);
+                }).setNegativeButton("إلغاء",(d,which)->{mode=0;setup=false;invalidate();}).show();
+        }
+        private void createLanSession() {
+            if(lanSession!=null)lanSession.close();
+            lanSession=new LanMatchSession(lanLocalSide,new LanMatchSession.Listener(){
+                @Override public void onConnected(){runOnUiThread(()->{
+                    message="تم الاتصال — جارٍ تحديد من يبدأ";
+                    if(!lanOpeningStarted){lanOpeningStarted=true;lanSession.startOpeningToss();}
+                    invalidate();
+                });}
+                @Override public void onOpeningRolls(int b,int r,boolean tied){runOnUiThread(()->{
+                    openingRoll1=b;openingRoll2=r;openingToss=true;
+                    message=tied?"تعادل — إعادة القرعة تلقائياً":"قرعة البداية";
+                    invalidate();
+                });}
+                @Override public void onOpeningWinner(int side){runOnUiThread(()->{
+                    if(!lanOpeningStarted || mode!=3)return;
+                    openingToss=false;stage=2;player=side;die=0;choosing=false;lanTurnId=1;
+                    message=(side==lanLocalSide?"أنت تبدأ":"الخصم يبدأ");
+                    lanSession.beginTurn(lanTurnId,side);invalidate();
+                });}
+                @Override public void onTurnStarted(int id,int side,boolean local){runOnUiThread(()->{
+                    lanTurnId=id;player=side;die=0;choosing=false;lanCountdown=30;
+                    message=local?"دورك — اضغط أطلق خلال 30 ثانية":"دور الخصم — بانتظار رمي النرد";
+                    invalidate();
+                });}
+                @Override public void onCountdown(int seconds){runOnUiThread(()->{lanCountdown=seconds;invalidate();});}
+                @Override public void onRoll(int side,int value,boolean automatic){runOnUiThread(()->{
+                    if(mode!=3 || winner!=0 || side!=player)return;
+                    die=value;choosing=true;
+                    message=(side==lanLocalSide?"أنت":"الخصم")+" رمى "+value+(automatic?" تلقائياً":"")+" — اختر السلاح";
+                    if(!anyMove(side)){
+                        message="لا يوجد سلاح مناسب! الدور ملغي";choosing=false;die=0;invalidate();
+                        if(side==lanLocalSide)lanSession.cancelTurn();
+                    }
+                    invalidate();
+                });}
+                @Override public void onMove(int side,int lane,int value){runOnUiThread(()->{
+                    if(mode!=3 || winner!=0 || side!=player || value!=die)return;
+                    animateMove(side,lane,value);invalidate();
+                });}
+                @Override public void onTurnCancelled(int side){runOnUiThread(()->{
+                    if(mode==3 && winner==0 && side==player){die=0;choosing=false;message="الدور ملغي";postDelayed(()->afterTurn(),650);invalidate();}
+                });}
+                @Override public void onDisconnected(String reason){runOnUiThread(()->{
+                    timerlessCloseLan();message="انقطع الاتصال: "+reason;
+                    new AlertDialog.Builder(MainActivity.this).setTitle("انقطع اتصال Wi-Fi").setMessage(reason)
+                        .setPositiveButton("العودة للرئيسية",(d,which)->{mode=0;setup=false;invalidate();}).show();
+                });}
+                @Override public void onProtocolError(String reason){runOnUiThread(()->{message=reason;invalidate();});}
+            });
+        }
+        private void timerlessCloseLan(){if(lanSession!=null){lanSession.close();lanSession=null;}}
+        private void startLanHost(){
+            createLanSession();message="بانتظار اتصال اللاعب الثاني...";
+            new Thread(()->{try{lanSession.host();}catch(Exception ex){runOnUiThread(()->{
+                message="تعذر إنشاء الاتصال";new AlertDialog.Builder(MainActivity.this).setMessage("تعذر إنشاء المباراة: "+ex.getMessage()).setPositiveButton("حسناً",null).show();invalidate();
+            });}},"GENERAL-LAN-host").start();invalidate();
+        }
+        private void startLanJoin(String address){
+            createLanSession();message="جارٍ الاتصال بالجهاز المضيف...";
+            new Thread(()->{try{lanSession.join(address);}catch(Exception ex){runOnUiThread(()->{
+                message="تعذر الاتصال";new AlertDialog.Builder(MainActivity.this).setMessage("تعذر الاتصال: "+ex.getMessage()).setPositiveButton("حسناً",null).show();invalidate();
+            });}},"GENERAL-LAN-join").start();invalidate();
         }
 
         private void showNameDialog() {
@@ -488,10 +592,11 @@ public class MainActivity extends Activity {
             if(mode==0) {
                 if(historyScreen){drawHistory(c);return;}
                 txt(c,"اختر طريقة اللعب",w*.5f,h*.31f,h*.065f,dark,true);
-                btn(c,"لاعبان على نفس الجهاز",w*.12f,h*.42f,w*.48f,h*.62f,blue);
-                btn(c,"ضد جنيرال الكمبيوتر",w*.52f,h*.42f,w*.88f,h*.62f,red);
-                btn(c,"سجل المباريات",w*.36f,h*.66f,w*.64f,h*.78f,dark);
-                txt(c,"جنيرال يلعب وحده ويتخذ قراراته",w*.5f,h*.85f,h*.035f,dark,false);
+                btn(c,"لاعبان على نفس الجهاز",w*.12f,h*.37f,w*.48f,h*.53f,blue);
+                btn(c,"ضد جنيرال الكمبيوتر",w*.52f,h*.37f,w*.88f,h*.53f,red);
+                btn(c,"مواجهة عبر Wi-Fi",w*.30f,h*.56f,w*.70f,h*.68f,Color.rgb(52,125,91));
+                btn(c,"سجل المباريات",w*.36f,h*.73f,w*.64f,h*.83f,dark);
+                txt(c,"جنيرال يلعب وحده ويتخذ قراراته",w*.5f,h*.90f,h*.028f,dark,false);
                 return;
             }
             if(winner!=0) {
@@ -572,8 +677,9 @@ public class MainActivity extends Activity {
             boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
             if(mode==0) {
                 if(historyScreen) { if(y>=h*.93f)historyScreen=false; }
-                else if(y>=h*.42f&&y<=h*.62f){mode=x<w*.5f?1:2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.66f&&y<=h*.79f)historyScreen=true;
+                else if(y>=h*.37f&&y<=h*.53f){mode=x<w*.5f?1:2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.56f&&y<=h*.68f)showLanModeDialog();
+                else if(y>=h*.73f&&y<=h*.84f)historyScreen=true;
                 invalidate();return true;
             }
             if(setup) {
@@ -599,7 +705,7 @@ public class MainActivity extends Activity {
                 }
                 invalidate();return true;
             }
-            boolean launchTapped=mode==1 && !choosing && die==0 && y>=h*.80f && y<=h*.94f && x>=w*.39f && x<=w*.61f;
+            boolean launchTapped=(mode==1 || (mode==3 && player==lanLocalSide)) && !choosing && die==0 && y>=h*.80f && y<=h*.94f && x>=w*.39f && x<=w*.61f;
             if(!choosing && !diceTapped && !launchTapped)return true;
             if(stage<2 && diceTapped) {
                 // قرعة البداية أصبحت تلقائية وتُعرض بجانب كل لاعب.
