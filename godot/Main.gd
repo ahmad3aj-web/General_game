@@ -679,7 +679,9 @@ func _on_roll_pressed() -> void:
 	else:
 		_refresh_board()
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
+	# Read the touch before GUI controls consume it. We only act after a roll,
+	# so the roll/reset buttons keep their normal behaviour.
 	var screen_position := Vector2.ZERO
 	var pressed := false
 	if event is InputEventScreenTouch and event.pressed:
@@ -688,49 +690,56 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		screen_position = event.position
 		pressed = true
-	if pressed:
+	if pressed and waiting_for_weapon:
 		_pick_weapon_at_screen_position(screen_position)
 
 func _pick_weapon_at_screen_position(screen_position: Vector2) -> void:
 	if not waiting_for_weapon or game_over or game_camera == null:
 		return
 
-	# Android touch picking can miss 3D Area3D events on some devices.
-	# First test the projected screen position of each selectable weapon.
+	# Primary Android-safe picking: compare the finger with projected weapon
+	# centers, using a generous radius for large touch screens.
 	var viewport_size := get_viewport().get_visible_rect().size
-	var tap_radius := minf(viewport_size.x, viewport_size.y) * 0.105
-	var best_distance := tap_radius
+	var tap_radius := minf(viewport_size.x, viewport_size.y) * 0.19
+	var best_distance := INF
 	var best_lane := -1
 	for item in weapon_roots:
-		var side: int = item["side"]
-		var lane: int = item["lane"]
+		var side: int = int(item["side"])
+		var lane: int = int(item["lane"])
 		if side != current_player:
 			continue
 		if destroyed[side][lane] or progress[side][lane] + die_value > STEPS:
 			continue
 		var root: Node3D = item["root"]
-		var world_target := root.global_position + Vector3(0, 0.85, 0)
-		var screen_target := game_camera.unproject_position(world_target)
+		var screen_target := game_camera.unproject_position(root.global_position + Vector3(0, 0.55, 0))
 		var distance := screen_position.distance_to(screen_target)
 		if distance < best_distance:
 			best_distance = distance
 			best_lane = lane
-	if best_lane >= 0:
-		_try_choose_weapon(current_player, best_lane)
-		get_viewport().set_input_as_handled()
-		return
 
-	# Keep the 3D physics ray as a secondary fallback.
-	var ray_origin := game_camera.project_ray_origin(screen_position)
-	var ray_direction := game_camera.project_ray_normal(screen_position)
-	var query := PhysicsRayQueryParameters3D.create(ray_origin, ray_origin + ray_direction * 100.0)
-	query.collision_mask = 1
-	var hit := get_world_3d().direct_space_state.intersect_ray(query)
-	if hit.is_empty():
-		return
-	var collider := hit.get("collider") as Node
-	if collider is Area3D and collider.has_meta("weapon_side") and collider.has_meta("weapon_lane"):
-		_try_choose_weapon(int(collider.get_meta("weapon_side")), int(collider.get_meta("weapon_lane")))
+	# If perspective/projection differs slightly on a device, resolve the tap
+	# against the ground plane and choose the closest lane on the player's half.
+	if best_lane < 0 or best_distance > tap_radius:
+		var ray_origin := game_camera.project_ray_origin(screen_position)
+		var ray_direction := game_camera.project_ray_normal(screen_position)
+		if absf(ray_direction.y) > 0.0001:
+			var plane_distance := -ray_origin.y / ray_direction.y
+			if plane_distance > 0.0:
+				var ground_hit := ray_origin + ray_direction * plane_distance
+				var nearest_lane := -1
+				var nearest_z := INF
+				for lane in range(3):
+					if destroyed[current_player][lane] or progress[current_player][lane] + die_value > STEPS:
+						continue
+					var z_distance := absf(ground_hit.z - ROW_Z[lane])
+					if z_distance < nearest_z:
+						nearest_z = z_distance
+						nearest_lane = lane
+				if nearest_lane >= 0 and nearest_z < 2.25:
+					best_lane = nearest_lane
+
+	if best_lane >= 0 and (best_distance <= tap_radius or best_distance == INF or best_lane >= 0):
+		_try_choose_weapon(current_player, best_lane)
 		get_viewport().set_input_as_handled()
 
 func _on_weapon_area_input(_camera: Node, event: InputEvent, _position: Vector3, _normal: Vector3, _shape_idx: int, side: int, lane: int) -> void:
