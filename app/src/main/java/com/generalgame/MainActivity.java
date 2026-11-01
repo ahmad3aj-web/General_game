@@ -99,13 +99,21 @@ public class MainActivity extends Activity {
                 .setNegativeButton("إلغاء",null)
                 .show();
         }
+        private int grayColor(int color) {
+            int gray=(int)(Color.red(color)*.299f+Color.green(color)*.587f+Color.blue(color)*.114f);
+            return Color.rgb(gray,gray,gray);
+        }
         private void drawAvatar(Canvas c,int index,float cx,float cy,float radius,boolean selected) {
+            drawAvatar(c,index,cx,cy,radius,selected,false);
+        }
+        private void drawAvatar(Canvas c,int index,float cx,float cy,float radius,boolean selected,boolean monochrome) {
             int color=avatarColors[index%avatarColors.length];
+            if(monochrome)color=grayColor(color);
             p.setColor(selected?gold:Color.rgb(53,67,51));
             c.drawCircle(cx,cy,radius+(selected?h*.009f:h*.003f),p);
             p.setColor(color);c.drawCircle(cx,cy,radius,p);
             p.setColor(Color.argb(65,255,255,255));c.drawCircle(cx-radius*.28f,cy-radius*.3f,radius*.48f,p);
-            p.setColor(Color.rgb(255,232,194));c.drawCircle(cx,cy-radius*.08f,radius*.48f,p);
+            p.setColor(monochrome?grayColor(Color.rgb(255,232,194)):Color.rgb(255,232,194));c.drawCircle(cx,cy-radius*.08f,radius*.48f,p);
             p.setColor(Color.rgb(45,48,47));
             c.drawCircle(cx-radius*.17f,cy-radius*.13f,radius*.045f,p);
             c.drawCircle(cx+radius*.17f,cy-radius*.13f,radius*.045f,p);
@@ -468,8 +476,7 @@ public class MainActivity extends Activity {
                 int loserAvatar=winner==1?(mode==2?5:avatars[1]):avatars[0];
                 float portraitY=h*.39f, portraitR=h*.085f;
                 drawAvatar(c,winnerAvatar,w*.34f,portraitY,portraitR,true);
-                drawAvatar(c,loserAvatar,w*.66f,portraitY,portraitR,false);
-                p.setColor(Color.argb(155,125,125,125));c.drawCircle(w*.66f,portraitY,portraitR,p);p.setColor(Color.WHITE);
+                drawAvatar(c,loserAvatar,w*.66f,portraitY,portraitR,false,true);
                 txt(c,winnerName,w*.34f,h*.52f,h*.038f,blue,true);
                 txt(c,loserName,w*.66f,h*.52f,h*.038f,dark,true);
                 txt(c,"الفائز: "+winnerName,w*.5f,h*.60f,h*.05f,dark,true);
