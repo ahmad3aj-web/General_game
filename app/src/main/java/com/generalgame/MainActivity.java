@@ -158,11 +158,16 @@ public class MainActivity extends Activity {
             try {
                 JSONArray old=loadHistory(), updated=new JSONArray();
                 JSONObject item=new JSONObject();
-                String opponent=mode==2?"جنيرال":playerNames[1];
+                String opponent=mode==2?"جنيرال":(winner==1?playerNames[1]:playerNames[0]);
                 String winnerName=winner==1?playerNames[0]:(mode==2?"جنيرال":playerNames[1]);
                 String loserName=winner==1?(mode==2?"جنيرال":playerNames[1]):playerNames[0];
                 item.put("opponent",opponent); item.put("winner",winnerName); item.put("loser",loserName);
-                item.put("result",winner==1?"فوز":"خسارة");
+                if(mode==2) item.put("result",winner==1?"فوز":"خسارة");
+                else {
+                    item.put("player1",playerNames[0]);
+                    item.put("player2",playerNames[1]);
+                    item.put("winnerSide",winner);
+                }
                 item.put("mode",mode);
                 item.put("date",new SimpleDateFormat("EEEE dd/MM/yyyy HH:mm",new Locale("ar","JO")).format(new Date()));
                 updated.put(item);
@@ -187,11 +192,22 @@ public class MainActivity extends Activity {
             txt(c,"السجل حسب الخصم",w*.5f,h*.42f,h*.038f,dark,true);
             java.util.LinkedHashMap<String,int[]> byOpponent=new java.util.LinkedHashMap<>();
             for(int i=total-1;i>=0;i--)try {
-                JSONObject o=data.getJSONObject(i); String opponent=o.optString("opponent","غير معروف");
-                int[] counts=byOpponent.get(opponent);
-                if(counts==null){counts=new int[2];byOpponent.put(opponent,counts);}
-                String result=o.optString("result");
-                if("فوز".equals(result))counts[0]++; else if("خسارة".equals(result))counts[1]++;
+                JSONObject o=data.getJSONObject(i);
+                if(o.optInt("mode",2)==1 && o.has("player1") && o.has("player2")) {
+                    String p1=o.optString("player1"), p2=o.optString("player2");
+                    int side=o.optInt("winnerSide",0);
+                    int[] first=byOpponent.get(p1+" ضد "+p2);
+                    if(first==null){first=new int[2];byOpponent.put(p1+" ضد "+p2,first);}
+                    int[] second=byOpponent.get(p2+" ضد "+p1);
+                    if(second==null){second=new int[2];byOpponent.put(p2+" ضد "+p1,second);}
+                    if(side==1){first[0]++;second[1]++;} else if(side==2){first[1]++;second[0]++;}
+                } else {
+                    String opponent=o.optString("opponent","غير معروف");
+                    int[] counts=byOpponent.get(opponent);
+                    if(counts==null){counts=new int[2];byOpponent.put(opponent,counts);}
+                    String result=o.optString("result");
+                    if("فوز".equals(result))counts[0]++; else if("خسارة".equals(result))counts[1]++;
+                }
             } catch(Exception ignored) { }
             int row=0;
             for(java.util.Map.Entry<String,int[]> entry:byOpponent.entrySet()) {
@@ -245,7 +261,12 @@ public class MainActivity extends Activity {
             // الفوز يتحقق عند تدمير سلاحين من أصل ثلاثة لدى الخصم.
             if(p1Destroyed>=2) winner=2;
             if(p2Destroyed>=2) winner=1;
-            if(winner!=0){die=0;choosing=false;message=winner==1?"انتهت المباراة — أنت الفائز!":"انتهت المباراة — فاز جنيرال!";saveMatchResult();}
+            if(winner!=0){
+                die=0;choosing=false;
+                if(mode==2) message=winner==1?"انتهت المباراة — أنت الفائز!":"انتهت المباراة — فاز جنيرال!";
+                else message="انتهت المباراة — الفائز: "+(winner==1?playerNames[0]:playerNames[1]);
+                saveMatchResult();
+            }
         }
         private void afterTurn() {
             if(winner!=0)return;
