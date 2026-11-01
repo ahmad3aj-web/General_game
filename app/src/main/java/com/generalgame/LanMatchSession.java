@@ -13,6 +13,7 @@ import org.json.JSONObject;
 public final class LanMatchSession implements LanConnection.Listener {
     public interface Listener {
         void onConnected();
+        void onPeerInfo(int side, String name, int avatar);
         void onOpeningRolls(int blueValue, int redValue, boolean tied);
         void onOpeningWinner(int startingSide);
         void onTurnStarted(int turnId, int activeSide, boolean localTurn);
@@ -57,6 +58,14 @@ public final class LanMatchSession implements LanConnection.Listener {
     }
 
     public int getLocalSide() { return localSide; }
+    public void sendHello(String name, int avatar) {
+        if (!connected) return;
+        try {
+            JSONObject message = LanGameProtocol.hello(name, avatar);
+            message.put("side", localSide);
+            connection.send(message);
+        } catch (Exception error) { listener.onProtocolError("تعذر إرسال بيانات اللاعب"); }
+    }
     public boolean isConnected() { return connected; }
     public boolean isLocalTurn() { return connected && activeSide == localSide; }
 
@@ -180,6 +189,14 @@ public final class LanMatchSession implements LanConnection.Listener {
         }
         String type = message.optString("type", "");
         int side = message.optInt("side", 0);
+        if (LanGameProtocol.HELLO.equals(type)) {
+            if (side != (localSide == 1 ? 2 : 1)) {
+                listener.onProtocolError("بيانات لاعب غير صالحة"); return;
+            }
+            listener.onPeerInfo(side, message.optString("name", "لاعب"),
+                    Math.max(0, Math.min(5, message.optInt("avatar", 0))));
+            return;
+        }
         int turn = message.optInt("turnId", -1);
         if (side != (localSide == 1 ? 2 : 1) || turn != expectedTurn) {
             listener.onProtocolError("تم تجاهل رسالة من دور غير متوقع");
