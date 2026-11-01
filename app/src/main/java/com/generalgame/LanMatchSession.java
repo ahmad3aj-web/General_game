@@ -97,7 +97,7 @@ public final class LanMatchSession implements LanConnection.Listener {
         final int red = localSide == 2 ? localOpeningValue : remoteOpeningValue;
         boolean tied = blue == red;
         listener.onOpeningRolls(blue, red, tied);
-        if (tied) {
+        if (tied && localSide == 1) {
             mainHandler.postDelayed(() -> {
                 synchronized (LanMatchSession.this) {
                     if (connected && openingRound == round && localOpeningValue != 0
@@ -106,7 +106,7 @@ public final class LanMatchSession implements LanConnection.Listener {
                     }
                 }
             }, 2600L);
-        } else {
+        } else if (!tied) {
             listener.onOpeningWinner(blue > red ? 1 : 2);
         }
     }
@@ -195,6 +195,36 @@ public final class LanMatchSession implements LanConnection.Listener {
             }
             listener.onPeerInfo(side, message.optString("name", "لاعب"),
                     Math.max(0, Math.min(5, message.optInt("avatar", 0))));
+            return;
+        }
+        if (LanGameProtocol.OPENING_ROLL.equals(type)) {
+            int round = message.optInt("round", -1);
+            int value = message.optInt("value", 0);
+            if (side != (localSide == 1 ? 2 : 1) || round < 1
+                    || value < 1 || value > 6 || round < openingRound) {
+                listener.onProtocolError("قرعة بداية غير صالحة");
+                return;
+            }
+            if (round > openingRound) {
+                openingRound = round;
+                localOpeningValue = (int) (Math.random() * 6) + 1;
+                remoteOpeningValue = 0;
+                try {
+                    JSONObject reply = new JSONObject();
+                    reply.put("version", LanGameProtocol.VERSION);
+                    reply.put("type", LanGameProtocol.OPENING_ROLL);
+                    reply.put("round", openingRound);
+                    reply.put("side", localSide);
+                    reply.put("value", localOpeningValue);
+                    connection.send(reply);
+                } catch (Exception error) {
+                    listener.onProtocolError("تعذر إرسال رمية قرعة البداية");
+                    return;
+                }
+            }
+            if (remoteOpeningValue != 0) return;
+            remoteOpeningValue = value;
+            evaluateOpeningToss(round);
             return;
         }
         int turn = message.optInt("turnId", -1);
