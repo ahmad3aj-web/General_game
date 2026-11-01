@@ -204,9 +204,11 @@ func _make_weapon(side: int, lane: int, x: float) -> void:
 		var tank_scene := load("res://assets/models/tank_basic.glb") as PackedScene
 		if tank_scene:
 			var tank_model := tank_scene.instantiate() as Node3D
-			tank_model.position = Vector3(0, 0.05, 0)
+			tank_model.position = Vector3(0, 0.02, 0)
 			tank_model.rotation_degrees.y = 90
-			tank_model.scale = Vector3(0.78, 0.78, 0.78)
+			# The source GLB uses a much larger world scale than the board.
+			# Keep the imported tank inside its lane and leave bullets visible.
+			tank_model.scale = Vector3(0.18, 0.18, 0.18)
 			root.add_child(tank_model)
 		else:
 			# Detailed cartoon tank: twin tracks, six road wheels, turret, hatch and cannon.
@@ -286,7 +288,7 @@ func _make_weapon(side: int, lane: int, x: float) -> void:
 
 	weapon_roots.append({"root": root, "side": side, "lane": lane})
 	var area := Area3D.new()
-	area.position = Vector3(0, 0.58, 0)
+	area.position = Vector3(0, 0.72, 0)
 	area.input_ray_pickable = true
 	area.monitoring = true
 	area.monitorable = true
@@ -296,7 +298,7 @@ func _make_weapon(side: int, lane: int, x: float) -> void:
 	area.set_meta("weapon_lane", lane)
 	var collision := CollisionShape3D.new()
 	var shape := SphereShape3D.new()
-	shape.radius = 1.95
+	shape.radius = 2.25
 	collision.shape = shape
 	area.add_child(collision)
 	root.add_child(area)
