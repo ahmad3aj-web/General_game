@@ -151,6 +151,8 @@ func _build_tracks() -> void:
 				if side == 1:
 					x = TRACK_X - (step * (TRACK_X * 2.0 / float(STEPS - 1)))
 				bullet.position = Vector3(x, 0.22, z)
+				if side == 1:
+					bullet.rotation.y = PI
 				add_child(bullet)
 				bullet_nodes.append({"node": bullet, "side": side, "lane": lane, "step": step})
 
