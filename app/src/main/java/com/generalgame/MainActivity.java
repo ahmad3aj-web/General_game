@@ -231,19 +231,56 @@ public class MainActivity extends Activity {
             drawAvatar(c,index,cx,cy,radius,selected,false);
         }
         private void drawAvatar(Canvas c,int index,float cx,float cy,float radius,boolean selected,boolean monochrome) {
-            int color=avatarColors[index%avatarColors.length];
-            if(monochrome)color=grayColor(color);
-            p.setColor(selected?gold:Color.rgb(53,67,51));
-            c.drawCircle(cx,cy,radius+(selected?h*.009f:h*.003f),p);
-            p.setColor(color);c.drawCircle(cx,cy,radius,p);
-            p.setColor(Color.argb(65,255,255,255));c.drawCircle(cx-radius*.28f,cy-radius*.3f,radius*.48f,p);
-            p.setColor(monochrome?grayColor(Color.rgb(255,232,194)):Color.rgb(255,232,194));c.drawCircle(cx,cy-radius*.08f,radius*.48f,p);
-            p.setColor(Color.rgb(45,48,47));
-            c.drawCircle(cx-radius*.17f,cy-radius*.13f,radius*.045f,p);
-            c.drawCircle(cx+radius*.17f,cy-radius*.13f,radius*.045f,p);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,radius*.035f));
-            c.drawArc(new RectF(cx-radius*.17f,cy-radius*.03f,cx+radius*.17f,cy+radius*.22f),15,150,false,p);
-            p.setStyle(Paint.Style.FILL);
+            int teamColor=avatarColors[index%avatarColors.length];
+            if(monochrome)teamColor=grayColor(teamColor);
+            int ink=monochrome?Color.rgb(75,75,75):Color.rgb(43,48,49);
+            int skin=monochrome?grayColor(Color.rgb(255,218,178)):Color.rgb(255,218,178);
+            int hair=monochrome?Color.rgb(90,90,90):new int[]{Color.rgb(54,39,31),Color.rgb(35,34,34),Color.rgb(105,63,35),Color.rgb(47,43,65),Color.rgb(76,48,35),Color.rgb(35,54,65)}[index%6];
+            c.save();
+            p.setShader(null);p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.argb(55,20,30,20));c.drawOval(new RectF(cx-radius*.72f,cy+radius*.68f,cx+radius*.72f,cy+radius*.91f),p);
+            p.setColor(selected?gold:ink);c.drawCircle(cx,cy,radius+(selected?h*.009f:h*.004f),p);
+            p.setColor(teamColor);c.drawCircle(cx,cy,radius*.94f,p);
+            p.setColor(Color.argb(48,255,255,255));c.drawCircle(cx-radius*.30f,cy-radius*.32f,radius*.52f,p);
+            // Shoulders and uniform.
+            p.setColor(ink);c.drawOval(new RectF(cx-radius*.61f,cy+radius*.38f,cx+radius*.61f,cy+radius*.99f),p);
+            p.setColor(shade(teamColor,.78f));c.drawOval(new RectF(cx-radius*.55f,cy+radius*.43f,cx+radius*.55f,cy+radius*.94f),p);
+            p.setColor(shade(teamColor,1.24f));c.drawRoundRect(new RectF(cx-radius*.10f,cy+radius*.47f,cx+radius*.10f,cy+radius*.78f),radius*.06f,radius*.06f,p);
+            // Neck, ears and face.
+            p.setColor(ink);c.drawRoundRect(new RectF(cx-radius*.19f,cy+radius*.20f,cx+radius*.19f,cy+radius*.58f),radius*.10f,radius*.10f,p);
+            p.setColor(skin);c.drawRoundRect(new RectF(cx-radius*.16f,cy+radius*.19f,cx+radius*.16f,cy+radius*.53f),radius*.09f,radius*.09f,p);
+            p.setColor(ink);c.drawCircle(cx-radius*.39f,cy-radius*.02f,radius*.13f,p);c.drawCircle(cx+radius*.39f,cy-radius*.02f,radius*.13f,p);
+            p.setColor(skin);c.drawCircle(cx-radius*.39f,cy-radius*.02f,radius*.085f,p);c.drawCircle(cx+radius*.39f,cy-radius*.02f,radius*.085f,p);
+            p.setColor(ink);c.drawOval(new RectF(cx-radius*.36f,cy-radius*.48f,cx+radius*.36f,cy+radius*.37f),p);
+            p.setColor(skin);c.drawOval(new RectF(cx-radius*.33f,cy-radius*.43f,cx+radius*.33f,cy+radius*.35f),p);
+            // Hair silhouette and individual locks.
+            p.setColor(ink);
+            Path hairShape=new Path();hairShape.moveTo(cx-radius*.35f,cy-radius*.12f);
+            hairShape.quadTo(cx-radius*.52f,cy-radius*.59f,cx-radius*.12f,cy-radius*.57f);
+            hairShape.quadTo(cx+radius*.18f,cy-radius*.68f,cx+radius*.36f,cy-radius*.35f);
+            hairShape.lineTo(cx+radius*.31f,cy-radius*.20f);
+            hairShape.quadTo(cx,cy-radius*.34f,cx-radius*.35f,cy-radius*.12f);hairShape.close();
+            c.drawPath(hairShape,p);
+            p.setColor(hair);
+            Path hairFill=new Path();hairFill.moveTo(cx-radius*.32f,cy-radius*.15f);
+            hairFill.quadTo(cx-radius*.43f,cy-radius*.53f,cx-radius*.10f,cy-radius*.53f);
+            hairFill.quadTo(cx+radius*.17f,cy-radius*.62f,cx+radius*.32f,cy-radius*.34f);
+            hairFill.lineTo(cx+radius*.28f,cy-radius*.22f);
+            hairFill.quadTo(cx,cy-radius*.31f,cx-radius*.32f,cy-radius*.15f);hairFill.close();c.drawPath(hairFill,p);
+            if(index%3==1){p.setColor(ink);c.drawRoundRect(new RectF(cx-radius*.34f,cy-radius*.28f,cx+radius*.34f,cy-radius*.12f),radius*.08f,radius*.08f,p);p.setColor(hair);c.drawRoundRect(new RectF(cx-radius*.30f,cy-radius*.27f,cx+radius*.30f,cy-radius*.16f),radius*.06f,radius*.06f,p);}
+            // Eyebrows, eyes, nose and friendly expression.
+            p.setColor(ink);p.setStrokeWidth(Math.max(2,radius*.045f));p.setStrokeCap(Paint.Cap.ROUND);
+            c.drawLine(cx-radius*.23f,cy-radius*.12f,cx-radius*.10f,cy-radius*.14f,p);
+            c.drawLine(cx+radius*.10f,cy-radius*.14f,cx+radius*.23f,cy-radius*.12f,p);
+            p.setColor(Color.WHITE);c.drawCircle(cx-radius*.17f,cy-radius*.04f,radius*.075f,p);c.drawCircle(cx+radius*.17f,cy-radius*.04f,radius*.075f,p);
+            p.setColor(ink);c.drawCircle(cx-radius*.16f,cy-radius*.035f,radius*.038f,p);c.drawCircle(cx+radius*.16f,cy-radius*.035f,radius*.038f,p);
+            p.setColor(shade(skin,.82f));c.drawOval(new RectF(cx-radius*.035f,cy+radius*.01f,cx+radius*.035f,cy+radius*.16f),p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,radius*.035f));p.setColor(ink);
+            c.drawArc(new RectF(cx-radius*.15f,cy+radius*.11f,cx+radius*.15f,cy+radius*.29f),15,150,false,p);
+            p.setStyle(Paint.Style.FILL);p.setStrokeCap(Paint.Cap.BUTT);
+            // Small uniform badge.
+            p.setColor(Color.argb(210,245,225,160));c.drawCircle(cx+radius*.34f,cy+radius*.60f,radius*.075f,p);
+            c.restore();
         }
         private void drawSetup(Canvas c) {
             txt(c,"إعداد اللاعبين",w*.5f,h*.16f,h*.065f,dark,true);
