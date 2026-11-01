@@ -582,8 +582,8 @@ func _build_ui() -> void:
 
 	game_panel = PanelContainer.new()
 	game_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	game_panel.position = Vector2(-300, -210)
-	game_panel.size = Vector2(280, 190)
+	game_panel.position = Vector2(-320, -390)
+	game_panel.size = Vector2(300, 370)
 	screen.add_child(game_panel)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)
@@ -846,10 +846,10 @@ func _refresh_board() -> void:
 	if game_panel and game_mode >= 0:
 		if current_player == 0:
 			game_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-			game_panel.position = Vector2(18, -210)
+			game_panel.position = Vector2(18, -390)
 		else:
 			game_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-			game_panel.position = Vector2(-300, -210)
+			game_panel.position = Vector2(-320, -390)
 	for item in bullet_nodes:
 		var side: int = item["side"]
 		var lane: int = item["lane"]
