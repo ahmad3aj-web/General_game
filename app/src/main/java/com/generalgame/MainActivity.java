@@ -176,41 +176,64 @@ public class MainActivity extends Activity {
             float baseX=pointsRight?cx-bw*.39f:cx+bw*.22f;
             c.drawRect(baseX-bw*.035f,cy-bh*.39f,baseX+bw*.035f,cy+bh*.39f,p);
         }
-        private void drawWeapon(Canvas c,int lane,float cx,float cy,int color) {
-            int darkColor=shade(color,.48f), lightColor=shade(color,1.35f);
-            p.setStyle(Paint.Style.FILL); p.setShader(null);
-            p.setColor(Color.argb(65,20,35,20));
-            c.drawOval(new RectF(cx-w*.047f,cy+h*.026f,cx+w*.047f,cy+h*.043f),p);
-            if(lane==0) {
-                p.setColor(Color.rgb(42,52,43));
-                c.drawRoundRect(new RectF(cx-w*.043f,cy-h*.004f,cx+w*.043f,cy+h*.027f),h*.014f,h*.014f,p);
-                for(int i=0;i<5;i++){p.setColor(i%2==0?Color.rgb(135,145,112):Color.rgb(75,88,69));c.drawCircle(cx-w*.031f+i*w*.0155f,cy+h*.012f,h*.009f,p);}
-                p.setShader(new LinearGradient(cx,cy-h*.02f,cx,cy+h*.018f,lightColor,color,Shader.TileMode.CLAMP));
-                c.drawRoundRect(new RectF(cx-w*.037f,cy-h*.018f,cx+w*.037f,cy+h*.014f),h*.009f,h*.009f,p);p.setShader(null);
-                p.setColor(darkColor);c.drawRoundRect(new RectF(cx-w*.016f,cy-h*.034f,cx+w*.017f,cy-h*.002f),h*.009f,h*.009f,p);
-                p.setColor(color);c.drawRoundRect(new RectF(cx-w*.012f,cy-h*.031f,cx+w*.012f,cy-h*.006f),h*.008f,h*.008f,p);
-                p.setColor(darkColor);c.drawRoundRect(new RectF(cx+w*.006f,cy-h*.025f,cx+w*.047f,cy-h*.016f),h*.004f,h*.004f,p);
-                p.setColor(lightColor);c.drawRect(cx+w*.018f,cy-h*.024f,cx+w*.043f,cy-h*.021f,p);
-            } else if(lane==1) {
-                p.setColor(darkColor);Path wing=new Path();
-                wing.moveTo(cx,cy-h*.009f);wing.lineTo(cx+w*.045f,cy+h*.022f);wing.lineTo(cx+w*.012f,cy+h*.015f);
-                wing.lineTo(cx,cy+h*.028f);wing.lineTo(cx-w*.012f,cy+h*.015f);wing.lineTo(cx-w*.045f,cy+h*.022f);wing.close();c.drawPath(wing,p);
-                p.setShader(new LinearGradient(cx-w*.04f,cy,cx+w*.04f,cy,lightColor,color,Shader.TileMode.CLAMP));c.drawPath(wing,p);p.setShader(null);
-                p.setColor(darkColor);Path body=new Path();body.moveTo(cx,cy-h*.038f);body.quadTo(cx+w*.009f,cy-h*.006f,cx+w*.006f,cy+h*.025f);
-                body.lineTo(cx,cy+h*.033f);body.lineTo(cx-w*.006f,cy+h*.025f);body.quadTo(cx-w*.009f,cy-h*.006f,cx,cy-h*.038f);body.close();c.drawPath(body,p);
-                p.setColor(lightColor);c.drawLine(cx-w*.002f,cy-h*.027f,cx-w*.001f,cy+h*.019f,p);
-                p.setColor(Color.rgb(135,205,220));c.drawOval(new RectF(cx-w*.005f,cy-h*.018f,cx+w*.005f,cy-h*.002f),p);
-            } else {
-                p.setColor(Color.rgb(48,56,43));c.drawCircle(cx-w*.022f,cy+h*.014f,h*.016f,p);c.drawCircle(cx+w*.022f,cy+h*.014f,h*.016f,p);
-                p.setColor(Color.rgb(180,185,155));c.drawCircle(cx-w*.022f,cy+h*.014f,h*.007f,p);c.drawCircle(cx+w*.022f,cy+h*.014f,h*.007f,p);
-                p.setShader(new LinearGradient(cx,cy-h*.01f,cx,cy+h*.02f,lightColor,color,Shader.TileMode.CLAMP));
-                c.drawRoundRect(new RectF(cx-w*.027f,cy-h*.009f,cx+w*.027f,cy+h*.016f),h*.006f,h*.006f,p);p.setShader(null);
-                p.setColor(darkColor);Path shield=new Path();shield.moveTo(cx-w*.018f,cy-h*.009f);shield.lineTo(cx+w*.018f,cy-h*.009f);
-                shield.lineTo(cx+w*.014f,cy+h*.012f);shield.lineTo(cx-w*.014f,cy+h*.012f);shield.close();c.drawPath(shield,p);
-                p.setColor(color);c.drawRoundRect(new RectF(cx-w*.007f,cy-h*.031f,cx+w*.007f,cy-h*.003f),h*.004f,h*.004f,p);
-                p.setColor(darkColor);c.drawRoundRect(new RectF(cx-w*.004f,cy-h*.041f,cx+w*.004f,cy-h*.025f),h*.003f,h*.003f,p);
-            }
+        private void drawWeapon(Canvas c,int lane,float cx,float cy,int color,boolean faceRight) {
+            // Vector artwork: hand-inked outlines, soft highlights and a fixed team flag.
+            int ink=Color.rgb(42,48,43), highlight=shade(color,1.28f), shadow=shade(color,.58f);
+            float sx=w*.00122f, sy=h*.00110f;
+            c.save(); c.translate(cx-w*.061f,cy-h*.047f); c.scale(sx,sy);
+            if(!faceRight) { c.translate(100,0); c.scale(-1,1); }
             p.setShader(null);p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.argb(65,25,35,20));c.drawOval(new RectF(7,66,96,76),p);
+            if(lane==0) {
+                // Tank tracks and individual road wheels.
+                p.setColor(ink);c.drawRoundRect(new RectF(7,39,94,68),13,13,p);
+                p.setColor(Color.rgb(116,126,105));c.drawRoundRect(new RectF(11,43,90,64),10,10,p);
+                for(int i=0;i<5;i++){float wx=20+i*15;p.setColor(ink);c.drawCircle(wx,54,8,p);p.setColor(Color.rgb(205,207,183));c.drawCircle(wx,54,5.3f,p);p.setColor(Color.rgb(116,126,105));c.drawCircle(wx,54,2,p);}
+                // Lower hull.
+                p.setColor(ink);c.drawRoundRect(new RectF(9,31,92,55),8,8,p);
+                p.setShader(new LinearGradient(0,31,0,55,highlight,color,Shader.TileMode.CLAMP));
+                c.drawRoundRect(new RectF(12,33,89,52),7,7,p);p.setShader(null);
+                p.setColor(Color.rgb(225,220,190));c.drawRoundRect(new RectF(19,36,34,47),3,3,p);
+                p.setColor(shadow);c.drawRoundRect(new RectF(58,36,76,47),3,3,p);
+                // Turret and barrel.
+                p.setColor(ink);c.drawRoundRect(new RectF(34,19,73,43),12,12,p);
+                p.setShader(new LinearGradient(0,19,0,43,highlight,color,Shader.TileMode.CLAMP));
+                c.drawRoundRect(new RectF(36,20,71,40),10,10,p);p.setShader(null);
+                p.setColor(ink);c.drawRoundRect(new RectF(58,25,99,32),3,3,p);
+                p.setColor(Color.rgb(174,181,157));c.drawRoundRect(new RectF(62,26,96,28),2,2,p);
+                p.setColor(Color.rgb(223,225,204));c.drawRoundRect(new RectF(36,15,55,21),6,6,p);
+                p.setColor(ink);c.drawCircle(46,17,5,p);p.setColor(Color.rgb(218,220,199));c.drawCircle(46,16,3,p);
+                // Small rivets.
+                p.setColor(Color.rgb(236,232,207));for(int i=0;i<4;i++)c.drawCircle(18+i*8,34,1.1f,p);
+            } else if(lane==1) {
+                // Cartoon aircraft: fuselage, wings, tail and cockpit.
+                Path wing=new Path();wing.moveTo(42,35);wing.lineTo(5,55);wing.lineTo(31,52);wing.lineTo(45,45);wing.lineTo(60,53);wing.lineTo(96,57);wing.lineTo(62,35);wing.close();
+                p.setColor(ink);c.drawPath(wing,p);p.setColor(color);c.drawPath(wing,p);
+                p.setColor(highlight);Path wingLight=new Path();wingLight.moveTo(43,37);wingLight.lineTo(14,51);wingLight.lineTo(39,47);wingLight.close();c.drawPath(wingLight,p);
+                Path body=new Path();body.moveTo(5,37);body.quadTo(35,28,72,31);body.quadTo(91,34,99,39);body.quadTo(75,45,35,44);body.lineTo(5,40);body.close();
+                p.setColor(ink);c.drawPath(body,p);p.setColor(color);Path inner=new Path();inner.moveTo(8,37);inner.quadTo(40,30,73,33);inner.quadTo(88,36,94,39);inner.quadTo(62,42,35,42);inner.lineTo(8,39);inner.close();c.drawPath(inner,p);
+                p.setColor(highlight);c.drawLine(19,36,73,34,p);
+                p.setColor(ink);c.drawOval(new RectF(42,31,57,40),p);p.setColor(Color.rgb(157,211,224));c.drawOval(new RectF(44,32,55,38),p);
+                p.setColor(Color.rgb(238,235,205));c.drawCircle(14,38,1.4f,p);c.drawCircle(83,38,1.4f,p);
+            } else {
+                // Field cannon on two wheels with a shield and long barrel.
+                p.setColor(ink);c.drawCircle(25,58,13,p);c.drawCircle(76,58,13,p);
+                p.setColor(Color.rgb(164,171,145));c.drawCircle(25,58,8,p);c.drawCircle(76,58,8,p);
+                p.setColor(ink);c.drawCircle(25,58,3,p);c.drawCircle(76,58,3,p);
+                p.setColor(ink);c.drawRoundRect(new RectF(16,38,86,52),5,5,p);
+                p.setShader(new LinearGradient(0,38,0,52,highlight,color,Shader.TileMode.CLAMP));c.drawRoundRect(new RectF(18,39,84,49),4,4,p);p.setShader(null);
+                Path shield=new Path();shield.moveTo(33,30);shield.quadTo(50,23,69,30);shield.lineTo(66,49);shield.quadTo(50,56,36,48);shield.close();
+                p.setColor(ink);c.drawPath(shield,p);p.setColor(color);c.drawPath(shield,p);
+                p.setColor(ink);c.drawRoundRect(new RectF(48,18,99,25),3,3,p);p.setColor(Color.rgb(187,192,168));c.drawRoundRect(new RectF(52,19,96,21),2,2,p);
+                p.setColor(highlight);c.drawLine(38,33,62,30,p);
+            }
+            // Team pennant, always blue for player one and red for player two.
+            p.setColor(ink);p.setStrokeWidth(2.3f);c.drawLine(17,17,17,2,p);
+            Path flag=new Path();flag.moveTo(18,3);flag.lineTo(37,7);flag.lineTo(31,16);flag.lineTo(18,13);flag.close();
+            p.setColor(color);c.drawPath(flag,p);p.setColor(highlight);p.setStrokeWidth(1.4f);c.drawLine(19,5,31,8,p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1.5f);p.setColor(ink);
+            if(lane==0)c.drawRoundRect(new RectF(7,39,94,68),13,13,p);
+            p.setStyle(Paint.Style.FILL);p.setShader(null);c.restore();
         }
 
         @Override protected void onDraw(Canvas c) {
@@ -264,8 +287,8 @@ public class MainActivity extends Activity {
                     drawBullet(c,bx,y-gap,bulletW,bulletH,leftDead?Color.GRAY:blue,!leftDead && i<pos1[lane],true);
                     drawBullet(c,rx,y+gap,bulletW,bulletH,rightDead?Color.GRAY:red,!rightDead && i<pos2[lane],false);
                 }
-                drawWeapon(c,lane,w*.075f,y,blue);
-                drawWeapon(c,lane,w*.925f,y,red);
+                drawWeapon(c,lane,w*.075f,y,blue,true);
+                drawWeapon(c,lane,w*.925f,y,red,false);
                 if(dead1[lane]) txt(c,"×",w*.075f,y+h*.012f,h*.07f,Color.RED,true);
                 if(dead2[lane]) txt(c,"×",w*.925f,y+h*.012f,h*.07f,Color.RED,true);
                 if(choosing && winner==0) {
