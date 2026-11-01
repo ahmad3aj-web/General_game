@@ -259,18 +259,18 @@ public class MainActivity extends Activity {
             }
         }
         private void computerTurn() {
-            if(epoch!=matchEpoch || mode!=2 || winner!=0 || player!=2)return;
+            if(mode!=2 || winner!=0 || player!=2)return;
             final int epoch=matchEpoch;
             choosing=false;
             die=random.nextInt(6)+1;
             message="جنيرال يرمي النرد...";
             invalidate();
             postDelayed(new Runnable(){ @Override public void run(){
-                if(mode!=2 || winner!=0 || player!=2)return;
+                if(epoch!=matchEpoch || mode!=2 || winner!=0 || player!=2)return;
                 message="جنيرال حصل على "+die;
                 invalidate();
                 postDelayed(new Runnable(){ @Override public void run(){
-                    if(mode!=2 || winner!=0 || player!=2)return;
+                    if(epoch!=matchEpoch || mode!=2 || winner!=0 || player!=2)return;
                     int pick=-1;
                     // النرد عشوائي دائماً، والمستوى يغير استراتيجية اختيار السلاح فقط.
                     if(difficulty==0) {
