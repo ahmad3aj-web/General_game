@@ -99,20 +99,26 @@ public final class LanConnection {
     public static String getLocalIpv4() {
         try {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            String fallback = "";
             while (interfaces.hasMoreElements()) {
                 NetworkInterface network = interfaces.nextElement();
                 if (!network.isUp() || network.isLoopback()) continue;
+                String interfaceName = network.getName().toLowerCase(java.util.Locale.ROOT);
+                boolean wifi = interfaceName.contains("wlan") || interfaceName.contains("wifi");
                 Enumeration<InetAddress> addresses = network.getInetAddresses();
                 while (addresses.hasMoreElements()) {
                     InetAddress address = addresses.nextElement();
                     if (address instanceof Inet4Address && !address.isLoopbackAddress()
                             && !address.isLinkLocalAddress()) {
                         String value = address.getHostAddress();
-                        if (value.startsWith("192.168.") || value.startsWith("10.")
-                                || value.startsWith("172.")) return value;
+                        boolean privateAddress = value.startsWith("192.168.") || value.startsWith("10.")
+                                || value.matches("172\\.(1[6-9]|2[0-9]|3[0-1])\\..*");
+                        if (privateAddress && wifi) return value;
+                        if (privateAddress && fallback.isEmpty()) fallback = value;
                     }
                 }
             }
+            return fallback;
         } catch (SocketException ignored) { }
         return "";
     }
