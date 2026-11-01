@@ -107,7 +107,15 @@ public final class LanMatchSession implements LanConnection.Listener {
                 }
             }, 2600L);
         } else if (!tied) {
-            listener.onOpeningWinner(blue > red ? 1 : 2);
+            final int startingSide = blue > red ? 1 : 2;
+            mainHandler.postDelayed(() -> {
+                synchronized (LanMatchSession.this) {
+                    if (connected && openingRound == round
+                            && localOpeningValue != 0 && remoteOpeningValue != 0) {
+                        listener.onOpeningWinner(startingSide);
+                    }
+                }
+            }, 2600L);
         }
     }
 
