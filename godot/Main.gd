@@ -72,71 +72,136 @@ func _build_world() -> void:
 	var env := WorldEnvironment.new()
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_COLOR
-	environment.background_color = Color("#a9c5d2")
+	environment.background_color = Color("#91b8c6")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color("#c5d8e7")
-	environment.ambient_light_energy = 0.85
+	environment.ambient_light_color = Color("#e1e8cf")
+	environment.ambient_light_energy = 0.95
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.environment = environment
 	add_child(env)
 
+	# Rich layered battlefield: turf, compacted earth, lane insets and painted edges.
 	var ground := MeshInstance3D.new()
 	var ground_mesh := PlaneMesh.new()
-	ground_mesh.size = Vector2(27.0, 20.0)
+	ground_mesh.size = Vector2(29.0, 23.0)
 	ground.mesh = ground_mesh
-	ground.position.y = -0.22
-	ground.material_override = _material(Color("#347c32"), 0.0, 0.95)
+	ground.position.y = -0.34
+	ground.material_override = _material(Color("#397b3d"), 0.0, 1.0)
 	add_child(ground)
 
 	var arena := MeshInstance3D.new()
 	var arena_mesh := BoxMesh.new()
-	arena_mesh.size = Vector3(17.0, 0.2, 12.5)
+	arena_mesh.size = Vector3(17.8, 0.24, 13.0)
 	arena.mesh = arena_mesh
-	arena.position.y = -0.08
-	arena.material_override = _material(Color("#d6c58d"), 0.0, 0.88)
+	arena.position.y = -0.12
+	arena.material_override = _material(Color("#b89b67"), 0.0, 0.96)
 	add_child(arena)
 
-	# Decorative runway edges and lane markings.
-	for side_x in [-8.25, 8.25]:
+	var inner := MeshInstance3D.new()
+	var inner_mesh := BoxMesh.new()
+	inner_mesh.size = Vector3(16.8, 0.055, 12.0)
+	inner.mesh = inner_mesh
+	inner.position.y = 0.035
+	inner.material_override = _material(Color("#c5aa76"), 0.0, 1.0)
+	add_child(inner)
+
+	# Six inset battle lanes, with darker shoulders and warm center markings.
+	for side_x in [-8.42, 8.42]:
 		var edge := MeshInstance3D.new()
 		var edge_mesh := BoxMesh.new()
-		edge_mesh.size = Vector3(0.12, 0.035, 11.7)
+		edge_mesh.size = Vector3(0.16, 0.07, 12.0)
 		edge.mesh = edge_mesh
-		edge.position = Vector3(side_x, 0.035, 0)
-		edge.material_override = _material(Color("#e1d6a8"), 0.0, 0.8)
+		edge.position = Vector3(side_x, 0.09, 0)
+		edge.material_override = _material(Color("#5b6847"), 0.0, 0.9)
 		add_child(edge)
 	for z in ROW_Z:
+		for side in range(2):
+			var lane_bed := MeshInstance3D.new()
+			var lane_mesh := BoxMesh.new()
+			lane_mesh.size = Vector3(12.5, 0.035, 1.18)
+			lane_bed.mesh = lane_mesh
+			lane_bed.position = Vector3(0, 0.09, z + (0.38 if side == 0 else -0.38))
+			lane_bed.material_override = _material(Color("#9b835b"), 0.0, 1.0)
+			add_child(lane_bed)
 		var divider := MeshInstance3D.new()
 		var divider_mesh := BoxMesh.new()
-		divider_mesh.size = Vector3(12.0, 0.025, 0.035)
+		divider_mesh.size = Vector3(12.8, 0.035, 0.055)
 		divider.mesh = divider_mesh
-		divider.position = Vector3(0, 0.045, z)
-		divider.material_override = _material(Color("#d8c99a"), 0.0, 0.9)
+		divider.position = Vector3(0, 0.13, z)
+		divider.material_override = _material(Color("#e5d2a0"), 0.0, 0.82)
 		add_child(divider)
 
+	# Turf patches, rocks, supply crates and sandbag cover give the arena scale.
+	for i in range(34):
+		var gx := -12.0 + float((i * 17) % 240) / 10.0
+		var gz := -9.2 + float((i * 29) % 184) / 10.0
+		if absf(gx) < 8.8 and absf(gz) < 6.5:
+			continue
+		var tuft := Node3D.new()
+		tuft.position = Vector3(gx, -0.08, gz)
+		add_child(tuft)
+		for blade in range(3):
+			var grass := MeshInstance3D.new()
+			var grass_mesh := BoxMesh.new()
+			grass_mesh.size = Vector3(0.10, 0.28 + float(blade % 2) * 0.12, 0.055)
+			grass.mesh = grass_mesh
+			grass.position = Vector3(float(blade - 1) * 0.09, 0.12, 0)
+			grass.rotation_degrees.z = float(blade - 1) * 17.0
+			grass.material_override = _material(Color("#78a94c") if blade % 2 == 0 else Color("#547f3c"), 0.0, 1.0)
+			tuft.add_child(grass)
+	for side_x in [-9.1, 9.1]:
+		for z in [-4.8, -1.6, 1.6, 4.8]:
+			_add_box(self, Vector3(side_x, 0.16, z), Vector3(0.62, 0.32, 0.62), _material(Color("#806342"), 0.0, 0.95))
+			for layer in range(2):
+				_add_sphere(self, Vector3(side_x + (0.34 if layer == 0 else -0.34), 0.20 + float(layer) * 0.19, z), Vector3(0.48, 0.30, 0.36), _material(Color("#c2a16b"), 0.0, 1.0))
+	# Boundary warning lamps and corner watch posts.
+	for x in [-10.8, 10.8]:
+		for z in [-7.2, 7.2]:
+			_add_box(self, Vector3(x, 0.72, z), Vector3(0.30, 1.4, 0.30), _material(Color("#53614b"), 0.25, 0.65))
+			_add_sphere(self, Vector3(x, 1.48, z), Vector3(0.28, 0.24, 0.28), _material(Color("#f5c45d"), 0.1, 0.25))
+	# A few low rocks outside the playable lanes.
+	for i in range(12):
+		var rock := MeshInstance3D.new()
+		var rock_mesh := SphereMesh.new()
+		rock_mesh.radius = 0.5
+		rock_mesh.height = 0.7
+		rock.mesh = rock_mesh
+		rock.position = Vector3(-11.5 + float((i * 19) % 230) / 10.0, -0.02, -8.5 if i % 2 == 0 else 8.5)
+		rock.scale = Vector3(1.0 + float(i % 3) * 0.4, 0.55, 0.8)
+		rock.material_override = _material(Color("#777d69"), 0.0, 1.0)
+		add_child(rock)
+
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-48, -32, 0)
-	sun.light_energy = 1.55
+	sun.rotation_degrees = Vector3(-52, -28, 0)
+	sun.light_energy = 1.8
 	sun.shadow_enabled = true
 	add_child(sun)
-
 	var fill := OmniLight3D.new()
-	fill.position = Vector3(0, 7, 2)
-	fill.light_color = Color("#d8eaff")
-	fill.light_energy = 0.45
-	fill.omni_range = 24
+	fill.position = Vector3(0, 8, 1)
+	fill.light_color = Color("#e5f0d4")
+	fill.light_energy = 0.62
+	fill.omni_range = 28
 	add_child(fill)
 
 	var camera := Camera3D.new()
-	camera.position = Vector3(0, 15.5, 18.5)
+	camera.position = Vector3(0, 16.5, 19.5)
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 18.0
+	camera.size = 19.5
 	camera.near = 0.1
 	camera.far = 100.0
 	add_child(camera)
 	camera.look_at(Vector3.ZERO, Vector3.UP)
 	camera.make_current()
 	game_camera = camera
+
+func _process(delta: float) -> void:
+	# Gentle motion keeps the battlefield alive without obscuring the board.
+	if blue_flag and is_instance_valid(blue_flag):
+		blue_flag.rotation.z = sin(Time.get_ticks_msec() * 0.0018) * 0.035
+	if red_flag and is_instance_valid(red_flag):
+		red_flag.rotation.z = sin(Time.get_ticks_msec() * 0.0018 + 1.2) * 0.035
+	if die_root and is_instance_valid(die_root) and not waiting_for_weapon:
+		die_root.position.y = 0.72 + sin(Time.get_ticks_msec() * 0.0022) * 0.035
 
 func _build_tracks() -> void:
 	for side in range(2):
