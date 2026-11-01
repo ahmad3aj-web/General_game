@@ -229,7 +229,7 @@ public class MainActivity extends Activity {
         private void resetMatch() {
             matchEpoch++;
             for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}
-            stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false; recorded=false;
+            stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false; recorded=false; explosionAt=0;
             openingRoll1=0; openingRoll2=0; openingToss=false;
             message="استعدوا — النظام يحدد من يبدأ";
             startOpeningToss();
@@ -249,7 +249,7 @@ public class MainActivity extends Activity {
                 openingToss=false; stage=2;
                 message=player==1?(mode==2?"أنت تبدأ — دورك":"اللاعب 1 يبدأ"):(mode==2?"جنيرال يبدأ":"اللاعب 2 يبدأ");
                 invalidate();
-                if(mode==2 && player==2) postDelayed(new Runnable(){ @Override public void run(){ if(epoch==matchEpoch){computerTurn();invalidate();} }},700);
+                if(mode==2 && player==2) postDelayed(new Runnable(){ @Override public void run(){ if(epoch==matchEpoch && mode==2 && winner==0 && player==2){computerTurn();invalidate();} }},700);
             }},2600);
         }
         private void finishCheck() {
@@ -353,7 +353,7 @@ public class MainActivity extends Activity {
                     if(winner==0){
                         if(mode==2 && side==1){
                             player=2; die=0; message="دور جنيرال";
-                            postDelayed(new Runnable(){@Override public void run(){if(epoch==matchEpoch){computerTurn();invalidate();}}},650);
+                            postDelayed(new Runnable(){@Override public void run(){if(epoch==matchEpoch && mode==2 && winner==0 && player==2){computerTurn();invalidate();}}},650);
                         } else if(mode==2 && side==2){
                             player=1;die=0;choosing=false;message="دورك — اضغط النرد";
                         } else afterTurn();
@@ -595,7 +595,7 @@ public class MainActivity extends Activity {
             if(winner!=0) {
                 if(y>=h*.68f&&y<=h*.78f) {
                     if(x>=w*.25f&&x<=w*.48f) resetMatch();
-                    else if(x>=w*.52f&&x<=w*.75f) { matchEpoch++; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; message="اختر طريقة اللعب"; }
+                    else if(x>=w*.52f&&x<=w*.75f) { matchEpoch++; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; explosionAt=0; message="اختر طريقة اللعب"; }
                 }
                 invalidate();return true;
             }
