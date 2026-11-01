@@ -35,6 +35,7 @@ public class MainActivity extends Activity {
         private int mode = 0; // 0 menu, 1 local two-player, 2 vs General
         private boolean setup = false;
         private int setupSide = 1;
+        private int difficulty = 1; // 0 beginner, 1 medium, 2 professional, 3 legendary
         private final String[] playerNames = {"أنت","اللاعب 2"};
         private final int[] avatars = {0,1};
         private final int[] avatarColors = {Color.rgb(35,112,205),Color.rgb(205,69,54),Color.rgb(45,145,105),Color.rgb(142,85,180),Color.rgb(225,145,45),Color.rgb(65,115,155)};
@@ -113,8 +114,20 @@ public class MainActivity extends Activity {
             box(c,w*.27f,h*.50f,w*.73f,h*.59f,Color.rgb(248,250,239));
             txt(c,playerNames[idx],w*.5f,h*.56f,h*.043f,dark,true);
             txt(c,"اضغط على الاسم لتعديله",w*.5f,h*.65f,h*.028f,dark,false);
-            txt(c,"اختر الشخصية",w*.5f,h*.73f,h*.035f,dark,true);
-            for(int i=0;i<avatarColors.length;i++) drawAvatar(c,i,w*(.20f+i*.12f),h*.82f,h*.038f,avatars[idx]==i);
+            if(mode==2) {
+                String[] levels={"مبتدئ","متوسط","محترف","أسطوري"};
+                txt(c,"مستوى جنيرال",w*.5f,h*.675f,h*.031f,dark,true);
+                for(int i=0;i<4;i++) {
+                    float left=w*(.16f+i*.18f);
+                    box(c,left,h*.695f,left+w*.16f,h*.755f,difficulty==i?gold:Color.rgb(230,237,218));
+                    txt(c,levels[i],left+w*.08f,h*.733f,h*.025f,dark,difficulty==i);
+                }
+                txt(c,"اختر الشخصية",w*.5f,h*.785f,h*.03f,dark,true);
+                for(int i=0;i<avatarColors.length;i++) drawAvatar(c,i,w*(.20f+i*.12f),h*.85f,h*.034f,avatars[idx]==i);
+            } else {
+                txt(c,"اختر الشخصية",w*.5f,h*.73f,h*.035f,dark,true);
+                for(int i=0;i<avatarColors.length;i++) drawAvatar(c,i,w*(.20f+i*.12f),h*.82f,h*.038f,avatars[idx]==i);
+            }
             btn(c,setupSide==1 && mode==1?"التالي":"ابدأ المباراة",w*.36f,h*.90f,w*.64f,h*.985f,setupSide==1?blue:red);
         }
 
@@ -177,9 +190,22 @@ public class MainActivity extends Activity {
                 postDelayed(new Runnable(){ @Override public void run(){
                     if(mode!=2 || winner!=0 || player!=2)return;
                     int pick=-1;
-                    // يفضّل السلاح الأقرب إلى إكمال هجومه، مع عدم اختيار سلاح لا يستوعب رقم النرد.
-                    for(int i=0;i<3;i++) {
-                        if(canMove(2,i) && (pick<0 || pos2[i]>pos2[pick])) pick=i;
+                    // النرد عشوائي دائماً، والمستوى يغير استراتيجية اختيار السلاح فقط.
+                    if(difficulty==0) {
+                        int count=0;
+                        for(int i=0;i<3;i++) if(canMove(2,i)) count++;
+                        if(count>0) {
+                            int target=random.nextInt(count);
+                            for(int i=0;i<3;i++) if(canMove(2,i) && target--==0) { pick=i; break; }
+                        }
+                    } else {
+                        int bestScore=Integer.MIN_VALUE;
+                        for(int i=0;i<3;i++) if(canMove(2,i)) {
+                            int score=pos2[i]*10;
+                            if(pos2[i]+die>=15) score+=(difficulty==1?15:(difficulty==2?80:120));
+                            if(difficulty==3) score+=Math.min(14,die*2);
+                            if(score>bestScore){bestScore=score;pick=i;}
+                        }
                     }
                     if(pick>=0) {
                         message="جنيرال اختار "+names[pick];
@@ -434,7 +460,10 @@ public class MainActivity extends Activity {
             if(setup) {
                 int idx=setupSide-1;
                 if(y>=h*.50f && y<=h*.60f) { showNameDialog(); return true; }
-                if(y>=h*.76f && y<=h*.88f) {
+                if(mode==2 && y>=h*.695f && y<=h*.76f) {
+                    int level=Math.round((x/w-.16f)/.18f);
+                    if(level>=0 && level<4) difficulty=level;
+                } else if((mode==2 && y>=h*.80f && y<=h*.90f) || (mode!=2 && y>=h*.76f && y<=h*.88f)) {
                     int choice=Math.round((x/w-.20f)/.12f);
                     if(choice>=0 && choice<avatarColors.length) avatars[idx]=choice;
                 } else if(y>=h*.89f && y<=h*.995f) {
