@@ -126,6 +126,37 @@ public class MainActivity extends Activity {
             }
             if(winner==0){player=1;die=0;choosing=false;message="دورك — اضغط النرد";}
         }
+        private void animateMove(final int side, final int lane, final int amount) {
+            choosing=false;
+            final int start=positions(side)[lane];
+            final int target=Math.min(15,start+amount);
+            message=(side==1?"الأزرق":"الأحمر")+" يطلق...";
+            final Runnable[] step=new Runnable[1];
+            step[0]=new Runnable(){ @Override public void run(){
+                if(winner!=0)return;
+                if(positions(side)[lane]<target){
+                    positions(side)[lane]++;
+                    invalidate();
+                    postDelayed(step[0],115);
+                } else {
+                    if(target>=15){
+                        if(side==1){dead2[lane]=true;spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);}
+                        else {dead1[lane]=true;spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);}
+                    }
+                    finishCheck();
+                    if(winner==0){
+                        if(mode==2 && side==1){
+                            player=2; die=0; message="دور جنيرال";
+                            postDelayed(new Runnable(){@Override public void run(){computerTurn();invalidate();}},650);
+                        } else if(mode==2 && side==2){
+                            player=1;die=0;choosing=false;message="دورك — اضغط النرد";
+                        } else afterTurn();
+                    }
+                    invalidate();
+                }
+            }};
+            postDelayed(step[0],180);
+        }
         private void spawnExplosion(float x,float y) {
             explosionX=x; explosionY=y; explosionAt=System.currentTimeMillis();
             invalidate();
@@ -351,15 +382,7 @@ public class MainActivity extends Activity {
                 if(lane>=0) {
                     if(!canMove(player,lane))message="هذه الحركة غير ممكنة — اختر سلاحاً آخر";
                     else {
-                        positions(player)[lane]+=die;
-                        if(positions(player)[lane]==15) {
-                            if(player==1) { dead2[lane]=true; spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]); } else { dead1[lane]=true; spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]); }
-                        }
-                        finishCheck();
-                        if(winner==0) {
-                            if(mode==2){player=2;choosing=false;die=0;computerTurn();}
-                            else afterTurn();
-                        }
+                        animateMove(player,lane,die);
                     }
                 }
             }
