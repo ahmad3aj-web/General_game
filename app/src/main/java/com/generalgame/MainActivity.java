@@ -574,7 +574,7 @@ public class MainActivity extends Activity {
             if(winner!=0) {
                 if(y>=h*.68f&&y<=h*.78f) {
                     if(x>=w*.25f&&x<=w*.48f) resetMatch();
-                    else if(x>=w*.52f&&x<=w*.75f) { mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; message="اختر طريقة اللعب"; }
+                    else if(x>=w*.52f&&x<=w*.75f) { matchEpoch++; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; message="اختر طريقة اللعب"; }
                 }
                 invalidate();return true;
             }
@@ -590,10 +590,15 @@ public class MainActivity extends Activity {
                     if(!anyMove(player)){
                         message="لا يوجد سلاح مناسب! الدور ملغي";
                         choosing=false;die=0;invalidate();
+                        final int epoch=matchEpoch;
                         postDelayed(new Runnable(){ @Override public void run(){
-                            if(winner!=0)return;
-                            if(mode==2){player=2;message="دور جنيرال";invalidate();postDelayed(new Runnable(){@Override public void run(){computerTurn();}},500);}
-                            else afterTurn();
+                            if(epoch!=matchEpoch || winner!=0)return;
+                            if(mode==2){
+                                player=2;message="دور جنيرال";invalidate();
+                                postDelayed(new Runnable(){@Override public void run(){
+                                    if(epoch==matchEpoch && mode==2 && winner==0 && player==2)computerTurn();
+                                }},500);
+                            } else afterTurn();
                             invalidate();
                         }},1200);
                     }
