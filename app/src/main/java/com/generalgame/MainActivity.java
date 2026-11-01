@@ -276,9 +276,10 @@ public class MainActivity extends Activity {
                 txt(c,String.valueOf(openingRoll1),w*.81f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
             }
             for(int lane=0;lane<3;lane++) {
-                float y=rows[lane], gap=h*.012f, laneH=h*.012f;
-                // 15 طلقة منفصلة لكل لاعب في كل سلاح، باتجاه الخصم.
-                float bulletW=trackW/34f, bulletH=h*.022f;
+                float y=rows[lane], gap=h*.038f;
+                // ستة صفوف واضحة: صفّان متقابلان لكل نوع سلاح.
+                // اللاعب الأزرق يساراً يطلق يميناً، والخصم الأحمر يميناً يطلق يساراً.
+                float bulletW=trackW/34f, bulletH=h*.024f;
                 float leftStart=trackL+bulletW*.65f, rightStart=trackR-bulletW*.65f;
                 for(int i=0;i<15;i++) {
                     float bx=leftStart+i*(trackW*.46f/14f);
@@ -289,8 +290,8 @@ public class MainActivity extends Activity {
                 }
                 drawWeapon(c,lane,w*.075f,y,blue,true);
                 drawWeapon(c,lane,w*.925f,y,red,false);
-                if(dead1[lane]) txt(c,"×",w*.075f,y+h*.012f,h*.07f,Color.RED,true);
-                if(dead2[lane]) txt(c,"×",w*.925f,y+h*.012f,h*.07f,Color.RED,true);
+                if(dead1[lane]) txt(c,"×",w*.075f,y-gap,h*.07f,Color.RED,true);
+                if(dead2[lane]) txt(c,"×",w*.925f,y+gap,h*.07f,Color.RED,true);
                 if(choosing && winner==0) {
                     float ownX=player==1?w*.075f:w*.925f;
                     if(canMove(player,lane)) {
