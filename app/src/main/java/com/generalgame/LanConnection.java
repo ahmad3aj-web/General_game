@@ -31,7 +31,7 @@ public final class LanConnection {
     private volatile Socket socket;
     private volatile BufferedWriter writer;
     private Thread readerThread;
-    private ServerSocket server;
+    private volatile ServerSocket server;
 
     public LanConnection(Listener listener) {
         if (listener == null) throw new IllegalArgumentException("listener");
