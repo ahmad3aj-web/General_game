@@ -19,6 +19,7 @@ var weapon_roots: Array = []
 var weapon_areas: Array = []
 var game_camera: Camera3D
 var weapon_buttons: Array = []
+var weapon_panel: PanelContainer
 var ui_label: Label
 var roll_button: Button
 var reset_button: Button
@@ -599,16 +600,34 @@ func _build_ui() -> void:
 	roll_button.add_theme_font_size_override("font_size", 26)
 	roll_button.pressed.connect(_on_roll_pressed)
 	column.add_child(roll_button)
-	# Reliable touch controls: choose a weapon from large Android UI buttons
-	# instead of relying only on 3D screen-space picking.
+	# A separate, centered weapon chooser stays visible above the battlefield
+	# after every roll; it is not clipped by the corner status panel.
+	weapon_panel = PanelContainer.new()
+	weapon_panel.set_anchors_preset(Control.PRESET_CENTER)
+	weapon_panel.position = Vector2(-300, -105)
+	weapon_panel.size = Vector2(600, 210)
+	weapon_panel.visible = false
+	screen.add_child(weapon_panel)
+	var chooser_column := VBoxContainer.new()
+	chooser_column.add_theme_constant_override("separation", 12)
+	weapon_panel.add_child(chooser_column)
+	var chooser_title := Label.new()
+	chooser_title.text = "اختر سلاحاً لتنفيذ نتيجة النرد"
+	chooser_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	chooser_title.add_theme_font_size_override("font_size", 27)
+	chooser_column.add_child(chooser_title)
+	var chooser_row := HBoxContainer.new()
+	chooser_row.add_theme_constant_override("separation", 12)
+	chooser_column.add_child(chooser_row)
 	for lane in range(3):
 		var weapon_button := Button.new()
-		weapon_button.text = "اختر " + WEAPON_NAMES[lane]
-		weapon_button.custom_minimum_size = Vector2(0, 52)
-		weapon_button.add_theme_font_size_override("font_size", 21)
-		weapon_button.visible = false
+		weapon_button.text = WEAPON_NAMES[lane]
+		weapon_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		weapon_button.custom_minimum_size = Vector2(170, 82)
+		weapon_button.add_theme_font_size_override("font_size", 25)
+		weapon_button.visible = true
 		weapon_button.pressed.connect(_on_weapon_pressed.bind(lane))
-		column.add_child(weapon_button)
+		chooser_row.add_child(weapon_button)
 		weapon_buttons.append(weapon_button)
 	reset_button = Button.new()
 	reset_button.text = "إعادة المباراة"
@@ -660,7 +679,10 @@ func _reset_state() -> void:
 	waiting_for_weapon = false
 	game_over = false
 	for weapon_button in weapon_buttons:
-		weapon_button.visible = false
+		weapon_button.visible = true
+		weapon_button.disabled = true
+	if weapon_panel:
+		weapon_panel.visible = false
 	roll_button.disabled = false
 	ui_label.text = "ابدأ مباراة جديدة"
 	_update_die_face(1)
@@ -838,10 +860,12 @@ func _refresh_board() -> void:
 		die_root.position = Vector3(-8.35 if current_player == 0 else 8.35, 0.72, 5.0)
 	if ui_label and game_mode >= 0 and not game_over and not waiting_for_weapon:
 		ui_label.text = ("اللاعب الأزرق" if current_player == 0 else ("جنيرال الأحمر" if game_mode == 1 else "اللاعب الأحمر"))
+	if weapon_panel:
+		weapon_panel.visible = waiting_for_weapon and not game_over
 	for lane in range(3):
 		if lane < weapon_buttons.size():
 			var can_use: bool = waiting_for_weapon and not destroyed[current_player][lane] and progress[current_player][lane] + die_value <= STEPS
-			weapon_buttons[lane].visible = waiting_for_weapon
+			weapon_buttons[lane].visible = true
 			weapon_buttons[lane].disabled = not can_use
 	if game_panel and game_mode >= 0:
 		if current_player == 0:
