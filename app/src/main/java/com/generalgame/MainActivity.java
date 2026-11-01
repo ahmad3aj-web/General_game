@@ -606,8 +606,8 @@ public class MainActivity extends Activity {
         private void drawWeapon(Canvas c,int lane,float cx,float cy,int color,boolean faceRight) {
             // Vector artwork: hand-inked outlines, soft highlights and a fixed team flag.
             int ink=Color.rgb(42,48,43), highlight=shade(color,1.28f), shadow=shade(color,.58f);
-            float sx=w*.00122f, sy=h*.00110f;
-            c.save(); c.translate(cx-w*.061f,cy-h*.047f); c.scale(sx,sy);
+            float sx=w*.00098f, sy=h*.00088f;
+            c.save(); c.translate(cx-w*.049f,cy-h*.0335f); c.scale(sx,sy);
             if(!faceRight) { c.translate(100,0); c.scale(-1,1); }
             p.setShader(null);p.setStyle(Paint.Style.FILL);
             p.setColor(Color.argb(65,25,35,20));c.drawOval(new RectF(7,66,96,76),p);
@@ -679,26 +679,37 @@ public class MainActivity extends Activity {
                 p.setColor(Color.argb(150,255,255,255));c.drawRoundRect(new RectF(57,19,89,20.5f),1,1,p);
             }
             p.setStyle(Paint.Style.FILL);p.setStrokeCap(Paint.Cap.BUTT);
-            // Team pennant, always blue for player one and red for player two.
-            p.setColor(ink);p.setStrokeWidth(2.3f);c.drawLine(17,17,17,2,p);
-            Path flag=new Path();flag.moveTo(18,3);flag.lineTo(37,7);flag.lineTo(31,16);flag.lineTo(18,13);flag.close();
-            p.setColor(color);c.drawPath(flag,p);p.setColor(highlight);p.setStrokeWidth(1.4f);c.drawLine(19,5,31,8,p);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1.5f);p.setColor(ink);
+            // Clean comic ink outline; no national flags or symbols.
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2.2f);p.setColor(ink);
             if(lane==0)c.drawRoundRect(new RectF(7,39,94,68),13,13,p);
+            else if(lane==1)c.drawPath(wing,p);
+            else c.drawPath(shield,p);
             p.setStyle(Paint.Style.FILL);p.setShader(null);c.restore();
         }
 
         @Override protected void onDraw(Canvas c) {
             super.onDraw(c); w=getWidth(); h=getHeight();
-            p.setShader(new LinearGradient(0,0,0,h*.9f,Color.rgb(205,233,183),Color.rgb(126,177,105),Shader.TileMode.CLAMP));
+            // Warm, layered cartoon desert battlefield.
+            p.setShader(new LinearGradient(0,0,0,h,Color.rgb(104,177,225),Color.rgb(250,205,137),Shader.TileMode.CLAMP));
             c.drawRect(0,0,w,h,p);p.setShader(null);
-            p.setColor(Color.rgb(190,220,166));c.drawCircle(w*.10f,h*.08f,h*.15f,p);
-            p.setColor(Color.rgb(151,196,125));c.drawOval(new RectF(-w*.12f,h*.12f,w*.48f,h*.36f),p);
-            p.setColor(Color.rgb(137,184,111));c.drawOval(new RectF(w*.52f,h*.10f,w*1.12f,h*.34f),p);
-            p.setColor(Color.rgb(105,157,91));c.drawRect(0,h*.91f,w,h,p);
-            p.setColor(Color.argb(45,255,255,255));
-            for(int i=0;i<18;i++)c.drawCircle((i*73%1000)/1000f*w,h*(.22f+(i*37%620)/1000f),h*.0025f,p);
-            txt(c,"GENERAL  •  جينيرال",w*.5f,h*.075f,h*.06f,dark,true);
+            p.setColor(Color.rgb(255,225,166));c.drawCircle(w*.78f,h*.16f,h*.075f,p);
+            p.setColor(Color.rgb(194,151,130));
+            Path far=new Path();far.moveTo(0,h*.43f);far.lineTo(w*.12f,h*.23f);far.lineTo(w*.22f,h*.38f);far.lineTo(w*.39f,h*.19f);far.lineTo(w*.55f,h*.39f);far.lineTo(w*.73f,h*.22f);far.lineTo(w*.88f,h*.37f);far.lineTo(w,h*.24f);far.lineTo(w,h*.66f);far.lineTo(0,h*.66f);far.close();c.drawPath(far,p);
+            p.setColor(Color.rgb(225,177,139));
+            Path near=new Path();near.moveTo(0,h*.49f);near.lineTo(w*.18f,h*.34f);near.lineTo(w*.34f,h*.48f);near.lineTo(w*.52f,h*.32f);near.lineTo(w*.70f,h*.49f);near.lineTo(w*.86f,h*.35f);near.lineTo(w,h*.47f);near.lineTo(w,h*.75f);near.lineTo(0,h*.75f);near.close();c.drawPath(near,p);
+            p.setColor(Color.rgb(199,139,89));c.drawRect(0,h*.48f,w,h*.94f,p);
+            p.setColor(Color.rgb(218,161,105));c.drawOval(new RectF(-w*.12f,h*.55f,w*.58f,h*.98f),p);
+            p.setColor(Color.rgb(185,123,78));c.drawOval(new RectF(w*.42f,h*.58f,w*1.12f,h*.98f),p);
+            p.setColor(Color.rgb(126,91,73));
+            c.drawRect(w*.12f,h*.34f,w*.19f,h*.49f,p);c.drawRect(w*.14f,h*.29f,w*.21f,h*.49f,p);
+            c.drawRect(w*.77f,h*.36f,w*.84f,h*.49f,p);c.drawRect(w*.80f,h*.31f,w*.87f,h*.49f,p);
+            p.setColor(Color.rgb(91,75,65));c.drawRect(w*.69f,h*.24f,w*.695f,h*.49f,p);c.drawRect(w*.66f,h*.24f,w*.73f,h*.26f,p);c.drawRect(w*.66f,h*.29f,w*.73f,h*.31f,p);
+            p.setColor(Color.rgb(151,106,78));c.drawRect(0,h*.91f,w,h*.12f,p);
+            p.setColor(Color.rgb(103,79,65));
+            for(int i=0;i<26;i++){float x=(i*137%997)/997f*w;float y=h*(.49f+(i*43%390)/1000f);float rr=h*(.004f+(i%4)*.002f);c.drawOval(new RectF(x-rr*1.5f,y-rr,x+rr*1.5f,y+rr),p);}
+            p.setColor(Color.argb(55,255,255,255));
+            for(int i=0;i<12;i++)c.drawCircle((i*173%1000)/1000f*w,h*(.12f+(i*37%200)/1000f),h*.012f,p);
+            txt(c,"GENERAL  •  جنيرال",w*.5f,h*.075f,h*.06f,dark,true);
             if(setup) { drawSetup(c); return; }
             if(mode==0) {
                 if(historyScreen){drawHistory(c);return;}
