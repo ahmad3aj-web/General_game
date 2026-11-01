@@ -222,7 +222,8 @@ public final class LanMatchSession implements LanConnection.Listener {
             moveReceived = true;
             listener.onMove(side, lane, rolledValue);
         } else if (LanGameProtocol.TURN_CANCEL.equals(type)) {
-            if (activeSide != side || moveReceived\n                    || message.optInt("value", 0) != rolledValue) {
+            if (activeSide != side || moveReceived
+                    || message.optInt("value", 0) != rolledValue) {
                 listener.onProtocolError("إلغاء دور غير صالح");
                 return;
             }
