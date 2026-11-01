@@ -149,11 +149,11 @@ public class MainActivity extends Activity {
             try {
                 JSONArray old=loadHistory(), updated=new JSONArray();
                 JSONObject item=new JSONObject();
-                String opponent=mode==2?"جنيرال":(winner==1?playerNames[1]:playerNames[0]);
+                String opponent=mode==2?"جنيرال":playerNames[1];
                 String winnerName=winner==1?playerNames[0]:(mode==2?"جنيرال":playerNames[1]);
                 String loserName=winner==1?(mode==2?"جنيرال":playerNames[1]):playerNames[0];
                 item.put("opponent",opponent); item.put("winner",winnerName); item.put("loser",loserName);
-                item.put("result",mode==2?(winner==1?"فوز":"خسارة"):(winner==1?"فوز اللاعب الأول":"فوز اللاعب الثاني"));
+                item.put("result",winner==1?"فوز":"خسارة");
                 item.put("mode",mode);
                 item.put("date",new SimpleDateFormat("EEEE dd/MM/yyyy HH:mm",new Locale("ar","JO")).format(new Date()));
                 updated.put(item);
@@ -167,8 +167,10 @@ public class MainActivity extends Activity {
             JSONArray data=loadHistory(); int total=data.length(),wins=0,losses=0;
             for(int i=0;i<total;i++)try {
                 JSONObject o=data.getJSONObject(i);
-                if("فوز".equals(o.optString("result")))wins++;
-                else if("خسارة".equals(o.optString("result")))losses++;
+                if("جنيرال".equals(o.optString("opponent"))) {
+                    if("فوز".equals(o.optString("result")))wins++;
+                    else if("خسارة".equals(o.optString("result")))losses++;
+                }
             } catch(Exception ignored) { }
             box(c,w*.10f,h*.23f,w*.90f,h*.36f,Color.rgb(245,249,239));
             txt(c,"إجمالي المباريات: "+total,w*.5f,h*.275f,h*.036f,dark,true);
