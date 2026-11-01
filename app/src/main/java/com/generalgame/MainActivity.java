@@ -341,7 +341,8 @@ public class MainActivity extends Activity {
             if(mode==3 && lanSession!=null && lanSession.isConnected()) {
                 lanOpeningStarted=true;
                 message="إعادة المباراة — قرعة البداية";
-                lanSession.startOpeningToss();
+                if(lanLocalSide==1)lanSession.startOpeningToss();
+                else message="بانتظار قرعة البداية من اللاعب المضيف";
             } else {
                 message="استعدوا — النظام يحدد من يبدأ";
                 startOpeningToss();
