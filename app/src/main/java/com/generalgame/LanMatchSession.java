@@ -117,6 +117,9 @@ public final class LanMatchSession implements LanConnection.Listener {
                     if (connected && openingRound == round
                             && localOpeningValue != 0 && remoteOpeningValue != 0) {
                         listener.onOpeningWinner(startingSide);
+                        localRematchRequested = false;
+                        remoteRematchRequested = false;
+                        rematchStarted = false;
                     }
                 }
             }, 2600L);
