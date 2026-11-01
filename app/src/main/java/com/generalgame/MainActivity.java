@@ -159,6 +159,23 @@ public class MainActivity extends Activity {
         private int shade(int color,float factor) {
             return Color.rgb(Math.min(255,(int)(Color.red(color)*factor)),Math.min(255,(int)(Color.green(color)*factor)),Math.min(255,(int)(Color.blue(color)*factor)));
         }
+        private void drawBullet(Canvas c,float cx,float cy,float bw,float bh,int color,boolean filled,boolean pointsRight) {
+            int body=filled?color:Color.rgb(247,248,239);
+            int outline=Color.rgb(48,57,46);
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(body);
+            RectF shell=new RectF(cx-bw*.42f,cy-bh*.34f,cx+bw*.25f,cy+bh*.34f);
+            c.drawRoundRect(shell,bh*.12f,bh*.12f,p);
+            Path tip=new Path();
+            if(pointsRight){tip.moveTo(cx+bw*.25f,cy-bh*.34f);tip.quadTo(cx+bw*.66f,cy,cx+bw*.25f,cy+bh*.34f);}
+            else{tip.moveTo(cx-bw*.42f,cy-bh*.34f);tip.quadTo(cx-bw*.83f,cy,cx-bw*.42f,cy+bh*.34f);}
+            tip.close();c.drawPath(tip,p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1f,bh*.075f));p.setColor(outline);
+            c.drawRoundRect(shell,bh*.12f,bh*.12f,p);c.drawPath(tip,p);
+            p.setStyle(Paint.Style.FILL);p.setColor(filled?shade(color,.62f):Color.rgb(135,143,127));
+            float baseX=pointsRight?cx-bw*.39f:cx+bw*.22f;
+            c.drawRect(baseX-bw*.035f,cy-bh*.39f,baseX+bw*.035f,cy+bh*.39f,p);
+        }
         private void drawWeapon(Canvas c,int lane,float cx,float cy,int color) {
             int darkColor=shade(color,.48f), lightColor=shade(color,1.35f);
             p.setStyle(Paint.Style.FILL); p.setShader(null);
@@ -226,8 +243,8 @@ public class MainActivity extends Activity {
             txt(c,message,w*.5f,h*.145f,h*.036f,dark,true);
             float trackL=w*.18f, trackR=w*.82f, trackW=trackR-trackL;
             float[] rows={h*.29f,h*.49f,h*.69f};
-            txt(c,mode==2?"جنيرال":"اللاعب 2",w*.08f,h*.19f,h*.035f,red,true);
-            txt(c,mode==2?"أنت":"اللاعب 1",w*.92f,h*.19f,h*.035f,blue,true);
+            txt(c,mode==2?"جنيرال":"اللاعب 2",w*.92f,h*.19f,h*.035f,red,true);
+            txt(c,mode==2?"أنت":"اللاعب 1",w*.08f,h*.19f,h*.035f,blue,true);
             if(openingToss){
                 float ds=h*.075f;
                 box(c,w*.19f-ds/2,h*.145f,w*.19f+ds/2,h*.145f+ds,red);
@@ -237,28 +254,22 @@ public class MainActivity extends Activity {
             }
             for(int lane=0;lane<3;lane++) {
                 float y=rows[lane], gap=h*.012f, laneH=h*.012f;
-                // مساران مستقلان لكل سلاح: 6 خطوط إجمالاً، واحد لكل لاعب.
-                for(int side=1;side<=2;side++) {
-                    float lineY=y+(side==1?gap:-gap);
-                    int color=side==1?blue:red;
-                    boolean dead=destroyed(side)[lane];
-                    int progress=positions(side)[lane];
-                    p.setColor(Color.rgb(115,145,105));
-                    c.drawRoundRect(new RectF(trackL,lineY-laneH,trackR,lineY+laneH),5,5,p);
-                    for(int i=0;i<15;i++) {
-                        float cell=trackW/15f;
-                        float x=side==1?trackR-(i+1)*cell:trackL+i*cell;
-                        int fill=dead?Color.rgb(125,125,120):(i<progress?color:Color.rgb(242,247,235));
-                        p.setColor(fill);
-                        c.drawRoundRect(new RectF(x+1,lineY-laneH+1,x+cell-2,lineY+laneH-1),4,4,p);
-                    }
+                // 15 طلقة منفصلة لكل لاعب في كل سلاح، باتجاه الخصم.
+                float bulletW=trackW/34f, bulletH=h*.022f;
+                float leftStart=trackL+bulletW*.65f, rightStart=trackR-bulletW*.65f;
+                for(int i=0;i<15;i++) {
+                    float bx=leftStart+i*(trackW*.46f/14f);
+                    float rx=rightStart-i*(trackW*.46f/14f);
+                    boolean leftDead=dead1[lane], rightDead=dead2[lane];
+                    drawBullet(c,bx,y-gap,bulletW,bulletH,leftDead?Color.GRAY:blue,!leftDead && i<pos1[lane],true);
+                    drawBullet(c,rx,y+gap,bulletW,bulletH,rightDead?Color.GRAY:red,!rightDead && i<pos2[lane],false);
                 }
-                drawWeapon(c,lane,w*.075f,y,red);
-                drawWeapon(c,lane,w*.925f,y,blue);
-                if(dead2[lane]) txt(c,"×",w*.075f,y+h*.012f,h*.07f,Color.RED,true);
-                if(dead1[lane]) txt(c,"×",w*.925f,y+h*.012f,h*.07f,Color.RED,true);
+                drawWeapon(c,lane,w*.075f,y,blue);
+                drawWeapon(c,lane,w*.925f,y,red);
+                if(dead1[lane]) txt(c,"×",w*.075f,y+h*.012f,h*.07f,Color.RED,true);
+                if(dead2[lane]) txt(c,"×",w*.925f,y+h*.012f,h*.07f,Color.RED,true);
                 if(choosing && winner==0) {
-                    float ownX=player==1?w*.925f:w*.075f;
+                    float ownX=player==1?w*.075f:w*.925f;
                     if(canMove(player,lane)) {
                         p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(4); p.setColor(gold);
                         c.drawCircle(ownX,y,h*.055f,p); p.setStyle(Paint.Style.FILL);
@@ -306,7 +317,7 @@ public class MainActivity extends Activity {
                     else message=(mode==2?"أنت":"اللاعب "+player)+" رمى "+die+" — اختر سلاحاً";
                 }
             } else {
-                float ownX=player==1?w*.925f:w*.075f;
+                float ownX=player==1?w*.075f:w*.925f;
                 int lane=-1;
                 float[] weaponRows={h*.30f,h*.49f,h*.68f};
                 // اختيار السلاح بالضغط على رسمه نفسه، وليس على زر يحمل اسمه.
