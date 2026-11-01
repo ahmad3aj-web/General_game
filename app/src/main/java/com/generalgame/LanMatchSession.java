@@ -1,6 +1,6 @@
 package com.generalgame;
 
-import org.json.JSONException;
+import android.os.Handler;\nimport android.os.Looper;\nimport org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -11,7 +11,7 @@ import org.json.JSONObject;
 public final class LanMatchSession implements LanConnection.Listener {
     public interface Listener {
         void onConnected();
-        void onTurnStarted(int turnId, int activeSide, boolean localTurn);
+        void onOpeningRolls(int blueValue, int redValue, boolean tied);\n        void onOpeningWinner(int startingSide);\n        void onTurnStarted(int turnId, int activeSide, boolean localTurn);
         void onCountdown(int secondsRemaining);
         void onRoll(int side, int value, boolean automatic);
         void onMove(int side, int lane, int value);
@@ -29,7 +29,7 @@ public final class LanMatchSession implements LanConnection.Listener {
     private int activeSide;
     private int rolledValue;
     private boolean rollReceived;
-    private boolean moveReceived;
+    private boolean moveReceived;\n    private final Handler mainHandler = new Handler(Looper.getMainLooper());\n    private int openingRound;\n    private int localOpeningValue;\n    private int remoteOpeningValue;
 
     public LanMatchSession(int localSide, Listener listener) {
         if (localSide != 1 && localSide != 2) throw new IllegalArgumentException("localSide");
@@ -55,7 +55,7 @@ public final class LanMatchSession implements LanConnection.Listener {
     public void host() throws java.io.IOException { connection.host(); }
     public void join(String address) throws java.io.IOException { connection.join(address); }
 
-    /** Called on both devices after the opening toss has selected the first player. */
+    /** Both phones generate their own opening die and exchange the results. */\n    public synchronized void startOpeningToss() {\n        if (!connected) return;\n        openingRound++;\n        localOpeningValue = (int) (Math.random() * 6) + 1;\n        remoteOpeningValue = 0;\n        try {\n            JSONObject message = new JSONObject();\n            message.put("version", LanGameProtocol.VERSION);\n            message.put("type", LanGameProtocol.OPENING_ROLL);\n            message.put("round", openingRound);\n            message.put("side", localSide);\n            message.put("value", localOpeningValue);\n            connection.send(message);\n        } catch (Exception error) {\n            listener.onProtocolError("تعذر إرسال قرعة البداية");\n        }\n    }\n\n    private synchronized void evaluateOpeningToss(int round) {\n        if (round != openingRound || localOpeningValue == 0 || remoteOpeningValue == 0) return;\n        final int blue = localSide == 1 ? localOpeningValue : remoteOpeningValue;\n        final int red = localSide == 2 ? localOpeningValue : remoteOpeningValue;\n        boolean tied = blue == red;\n        listener.onOpeningRolls(blue, red, tied);\n        if (tied) {\n            mainHandler.postDelayed(() -> {\n                synchronized (LanMatchSession.this) {\n                    if (connected && openingRound == round && localOpeningValue != 0\n                            && remoteOpeningValue != 0 && localOpeningValue == remoteOpeningValue) {\n                        startOpeningToss();\n                    }\n                }\n            }, 2600L);\n        } else {\n            listener.onOpeningWinner(blue > red ? 1 : 2);\n        }\n    }\n\n    /** Called on both devices after the opening toss has selected the first player. */
     public synchronized void beginTurn(int turnId, int side) {
         if (!connected || turnId < 1 || (side != 1 && side != 2)) return;
         timer.cancel();
