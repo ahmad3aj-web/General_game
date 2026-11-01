@@ -64,6 +64,8 @@ public class MainActivity extends Activity {
         private LanMatchSession lanSession;
         private int lanLocalSide=1, lanTurnId=0, lanCountdown=30;
         private boolean lanOpeningStarted=false;
+        private boolean lanHostPending=false;
+        private String lanJoinAddress=null;
 
         GameView() { super(MainActivity.this); setLayerType(View.LAYER_TYPE_SOFTWARE,null); }
         private void txt(Canvas c,String s,float x,float y,float size,int color,boolean bold) {
@@ -107,7 +109,7 @@ public class MainActivity extends Activity {
             String ip=LanConnection.getLocalIpv4();
             new AlertDialog.Builder(MainActivity.this).setTitle("عنوان الجهاز المضيف")
                 .setMessage((ip.isEmpty()?"تعذر تحديد عنوان IP تلقائياً":("أرسل هذا العنوان للاعب الآخر:\n"+ip))+"\n\nاضغط انتظار الاتصال بعد أن يصبح الجهازان على الشبكة نفسها.")
-                .setPositiveButton("انتظار الاتصال",(d,which)->startLanHost())
+                .setPositiveButton("انتظار الاتصال",(d,which)->{lanHostPending=true;invalidate();})
                 .setNegativeButton("إلغاء",(d,which)->{mode=0;setup=false;invalidate();}).show();
         }
         private void showLanJoinDialog() {
@@ -119,7 +121,7 @@ public class MainActivity extends Activity {
                 .setView(input).setPositiveButton("اتصال",(d,which)->{
                     String address=input.getText().toString().trim();
                     if(address.isEmpty()){showLanJoinDialog();return;}
-                    startLanJoin(address);
+                    lanJoinAddress=address;invalidate();
                 }).setNegativeButton("إلغاء",(d,which)->{mode=0;setup=false;invalidate();}).show();
         }
         private void createLanSession() {
@@ -380,8 +382,10 @@ public class MainActivity extends Activity {
                 message="دورك — اضغط النرد";
             } else {
                 player=player==1?2:1;
-                message="دور اللاعب "+player+" — اضغط النرد";
+                if(mode==3 && lanSession!=null){lanTurnId++;lanSession.beginTurn(lanTurnId,player);}
+                else message="دور اللاعب "+player+" — اضغط النرد";
             }
+            invalidate();
         }
         private void computerTurn() {
             if(mode!=2 || winner!=0 || player!=2)return;
@@ -693,6 +697,7 @@ public class MainActivity extends Activity {
                     if(choice>=0 && choice<avatarColors.length) avatars[idx]=choice;
                 } else if(y>=h*.89f && y<=h*.995f) {
                     if(setupSide==1 && mode==1) setupSide=2;
+                    else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
                     else { setup=false;resetMatch(); }
                 }
                 invalidate();return true;
@@ -712,6 +717,7 @@ public class MainActivity extends Activity {
                 return true;
             } else if(!choosing && (diceTapped || launchTapped)) {
                 if(mode==2&&player==2){computerTurn();}
+                else if(mode==3){if(lanSession!=null)lanSession.rollNow(false);}
                 else {
                     die=random.nextInt(6)+1;choosing=true;
                     if(!anyMove(player)){
@@ -742,7 +748,8 @@ public class MainActivity extends Activity {
                 if(lane>=0) {
                     if(!canMove(player,lane))message="هذه الحركة غير ممكنة — اختر سلاحاً آخر";
                     else {
-                        animateMove(player,lane,die);
+                        if(mode==3 && lanSession!=null){if(lanSession.sendMove(lane))animateMove(player,lane,die);}
+                        else animateMove(player,lane,die);
                     }
                 }
             }
