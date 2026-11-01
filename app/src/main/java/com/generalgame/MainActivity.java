@@ -748,11 +748,11 @@ public class MainActivity extends Activity {
                 float y=rows[lane], gap=h*.038f;
                 // ستة صفوف واضحة: صفّان متقابلان لكل نوع سلاح.
                 // اللاعب الأزرق يساراً يطلق يميناً، والخصم الأحمر يميناً يطلق يساراً.
-                float bulletW=trackW/34f, bulletH=h*.024f;
+                float bulletW=trackW/17f, bulletH=h*.048f;
                 float leftStart=trackL+bulletW*.65f, rightStart=trackR-bulletW*.65f;
                 for(int i=0;i<15;i++) {
-                    float bx=leftStart+i*(trackW*.46f/14f);
-                    float rx=rightStart-i*(trackW*.46f/14f);
+                    float bx=leftStart+i*(trackW*.92f/14f);
+                    float rx=rightStart-i*(trackW*.92f/14f);
                     boolean leftDead=dead1[lane], rightDead=dead2[lane];
                     drawBullet(c,bx,y-gap,bulletW,bulletH,leftDead?Color.GRAY:blue,!leftDead && i<pos1[lane],true);
                     drawBullet(c,rx,y+gap,bulletW,bulletH,rightDead?Color.GRAY:red,!rightDead && i<pos2[lane],false);
