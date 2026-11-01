@@ -118,7 +118,7 @@ public class MainActivity extends Activity {
             for(int i=0;i<3;i++) if(canMove(2,i) && (pick<0 || pos2[i]>pos2[pick])) pick=i;
             if(pick>=0) {
                 pos2[pick]+=die;
-                if(pos2[pick]==15) { dead1[pick]=true; spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[pick]); }
+                if(pos2[pick]==15) { dead1[pick]=true; spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[pick]); }
                 message="جنيرال رمى "+die+" وحرّك "+names[pick];
                 finishCheck();
             } else {
@@ -329,7 +329,7 @@ public class MainActivity extends Activity {
                     else {
                         positions(player)[lane]+=die;
                         if(positions(player)[lane]==15) {
-                            if(player==1) { dead2[lane]=true; spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]); } else { dead1[lane]=true; spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]); }
+                            if(player==1) { dead2[lane]=true; spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]); } else { dead1[lane]=true; spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]); }
                         }
                         finishCheck();
                         if(winner==0) {
