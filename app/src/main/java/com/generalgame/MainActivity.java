@@ -189,12 +189,14 @@ public class MainActivity extends Activity {
         private void startLanHost(){
             createLanSession();message="بانتظار اتصال اللاعب الثاني...";
             new Thread(()->{try{lanSession.host();}catch(Exception ex){runOnUiThread(()->{
+                if(mode!=3 || lanSession==null)return;
                 message="تعذر إنشاء الاتصال";new AlertDialog.Builder(MainActivity.this).setMessage("تعذر إنشاء المباراة: "+ex.getMessage()).setPositiveButton("حسناً",null).show();invalidate();
             });}},"GENERAL-LAN-host").start();invalidate();
         }
         private void startLanJoin(String address){
             createLanSession();message="جارٍ الاتصال بالجهاز المضيف...";
             new Thread(()->{try{lanSession.join(address);}catch(Exception ex){runOnUiThread(()->{
+                if(mode!=3 || lanSession==null)return;
                 message="تعذر الاتصال";new AlertDialog.Builder(MainActivity.this).setMessage("تعذر الاتصال: "+ex.getMessage()).setPositiveButton("حسناً",null).show();invalidate();
             });}},"GENERAL-LAN-join").start();invalidate();
         }
