@@ -638,6 +638,10 @@ public class MainActivity extends Activity {
                 return;
             }
             txt(c,message,w*.5f,h*.145f,h*.036f,dark,true);
+            if(mode==3 && (lanSession==null || !lanSession.isConnected())) {
+                btn(c,"إلغاء الاتصال والعودة",w*.31f,h*.81f,w*.69f,h*.92f,dark);
+                return;
+            }
             float trackL=w*.18f, trackR=w*.82f, trackW=trackR-trackL;
             float[] rows={h*.29f,h*.49f,h*.69f};
             txt(c,mode==2?"جنيرال":playerNames[1],w*.92f,h*.19f,h*.035f,red,true);
@@ -721,6 +725,13 @@ public class MainActivity extends Activity {
                 invalidate();return true;
             }
             if(openingToss)return true;
+            if(mode==3 && (lanSession==null || !lanSession.isConnected())) {
+                if(y>=h*.80f && y<=h*.94f) {
+                    timerlessCloseLan();lanHostPending=false;lanJoinAddress=null;
+                    mode=0;setup=false;message="اختر طريقة اللعب";
+                }
+                invalidate();return true;
+            }
             if(winner!=0) {
                 if(y>=h*.68f&&y<=h*.78f) {
                     if(x>=w*.25f&&x<=w*.48f) resetMatch();
