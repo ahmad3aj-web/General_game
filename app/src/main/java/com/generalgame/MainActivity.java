@@ -634,6 +634,31 @@ public class MainActivity extends Activity {
                 p.setColor(ink);c.drawRoundRect(new RectF(48,18,99,25),3,3,p);p.setColor(Color.rgb(187,192,168));c.drawRoundRect(new RectF(52,19,96,21),2,2,p);
                 p.setColor(highlight);c.drawLine(38,33,62,30,p);
             }
+            // Fine mechanical details that enrich the existing silhouettes without changing their colors.
+            p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeCap(Paint.Cap.ROUND);
+            if(lane==0) {
+                p.setColor(Color.argb(175,235,232,205));p.setStrokeWidth(1.25f);
+                c.drawLine(15,47,86,47,p);c.drawLine(15,61,86,61,p);
+                p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(224,218,184));
+                for(int i=0;i<5;i++)c.drawCircle(20+i*15,54,1.35f,p);
+                p.setColor(shade(color,.72f));c.drawRoundRect(new RectF(39,22,67,25),2,2,p);
+                p.setColor(Color.rgb(226,220,190));c.drawCircle(84,35,1.5f,p);
+            } else if(lane==1) {
+                p.setStrokeWidth(1.7f);p.setColor(ink);
+                c.drawLine(28,45,15,60,p);c.drawLine(15,60,34,56,p);
+                c.drawLine(70,43,84,55,p);c.drawLine(84,55,69,51,p);
+                p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(238,235,205));
+                c.drawCircle(24,38,1.8f,p);c.drawCircle(31,36,1.8f,p);c.drawCircle(38,35,1.8f,p);
+                p.setColor(Color.argb(170,255,255,255));c.drawOval(new RectF(47,33,53,35),p);
+            } else {
+                p.setStrokeWidth(1.5f);p.setColor(ink);
+                c.drawLine(21,58,25,58,p);c.drawLine(76,58,80,58,p);
+                c.drawLine(25,71,76,71,p);c.drawLine(50,50,50,68,p);
+                p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(224,218,184));
+                c.drawCircle(25,58,2.1f,p);c.drawCircle(76,58,2.1f,p);
+                p.setColor(Color.argb(150,255,255,255));c.drawRoundRect(new RectF(57,19,89,20.5f),1,1,p);
+            }
+            p.setStyle(Paint.Style.FILL);p.setStrokeCap(Paint.Cap.BUTT);
             // Team pennant, always blue for player one and red for player two.
             p.setColor(ink);p.setStrokeWidth(2.3f);c.drawLine(17,17,17,2,p);
             Path flag=new Path();flag.moveTo(18,3);flag.lineTo(37,7);flag.lineTo(31,16);flag.lineTo(18,13);flag.close();
