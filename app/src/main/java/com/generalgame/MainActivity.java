@@ -1,6 +1,7 @@
 package com.generalgame;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -11,6 +12,8 @@ import android.graphics.LinearGradient;
 import android.graphics.Shader;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.EditText;
+import android.text.InputType;
 import java.util.Random;
 
 public class MainActivity extends Activity {
@@ -30,6 +33,11 @@ public class MainActivity extends Activity {
         private final boolean[] dead1 = {false,false,false}, dead2 = {false,false,false};
         private final String[] names = {"الدبابة","الطائرة","المدفع"};
         private int mode = 0; // 0 menu, 1 local two-player, 2 vs General
+        private boolean setup = false;
+        private int setupSide = 1;
+        private final String[] playerNames = {"أنت","اللاعب 2"};
+        private final int[] avatars = {0,1};
+        private final int[] avatarColors = {Color.rgb(35,112,205),Color.rgb(205,69,54),Color.rgb(45,145,105),Color.rgb(142,85,180),Color.rgb(225,145,45),Color.rgb(65,115,155)};
         private int stage = 0; // opening toss: 0 or 1; 2 means game
         private int firstRoll = 0, player = 1, die = 0, winner = 0;
         private int openingRoll1 = 0, openingRoll2 = 0;
@@ -64,6 +72,52 @@ public class MainActivity extends Activity {
             for(int i=0;i<3;i++) if(canMove(side,i)) return true;
             return false;
         }
+
+        private void showNameDialog() {
+            final EditText input = new EditText(MainActivity.this);
+            input.setSingleLine(true);
+            input.setText(playerNames[setupSide-1]);
+            input.setSelection(input.getText().length());
+            input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+            new AlertDialog.Builder(MainActivity.this)
+                .setTitle(setupSide==1?"اسم اللاعب الأول":"اسم اللاعب الثاني")
+                .setMessage("اكتب الاسم الذي سيظهر أثناء المباراة")
+                .setView(input)
+                .setPositiveButton("حفظ", (dialog,which)->{
+                    String value=input.getText().toString().trim();
+                    if(!value.isEmpty()) playerNames[setupSide-1]=value;
+                    invalidate();
+                })
+                .setNegativeButton("إلغاء",null)
+                .show();
+        }
+        private void drawAvatar(Canvas c,int index,float cx,float cy,float radius,boolean selected) {
+            int color=avatarColors[index%avatarColors.length];
+            p.setColor(selected?gold:Color.rgb(53,67,51));
+            c.drawCircle(cx,cy,radius+(selected?h*.009f:h*.003f),p);
+            p.setColor(color);c.drawCircle(cx,cy,radius,p);
+            p.setColor(Color.argb(65,255,255,255));c.drawCircle(cx-radius*.28f,cy-radius*.3f,radius*.48f,p);
+            p.setColor(Color.rgb(255,232,194));c.drawCircle(cx,cy-radius*.08f,radius*.48f,p);
+            p.setColor(Color.rgb(45,48,47));
+            c.drawCircle(cx-radius*.17f,cy-radius*.13f,radius*.045f,p);
+            c.drawCircle(cx+radius*.17f,cy-radius*.13f,radius*.045f,p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,radius*.035f));
+            c.drawArc(new RectF(cx-radius*.17f,cy-radius*.03f,cx+radius*.17f,cy+radius*.22f),15,150,false,p);
+            p.setStyle(Paint.Style.FILL);
+        }
+        private void drawSetup(Canvas c) {
+            txt(c,"إعداد اللاعبين",w*.5f,h*.16f,h*.065f,dark,true);
+            txt(c,setupSide==1?"اللاعب الأول — الأزرق":"اللاعب الثاني — الأحمر",w*.5f,h*.25f,h*.043f,setupSide==1?blue:red,true);
+            int idx=setupSide-1;
+            drawAvatar(c,avatars[idx],w*.5f,h*.40f,h*.075f,true);
+            box(c,w*.27f,h*.50f,w*.73f,h*.59f,Color.rgb(248,250,239));
+            txt(c,playerNames[idx],w*.5f,h*.56f,h*.043f,dark,true);
+            txt(c,"اضغط على الاسم لتعديله",w*.5f,h*.65f,h*.028f,dark,false);
+            txt(c,"اختر الشخصية",w*.5f,h*.73f,h*.035f,dark,true);
+            for(int i=0;i<avatarColors.length;i++) drawAvatar(c,i,w*(.20f+i*.12f),h*.82f,h*.038f,avatars[idx]==i);
+            btn(c,setupSide==1 && mode==1?"التالي":"ابدأ المباراة",w*.36f,h*.90f,w*.64f,h*.985f,setupSide==1?blue:red);
+        }
+
         private void resetMatch() {
             for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}
             stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false;
@@ -300,6 +354,7 @@ public class MainActivity extends Activity {
             p.setColor(Color.argb(45,255,255,255));
             for(int i=0;i<18;i++)c.drawCircle((i*73%1000)/1000f*w,h*(.22f+(i*37%620)/1000f),h*.0025f,p);
             txt(c,"GENERAL  •  جينيرال",w*.5f,h*.075f,h*.06f,dark,true);
+            if(setup) { drawSetup(c); return; }
             if(mode==0) {
                 txt(c,"اختر طريقة اللعب",w*.5f,h*.31f,h*.065f,dark,true);
                 btn(c,"لاعبان على نفس الجهاز",w*.12f,h*.42f,w*.48f,h*.62f,blue);
@@ -319,8 +374,10 @@ public class MainActivity extends Activity {
             txt(c,message,w*.5f,h*.145f,h*.036f,dark,true);
             float trackL=w*.18f, trackR=w*.82f, trackW=trackR-trackL;
             float[] rows={h*.29f,h*.49f,h*.69f};
-            txt(c,mode==2?"جنيرال":"اللاعب 2",w*.92f,h*.19f,h*.035f,red,true);
-            txt(c,mode==2?"أنت":"اللاعب 1",w*.08f,h*.19f,h*.035f,blue,true);
+            txt(c,mode==2?"جنيرال":playerNames[1],w*.92f,h*.19f,h*.035f,red,true);
+            txt(c,playerNames[0],w*.08f,h*.19f,h*.035f,blue,true);
+            drawAvatar(c,avatars[0],w*.08f,h*.105f,h*.035f,false);
+            drawAvatar(c,mode==2?5:avatars[1],w*.92f,h*.105f,h*.035f,false);
             if(openingToss){
                 float ds=h*.075f;
                 box(c,w*.19f-ds/2,h*.145f,w*.19f+ds/2,h*.145f+ds,red);
@@ -371,14 +428,26 @@ public class MainActivity extends Activity {
             float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
             boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
             if(mode==0) {
-                if(y>=h*.42f&&y<=h*.62f){mode=x<w*.5f?1:2;resetMatch();}
+                if(y>=h*.42f&&y<=h*.62f){mode=x<w*.5f?1:2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                invalidate();return true;
+            }
+            if(setup) {
+                int idx=setupSide-1;
+                if(y>=h*.50f && y<=h*.60f) { showNameDialog(); return true; }
+                if(y>=h*.76f && y<=h*.88f) {
+                    int choice=Math.round((x/w-.20f)/.12f);
+                    if(choice>=0 && choice<avatarColors.length) avatars[idx]=choice;
+                } else if(y>=h*.89f && y<=h*.995f) {
+                    if(setupSide==1 && mode==1) setupSide=2;
+                    else { setup=false;resetMatch(); }
+                }
                 invalidate();return true;
             }
             if(openingToss)return true;
             if(winner!=0) {
                 if(y>=h*.63f&&y<=h*.73f) {
                     if(x>=w*.27f&&x<=w*.49f) resetMatch();
-                    else if(x>=w*.52f&&x<=w*.74f) { mode=0; stage=0; winner=0; die=0; choosing=false; message="اختر طريقة اللعب"; }
+                    else if(x>=w*.52f&&x<=w*.74f) { mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; message="اختر طريقة اللعب"; }
                 }
                 invalidate();return true;
             }
