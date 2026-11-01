@@ -68,6 +68,11 @@ public class MainActivity extends Activity {
         private String lanJoinAddress=null;
 
         GameView() { super(MainActivity.this); setLayerType(View.LAYER_TYPE_SOFTWARE,null); }
+
+        @Override protected void onDetachedFromWindow() {
+            timerlessCloseLan();
+            super.onDetachedFromWindow();
+        }
         private void txt(Canvas c,String s,float x,float y,float size,int color,boolean bold) {
             p.setColor(color); p.setTextSize(size); p.setFakeBoldText(bold);
             p.setTextAlign(Paint.Align.CENTER); p.setStyle(Paint.Style.FILL); c.drawText(s,x,y,p);
@@ -162,6 +167,11 @@ public class MainActivity extends Activity {
                 });}
                 @Override public void onMove(int side,int lane,int value){runOnUiThread(()->{
                     if(mode!=3 || winner!=0 || side!=player || value!=die)return;
+                    if(lane<0 || lane>2 || !canMove(side,lane)) {
+                        message="وصلت حركة غير ممكنة — تمت مزامنة إيقافها";
+                        invalidate();
+                        return;
+                    }
                     animateMove(side,lane,value);invalidate();
                 });}
                 @Override public void onTurnCancelled(int side){runOnUiThread(()->{
