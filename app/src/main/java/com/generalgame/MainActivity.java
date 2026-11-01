@@ -389,12 +389,20 @@ public class MainActivity extends Activity {
                 return;
             }
             if(winner!=0) {
-                box(c,w*.20f,h*.25f,w*.80f,h*.78f,Color.rgb(245,249,239));
-                txt(c,winner==1?"مبروك! أنت الفائز":"انتهت المباراة — جنيرال فاز",w*.5f,h*.39f,h*.065f,winner==1?blue:red,true);
-                txt(c,"تم تدمير سلاحين من أصل ثلاثة",w*.5f,h*.49f,h*.038f,dark,true);
-                txt(c,"انتهت المعركة بنجاح",w*.5f,h*.56f,h*.032f,dark,false);
-                btn(c,"إعادة المباراة",w*.27f,h*.63f,w*.49f,h*.73f,blue);
-                btn(c,"القائمة الرئيسية",w*.52f,h*.63f,w*.74f,h*.73f,dark);
+                box(c,w*.12f,h*.19f,w*.88f,h*.80f,Color.rgb(245,249,239));
+                String winnerName=winner==1?playerNames[0]:(mode==2?"جنيرال":playerNames[1]);
+                String loserName=winner==1?(mode==2?"جنيرال":playerNames[1]):playerNames[0];
+                int winnerAvatar=winner==1?avatars[0]:(mode==2?5:avatars[1]);
+                int loserAvatar=winner==1?(mode==2?5:avatars[1]):avatars[0];
+                float portraitY=h*.39f, portraitR=h*.085f;
+                drawAvatar(c,winnerAvatar,w*.34f,portraitY,portraitR,true);
+                drawAvatar(c,loserAvatar,w*.66f,portraitY,portraitR,false);
+                p.setColor(Color.argb(155,125,125,125));c.drawCircle(w*.66f,portraitY,portraitR,p);p.setColor(Color.WHITE);
+                txt(c,winnerName,w*.34f,h*.52f,h*.038f,blue,true);
+                txt(c,loserName,w*.66f,h*.52f,h*.038f,dark,true);
+                txt(c,"الفائز: "+winnerName,w*.5f,h*.60f,h*.05f,dark,true);
+                btn(c,"إعادة المحاولة",w*.25f,h*.68f,w*.48f,h*.77f,blue);
+                btn(c,"العودة إلى الرئيسية",w*.52f,h*.68f,w*.75f,h*.77f,dark);
                 return;
             }
             txt(c,message,w*.5f,h*.145f,h*.036f,dark,true);
@@ -478,9 +486,9 @@ public class MainActivity extends Activity {
             }
             if(openingToss)return true;
             if(winner!=0) {
-                if(y>=h*.63f&&y<=h*.73f) {
-                    if(x>=w*.27f&&x<=w*.49f) resetMatch();
-                    else if(x>=w*.52f&&x<=w*.74f) { mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; message="اختر طريقة اللعب"; }
+                if(y>=h*.68f&&y<=h*.78f) {
+                    if(x>=w*.25f&&x<=w*.48f) resetMatch();
+                    else if(x>=w*.52f&&x<=w*.75f) { mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; message="اختر طريقة اللعب"; }
                 }
                 invalidate();return true;
             }
