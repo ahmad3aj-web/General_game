@@ -151,7 +151,7 @@ public final class LanMatchSession implements LanConnection.Listener {
     }
 
     public synchronized void cancelTurn() {
-        if (!connected || activeSide != localSide || rolledValue != 0) return;
+        if (!connected || activeSide != localSide || moveReceived) return;
         timer.cancel();
         try {
             JSONObject message = new JSONObject();
@@ -159,7 +159,9 @@ public final class LanMatchSession implements LanConnection.Listener {
             message.put("type", LanGameProtocol.TURN_CANCEL);
             message.put("turnId", expectedTurn);
             message.put("side", localSide);
+            message.put("value", rolledValue);
             connection.send(message);
+            moveReceived = true;
             listener.onTurnCancelled(localSide);
         } catch (JSONException | java.io.IOException error) {
             listener.onProtocolError("تعذر إلغاء الدور");
@@ -203,7 +205,7 @@ public final class LanMatchSession implements LanConnection.Listener {
             moveReceived = true;
             listener.onMove(side, lane, rolledValue);
         } else if (LanGameProtocol.TURN_CANCEL.equals(type)) {
-            if (activeSide != side || rolledValue != 0) {
+            if (activeSide != side || moveReceived\n                    || message.optInt("value", 0) != rolledValue) {
                 listener.onProtocolError("إلغاء دور غير صالح");
                 return;
             }
