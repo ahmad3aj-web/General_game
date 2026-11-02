@@ -39,6 +39,13 @@ public class MainActivity extends Activity {
             View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         gameView = new GameView();
         setContentView(gameView);
+        gameView.handleInviteIntent(getIntent());
+    }
+
+    @Override protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (gameView != null) gameView.handleInviteIntent(intent);
     }
 
     @Override protected void onPause() { if(gameView!=null)gameView.pauseMusic(); super.onPause(); }
@@ -97,6 +104,8 @@ public class MainActivity extends Activity {
         private int onlineLocalSide=1, onlineTurnId=0;
         private boolean onlineOpeningStarted=false;
         private String onlineJoinCode=null;
+        private boolean onlineQuickMatch=false;
+        private boolean onlineInvitePending=false;
 
         GameView() {
             super(MainActivity.this);
@@ -268,12 +277,47 @@ public class MainActivity extends Activity {
                 .setNeutralButton("إلغاء",null).show();
         }
         private void showOnlineModeDialog() {
+            final String[] choices={"لعب سريع — ابحث عن لاعب","دعوة صديق عبر واتساب","الانضمام برمز غرفة"};
             new AlertDialog.Builder(MainActivity.this)
                 .setTitle("اللعب عبر الإنترنت")
-                .setMessage("اختر طريقة اللعب. ستتم المباراة برمز غرفة، دون الحاجة إلى أن يكون الجهازان على شبكة Wi-Fi نفسها.")
-                .setPositiveButton("إنشاء غرفة", (d,which)->showOnlineSetupNotice(true))
-                .setNegativeButton("الانضمام برمز", (d,which)->showOnlineSetupNotice(false))
-                .setNeutralButton("إلغاء",null).show();
+                .setItems(choices,(dialog,which)->{
+                    mode=4; setup=true; setupSide=1; onlineJoinCode=null;
+                    playerNames[0]="أنت"; avatars[0]=0;
+                    if(which==0) {
+                        onlineQuickMatch=true; onlineInvitePending=false;
+                    } else if(which==1) {
+                        onlineQuickMatch=false; onlineInvitePending=true;
+                    } else {
+                        setup=false; onlineQuickMatch=false; onlineInvitePending=false;
+                        showOnlineSetupNotice(false);
+                        return;
+                    }
+                    invalidate();
+                })
+                .setNegativeButton("إلغاء",null).show();
+        }
+
+        private void handleInviteIntent(android.content.Intent intent) {
+            if(intent==null || intent.getData()==null)return;
+            android.net.Uri uri=intent.getData();
+            if(!"generalgame".equals(uri.getScheme()) || !"join".equals(uri.getHost()))return;
+            String code=uri.getQueryParameter("room");
+            if(code==null || !code.matches("[A-Za-z0-9]{8}"))return;
+            onlineJoinCode=code.toUpperCase(Locale.ROOT);
+            onlineLocalSide=2; onlineQuickMatch=false; onlineInvitePending=false;
+            mode=4; setup=true; setupSide=2;
+            playerNames[1]="أنت"; avatars[1]=1;
+            message="وصلتك دعوة للعب عبر الإنترنت";
+            invalidate();
+        }
+
+        private void shareInviteLink(String code) {
+            String link="generalgame://join?room="+code;
+            android.content.Intent send=new android.content.Intent(android.content.Intent.ACTION_SEND);
+            send.setType("text/plain");
+            send.putExtra(android.content.Intent.EXTRA_TEXT,
+                    "تعال نلعب GENERAL مع بعض! اضغط الرابط لفتح اللعبة والانضمام للمباراة:\n"+link);
+            startActivity(android.content.Intent.createChooser(send,"إرسال دعوة GENERAL"));
         }
         private void showOnlineSetupNotice(boolean createRoom) {
             if(createRoom) {
@@ -388,10 +432,18 @@ public class MainActivity extends Activity {
             onlineOpeningStarted=false; onlineTurnId=0;
             onlineSession=new OnlineMatchSession(new OnlineMatchSession.Listener(){
                 @Override public void onConnected(String code){runOnUiThread(()->{
-                    message=onlineLocalSide==1?"الغرفة جاهزة — أرسل الرمز للاعب الثاني":"تم الانضمام — بانتظار بدء المباراة";
-                    if(onlineLocalSide==1) new AlertDialog.Builder(MainActivity.this).setTitle("رمز غرفة GENERAL")
-                        .setMessage("رمز غرفتك هو:\n\n"+code+"\n\nأرسل الرمز للاعب الثاني، وانتظر انضمامه.")
-                        .setPositiveButton("حسناً",null).show();
+                    if(onlineInvitePending && onlineLocalSide==1) {
+                        message="تم تجهيز الدعوة — أرسلها لصديقك";
+                        onlineInvitePending=false;
+                        shareInviteLink(code);
+                    } else if(onlineQuickMatch) {
+                        message="جارٍ البحث عن لاعب متاح...";
+                    } else {
+                        message=onlineLocalSide==1?"الغرفة جاهزة — أرسل الرمز للاعب الثاني":"تم الانضمام — بانتظار بدء المباراة";
+                        if(onlineLocalSide==1) new AlertDialog.Builder(MainActivity.this).setTitle("رمز غرفة GENERAL")
+                            .setMessage("رمز غرفتك هو:\n\n"+code+"\n\nأرسل الرمز للاعب الثاني، وانتظر انضمامه.")
+                            .setPositiveButton("حسناً",null).show();
+                    }
                     invalidate();
                 });}
                 @Override public void onPeerInfo(int side,String name,int avatar){runOnUiThread(()->{
@@ -399,7 +451,8 @@ public class MainActivity extends Activity {
                 });}
                 @Override public void onPeerJoined(){runOnUiThread(()->{
                     if(mode!=4)return;
-                    message=onlineLocalSide==1?"تم انضمام اللاعب — جارٍ إجراء قرعة البداية":"تم الاتصال بالمضيف — بانتظار القرعة";
+                    message=onlineQuickMatch?"تم العثور على لاعب — جارٍ إجراء قرعة البداية":
+                            (onlineLocalSide==1?"تم انضمام اللاعب — جارٍ إجراء قرعة البداية":"تم الاتصال بالمضيف — بانتظار القرعة");
                     if(!onlineOpeningStarted) {
                         onlineOpeningStarted=true;
                         if(onlineLocalSide==1)onlineSession.startOpeningToss();
@@ -467,6 +520,10 @@ public class MainActivity extends Activity {
         private void startOnlineHost(String name,int avatar) {
             onlineLocalSide=1; createOnlineSession(); message="جارٍ إنشاء غرفة الإنترنت...";
             onlineSession.createRoom(name,avatar); invalidate();
+        }
+        private void startOnlineQuickMatch(String name,int avatar) {
+            onlineLocalSide=1; createOnlineSession(); message="جارٍ البحث عن لاعب متاح...";
+            onlineSession.quickMatch(name,avatar); invalidate();
         }
         private void startOnlineJoin(String code,String name,int avatar) {
             onlineLocalSide=2; createOnlineSession(); message="جارٍ الانضمام إلى غرفة الإنترنت...";
@@ -660,7 +717,10 @@ public class MainActivity extends Activity {
                 txt(c,"اختر الشخصية",w*.5f,h*.73f,h*.035f,dark,true);
                 for(int i=0;i<8;i++) drawAvatar(c,i,w*(.29f+(i%4)*.14f),h*(i<4?.785f:.855f),h*.031f,avatars[idx]==i);
             }
-            btn(c,setupSide==1 && mode==1?"التالي":"ابدأ المباراة",w*.36f,h*.90f,w*.64f,h*.985f,setupSide==1?blue:red);
+            String startLabel=setupSide==1 && mode==1?"التالي":
+                    (mode==4 && onlineQuickMatch?"ابحث عن لاعب":
+                    (mode==4 && onlineInvitePending?"إنشاء الدعوة":"ابدأ المباراة"));
+            btn(c,startLabel,w*.36f,h*.90f,w*.64f,h*.985f,setupSide==1?blue:red);
         }
 
 
@@ -1219,7 +1279,7 @@ public class MainActivity extends Activity {
                 btn(c,"مواجهة عبر Wi-Fi",w*.53f,h*.535f,w*.93f,h*.675f,Color.rgb(52,125,91));
                 btn(c,"سجل المباريات",w*.16f,h*.735f,w*.48f,h*.835f,dark);
                 btn(c,"لوحة التقدم",w*.52f,h*.735f,w*.84f,h*.835f,Color.rgb(155,105,28));
-                txt(c,"الإنترنت: برمز غرفة  •  Wi-Fi: على الشبكة نفسها",w*.5f,h*.91f,h*.026f,dark,false);
+                txt(c,"الإنترنت: لعب سريع أو دعوة صديق أو رمز  •  Wi-Fi: الشبكة نفسها",w*.5f,h*.91f,h*.024f,dark,false);
                 return;
             }
             if(winner!=0 && !bonusAttempt) {
@@ -1355,7 +1415,11 @@ public class MainActivity extends Activity {
                 } else if(x>=w*.36f && x<=w*.64f && y>=h*.90f && y<=h*.985f) {
                     if(setupSide==1 && mode==1) setupSide=2;
                     else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
-                    else if(mode==4){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;onlineOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(onlineLocalSide==1)startOnlineHost(playerNames[0],avatars[0]);else startOnlineJoin(onlineJoinCode,playerNames[1],avatars[1]);}
+                    else if(mode==4){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;onlineOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
+                        if(onlineQuickMatch)startOnlineQuickMatch(playerNames[0],avatars[0]);
+                        else if(onlineInvitePending)startOnlineHost(playerNames[0],avatars[0]);
+                        else if(onlineLocalSide==1)startOnlineHost(playerNames[0],avatars[0]);
+                        else startOnlineJoin(onlineJoinCode,playerNames[1],avatars[1]);}
                     else { setup=false;resetMatch(); }
                 }
                 invalidate();return true;
