@@ -200,7 +200,7 @@ public class MainActivity extends Activity {
         private void showExitConfirmation() {
             new AlertDialog.Builder(MainActivity.this).setTitle("تأكيد الخروج")
                 .setMessage("هل أنت متأكد أنك تريد الخروج من لعبة GENERAL؟")
-                .setPositiveButton("خروج",(dialog,which)->{timerlessCloseLan();finish();})
+                .setPositiveButton("خروج",(dialog,which)->{timerlessCloseLan();timerlessCloseOnline();finish();})
                 .setNegativeButton("إلغاء",null).show();
         }
         private void vibrateForExplosion() {
@@ -887,6 +887,10 @@ public class MainActivity extends Activity {
                 openingToss=false;
                 message="طلب إعادة المباراة — بانتظار موافقة اللاعب الآخر";
                 lanSession.requestRematch();
+            } else if(mode==4 && onlineSession!=null && onlineSession.isConnected()) {
+                onlineOpeningStarted=true; openingToss=false;
+                message="طلب إعادة المباراة — بانتظار موافقة اللاعب الآخر";
+                onlineSession.requestRematch();
             } else {
                 message="استعدوا للحرب";
                 startBattleIntro();
@@ -933,6 +937,7 @@ public class MainActivity extends Activity {
             } else {
                 player=player==1?2:1;
                 if(mode==3 && lanSession!=null){lanTurnId++;lanSession.beginTurn(lanTurnId,player);}
+                else if(mode==4 && onlineSession!=null){onlineTurnId++;onlineSession.beginTurn(onlineTurnId,player);}
                 else message="دور اللاعب "+player+" — اضغط النرد";
             }
             invalidate();
@@ -1242,7 +1247,8 @@ public class MainActivity extends Activity {
                 return;
             }
             txt(c,message,w*.5f,h*.145f,h*.036f,dark,true);
-            if(mode==3 && (lanSession==null || !lanSession.isConnected())) {
+            if((mode==3 && (lanSession==null || !lanSession.isConnected()))
+                    || (mode==4 && (onlineSession==null || !onlineSession.isConnected()))) {
                 btn(c,"إلغاء الاتصال والعودة",w*.31f,h*.81f,w*.69f,h*.92f,dark);
                 return;
             }
@@ -1288,10 +1294,11 @@ public class MainActivity extends Activity {
             drawExplosion(c);
             float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
             boolean localRollTurn=(mode==1 || (mode==2 && player==1)
-                    || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected()));
+                    || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected())
+                    || (mode==4 && player==onlineLocalSide && onlineSession!=null && onlineSession.isConnected()));
             if(localRollTurn && !choosing && die==0) {
                 float buttonHalf=w*.115f;
-                btn(c,mode==3?("أطلق ("+lanCountdown+")"):"أطلق",
+                btn(c,(mode==3 || mode==4)?("أطلق ("+lanCountdown+")"):"أطلق",
                         diceCx-buttonHalf,h*.80f,diceCx+buttonHalf,h*.93f,player==1?blue:red);
             } else {
                 int diceColor=winner!=0?dark:(player==1?blue:red);
@@ -1347,14 +1354,17 @@ public class MainActivity extends Activity {
                 } else if(x>=w*.36f && x<=w*.64f && y>=h*.90f && y<=h*.985f) {
                     if(setupSide==1 && mode==1) setupSide=2;
                     else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
+                    else if(mode==4){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;onlineOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(onlineLocalSide==1)startOnlineHost(playerNames[0],avatars[0]);else startOnlineJoin(onlineJoinCode,playerNames[1],avatars[1]);}
                     else { setup=false;resetMatch(); }
                 }
                 invalidate();return true;
             }
             if(openingToss)return true;
-            if(mode==3 && (lanSession==null || !lanSession.isConnected())) {
+            if((mode==3 && (lanSession==null || !lanSession.isConnected()))
+                    || (mode==4 && (onlineSession==null || !onlineSession.isConnected()))) {
                 if(x>=w*.31f && x<=w*.69f && y>=h*.81f && y<=h*.92f) {
-                    timerlessCloseLan();lanHostPending=false;lanJoinAddress=null;
+                    if(mode==3){timerlessCloseLan();lanHostPending=false;lanJoinAddress=null;}
+                    else timerlessCloseOnline();
                     mode=0;setup=false;message="اختر طريقة اللعب";
                 }
                 invalidate();return true;
@@ -1366,7 +1376,8 @@ public class MainActivity extends Activity {
                 }
                 invalidate();return true;
             }
-            boolean localRollTurn=(mode==1 || (mode==2 && player==1) || (mode==3 && player==lanLocalSide));
+            boolean localRollTurn=(mode==1 || (mode==2 && player==1)
+                    || (mode==3 && player==lanLocalSide) || (mode==4 && player==onlineLocalSide));
             boolean launchTapped=localRollTurn && !choosing && die==0
                     && y>=h*.80f && y<=h*.94f && Math.abs(x-diceCx)<=w*.115f;
             if(!choosing && !diceTapped && !launchTapped)return true;
@@ -1376,6 +1387,7 @@ public class MainActivity extends Activity {
             } else if(!choosing && (diceTapped || launchTapped)) {
                 if(mode==2&&player==2){computerTurn();}
                 else if(mode==3){if(lanSession!=null)lanSession.rollNow(false);}
+                else if(mode==4){if(onlineSession!=null)onlineSession.rollNow(false);}
                 else {
                     die=random.nextInt(6)+1;choosing=true;
                     if(!anyMove(player)){
@@ -1408,6 +1420,7 @@ public class MainActivity extends Activity {
                     if(!canMove(player,lane))message="هذه الحركة غير ممكنة — اختر سلاحاً آخر";
                     else {
                         if(mode==3 && lanSession!=null){if(lanSession.sendMove(lane))animateMove(player,lane,die);}
+                        else if(mode==4 && onlineSession!=null){if(onlineSession.sendMove(lane))animateMove(player,lane,die);}
                         else animateMove(player,lane,die);
                     }
                 }
