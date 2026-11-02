@@ -21,6 +21,13 @@
           }
         }
       }
+    },
+    "quickMatch": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.hasChildren(['hostUid','roomCode','createdAt','status','name','avatar']) && newData.child('hostUid').val() == auth.uid && newData.child('roomCode').isString() && newData.child('roomCode').val().length == 8 && newData.child('status').val() == 'waiting' && newData.child('createdAt').isNumber()"
+      }
     }
   }
 }
