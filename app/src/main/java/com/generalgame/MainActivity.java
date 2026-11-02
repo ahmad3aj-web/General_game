@@ -5,6 +5,10 @@ import android.app.AlertDialog;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Vibrator;
+import android.os.VibrationEffect;
+import android.media.ToneGenerator;
+import android.media.AudioManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -36,6 +40,9 @@ public class MainActivity extends Activity {
     private class GameView extends View {
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Random random = new Random();
+        private ToneGenerator tones;
+        private Vibrator vibrator;
+        private boolean soundOn, musicOn, vibrationOn;
         private final int[] pos1 = {0,0,0}, pos2 = {0,0,0};
         private final boolean[] dead1 = {false,false,false}, dead2 = {false,false,false};
         private final String[] names = {"الدبابة","الطائرة","المدفع"};
@@ -69,7 +76,11 @@ public class MainActivity extends Activity {
         private boolean lanHostPending=false;
         private String lanJoinAddress=null;
 
-        GameView() { super(MainActivity.this); setLayerType(View.LAYER_TYPE_SOFTWARE,null); }
+        GameView() { super(MainActivity.this); setLayerType(View.LAYER_TYPE_SOFTWARE,null);
+            tones=new ToneGenerator(AudioManager.STREAM_MUSIC,35); vibrator=(Vibrator)getSystemService(VIBRATOR_SERVICE);
+            android.content.SharedPreferences prefs=getSharedPreferences("GENERAL_PREFS",MODE_PRIVATE);
+            soundOn=prefs.getBoolean("sound",true); musicOn=prefs.getBoolean("music",false); vibrationOn=prefs.getBoolean("vibration",true);
+        }
 
         @Override protected void onDetachedFromWindow() {
             timerlessCloseLan();
@@ -95,6 +106,13 @@ public class MainActivity extends Activity {
             for(int i=0;i<3;i++) if(canMove(side,i)) return true;
             return false;
         }
+
+        private void playTone(int tone,int duration){if(soundOn&&tones!=null)tones.startTone(tone,duration);}
+        private void explodeFeedback(){playTone(ToneGenerator.TONE_PROP_NACK,260);if(vibrationOn&&vibrator!=null&&vibrator.hasVibrator()){if(android.os.Build.VERSION.SDK_INT>=26)vibrator.vibrate(VibrationEffect.createOneShot(230,150));else vibrator.vibrate(230);}}
+        private void showSettings(){final String[] labels={"المؤثرات الصوتية","موسيقى خلفية خفيفة","الاهتزاز عند الانفجار"};final boolean[] values={soundOn,musicOn,vibrationOn};
+            new AlertDialog.Builder(MainActivity.this).setTitle("إعدادات اللعبة").setMultiChoiceItems(labels,values,(d,i,checked)->values[i]=checked)
+            .setPositiveButton("حفظ",(d,which)->{soundOn=values[0];musicOn=values[1];vibrationOn=values[2];getSharedPreferences("GENERAL_PREFS",MODE_PRIVATE).edit().putBoolean("sound",soundOn).putBoolean("music",musicOn).putBoolean("vibration",vibrationOn).apply();if(musicOn)playTone(ToneGenerator.TONE_PROP_BEEP,180);invalidate();}).setNegativeButton("إلغاء",null).show();}
+        private void confirmExit(){new AlertDialog.Builder(MainActivity.this).setTitle("الخروج من اللعبة؟").setMessage("هل أنت متأكد أنك تريد إغلاق GENERAL؟").setPositiveButton("خروج",(d,which)->{timerlessCloseLan();finish();}).setNegativeButton("إلغاء",null).show();}
 
         private void showLanModeDialog() {
             new AlertDialog.Builder(MainActivity.this)
@@ -527,7 +545,7 @@ public class MainActivity extends Activity {
             if(mode!=2 || winner!=0 || player!=2)return;
             final int epoch=matchEpoch;
             choosing=false;
-            die=random.nextInt(6)+1;
+            die=random.nextInt(6)+1;playTone(ToneGenerator.TONE_PROP_BEEP,120);
             message="جنيرال يرمي النرد...";
             invalidate();
             postDelayed(new Runnable(){ @Override public void run(){
@@ -593,8 +611,8 @@ public class MainActivity extends Activity {
                     postDelayed(step[0],115);
                 } else {
                     if(target>=15){
-                        if(side==1){dead2[lane]=true;spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);}
-                        else {dead1[lane]=true;spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);}
+                        if(side==1){dead2[lane]=true;spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);explodeFeedback();}
+                        else {dead1[lane]=true;spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);explodeFeedback();}
                     }
                     finishCheck();
                     if(winner==0){
@@ -811,7 +829,9 @@ public class MainActivity extends Activity {
                 btn(c,"لاعبان على نفس الجهاز",w*.12f,h*.37f,w*.48f,h*.53f,blue);
                 btn(c,"ضد جنيرال الكمبيوتر",w*.52f,h*.37f,w*.88f,h*.53f,red);
                 btn(c,"مواجهة عبر Wi-Fi",w*.30f,h*.56f,w*.70f,h*.68f,Color.rgb(52,125,91));
-                btn(c,"سجل المباريات",w*.36f,h*.73f,w*.64f,h*.83f,dark);
+                btn(c,"سجل المباريات",w*.36f,h*.70f,w*.64f,h*.79f,dark);
+                btn(c,"الإعدادات",w*.20f,h*.82f,w*.46f,h*.92f,Color.rgb(83,111,95));
+                btn(c,"خروج",w*.54f,h*.82f,w*.80f,h*.92f,Color.rgb(130,60,55));
                 txt(c,"جنيرال يلعب وحده ويتخذ قراراته",w*.5f,h*.90f,h*.028f,dark,false);
                 return;
             }
@@ -908,7 +928,8 @@ public class MainActivity extends Activity {
                 if(historyScreen) { if(y>=h*.93f)historyScreen=false; }
                 else if(y>=h*.37f&&y<=h*.53f){mode=x<w*.5f?1:2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
                 else if(y>=h*.56f&&y<=h*.68f)showLanModeDialog();
-                else if(y>=h*.73f&&y<=h*.84f)historyScreen=true;
+                else if(y>=h*.70f&&y<=h*.80f)historyScreen=true;
+                else if(y>=h*.82f&&y<=h*.92f){if(x<w*.5f)showSettings();else confirmExit();}
                 invalidate();return true;
             }
             if(setup) {
@@ -953,7 +974,7 @@ public class MainActivity extends Activity {
                 if(mode==2&&player==2){computerTurn();}
                 else if(mode==3){if(lanSession!=null)lanSession.rollNow(false);}
                 else {
-                    die=random.nextInt(6)+1;choosing=true;
+                    die=random.nextInt(6)+1;playTone(ToneGenerator.TONE_PROP_BEEP,120);choosing=true;
                     if(!anyMove(player)){
                         message="لا يوجد سلاح مناسب! الدور ملغي";
                         choosing=false;die=0;invalidate();
