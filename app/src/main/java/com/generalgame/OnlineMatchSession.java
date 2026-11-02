@@ -181,7 +181,7 @@ public final class OnlineMatchSession {
         Map<String, Object> value = new HashMap<>();
         value.put("side", side);
         value.put("name", name == null || name.trim().isEmpty() ? "لاعب" : name.trim());
-        value.put("avatar", Math.max(0, Math.min(5, avatar)));
+        value.put("avatar", Math.max(0, Math.min(7, avatar)));
         value.put("connected", true);
         return value;
     }
