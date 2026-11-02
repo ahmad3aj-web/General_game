@@ -897,6 +897,7 @@ public class MainActivity extends Activity {
             }
             if(winner!=0) {
                 box(c,w*.12f,h*.19f,w*.88f,h*.80f,Color.rgb(245,249,239));
+                String winnerName=winner==1?playerNames[0]:(mode==2?"جنيرال":playerNames[1]);
                 float portraitY=h*.39f, portraitR=h*.085f;
                 if(mode==2) {
                     boolean generalWon=winner==2;
@@ -905,7 +906,6 @@ public class MainActivity extends Activity {
                     txt(c,"جنيرال",w*.34f,h*.52f,h*.038f,dark,true);
                     txt(c,playerNames[0],w*.66f,h*.52f,h*.038f,blue,true);
                 } else {
-                    String winnerName=winner==1?playerNames[0]:playerNames[1];
                     String loserName=winner==1?playerNames[1]:playerNames[0];
                     int winnerAvatar=winner==1?avatars[0]:avatars[1];
                     int loserAvatar=winner==1?avatars[1]:avatars[0];
