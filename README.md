@@ -21,3 +21,7 @@
 - الفوز عند تدمير الأسلحة الثلاثة للخصم.
 
 هذه نسخة أولية لا تحتوي بعد على الذكاء الخبير أو اللعب عبر الإنترنت أو الرسومات النهائية.
+
+
+### Background music attribution
+The orchestral battle soundtrack “Dramatic2” is by PeriTune. Source: https://peritune.com/dramatic2/ . The source recording is distributed under Creative Commons Attribution (CC BY); attribution is provided here. The Android build downloads and converts the recording during CI.
