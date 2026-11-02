@@ -41,8 +41,19 @@ public final class OnlineMatchSession {
     private final Handler main = new Handler(Looper.getMainLooper());
     private final Random random = new Random();
     private final FirebaseAuth auth = FirebaseAuth.getInstance();
-    private final DatabaseReference rooms = FirebaseDatabase.getInstance(DATABASE_URL).getReference("rooms");
-    private final DatabaseReference quickMatches = FirebaseDatabase.getInstance(DATABASE_URL).getReference("quickMatch");
+    private final FirebaseDatabase database = FirebaseDatabase.getInstance(DATABASE_URL);
+    private final DatabaseReference rooms = database.getReference("rooms");
+    private final DatabaseReference quickMatches = database.getReference("quickMatch");
+    private Boolean databaseConnected = null;
+    private final ValueEventListener connectionListener = new ValueEventListener() {
+        @Override public void onDataChange(DataSnapshot snapshot) {
+            Boolean value = snapshot.getValue(Boolean.class);
+            databaseConnected = value;
+        }
+        @Override public void onCancelled(DatabaseError error) {
+            databaseConnected = false;
+        }
+    };
     private boolean quickMatchMode;
     private long quickMatchCreatedAt;
     private long quickMatchStartedAt;
@@ -72,6 +83,7 @@ public final class OnlineMatchSession {
     public OnlineMatchSession(Listener listener) {
         if (listener == null) throw new IllegalArgumentException("listener");
         this.listener = listener;
+        database.getReference(".info/connected").addValueEventListener(connectionListener);
         timer = new LanTurnTimer(new LanTurnTimer.Listener() {
             @Override public void onTick(int seconds) { listener.onCountdown(seconds); }
             @Override public void onTimeout() { rollNow(true); }
@@ -138,7 +150,15 @@ public final class OnlineMatchSession {
         Runnable timeout = () -> {
             if (finished[0]) return;
             finished[0] = true;
-            listener.onError("انتهت مهلة إنشاء الغرفة بعد 15 ثانية. افحص اتصال الإنترنت وصلاحيات Realtime Database ثم حاول مجدداً.");
+            String connection = databaseConnected == null ? "لم تصل حالة الاتصال بعد"
+                    : (databaseConnected ? "متصل بخادم Realtime Database" : "غير متصل بخادم Realtime Database");
+            String authState = auth.getCurrentUser() == null ? "غير مسجل الدخول"
+                    : (auth.getCurrentUser().isAnonymous() ? "دخول مجهول ناجح" : "مستخدم مسجل");
+            listener.onError("انتهت مهلة إنشاء الغرفة بعد 15 ثانية.\n"
+                    + "تشخيص الاتصال: " + connection + ".\n"
+                    + "حالة المصادقة: " + authState + ".\n"
+                    + "قاعدة البيانات: europe-west1.\n"
+                    + "لم يصل تأكيد الكتابة من الخادم؛ لا تغيّر قواعد Firebase الآن.");
         };
         main.postDelayed(timeout, 15000L);
         candidate.setValue(data).addOnCompleteListener(task -> {
@@ -147,8 +167,12 @@ public final class OnlineMatchSession {
             main.removeCallbacks(timeout);
             if (!task.isSuccessful()) {
                 String detail = task.getException() == null
-                        ? "سبب غير معروف" : task.getException().getMessage();
-                listener.onError("فشل إنشاء غرفة الإنترنت في Realtime Database: " + detail);
+                        ? "سبب غير معروف" : task.getException().toString();
+                String connection = databaseConnected == null ? "غير معروف"
+                        : (databaseConnected ? "متصل" : "غير متصل");
+                listener.onError("فشل إنشاء غرفة الإنترنت في Realtime Database.\n"
+                        + "التفاصيل: " + detail + "\n"
+                        + "حالة الاتصال بالخادم: " + connection);
                 return;
             }
             localSide = 1;
@@ -519,5 +543,6 @@ public final class OnlineMatchSession {
         timer.cancel();
         removeQuickMatchEntry();
         detachRoomListeners();
+        database.getReference(".info/connected").removeEventListener(connectionListener);
     }
 }
