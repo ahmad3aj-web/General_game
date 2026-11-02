@@ -11,8 +11,7 @@
         },
         "players": {
           "$uid": {
-            ".write": "auth != null && auth.uid == $uid && (auth.uid == root.child('rooms').child($room).child('hostUid').val() || auth.uid == root.child('rooms').child($room).child('guestUid').val())",
-            ".validate": "newData.hasChildren(['side', 'name', 'avatar', 'connected']) && ((auth.uid == root.child('rooms').child($room).child('hostUid').val() && newData.child('side').val() == 1) || (auth.uid == root.child('rooms').child($room).child('guestUid').val() && newData.child('side').val() == 2))"
+            ".write": "auth != null && auth.uid == $uid && (auth.uid == root.child('rooms').child($room).child('hostUid').val() || auth.uid == root.child('rooms').child($room).child('guestUid').val())"
           }
         },
         "actions": {
