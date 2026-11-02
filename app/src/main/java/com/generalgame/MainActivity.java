@@ -249,7 +249,27 @@ public class MainActivity extends Activity {
             c.drawRoundRect(new RectF(l,t,r,b),16,16,p);
         }
         private void btn(Canvas c,String s,float l,float t,float r,float b,int color) {
-            box(c,l,t,r,b,color); txt(c,s,(l+r)/2,(t+b)/2+h*.014f,h*.043f,Color.WHITE,true);
+            float radius=Math.min(h*.025f,(b-t)*.24f);
+            boolean pressed=touchDown && touchDownX>=l && touchDownX<=r && touchDownY>=t && touchDownY<=b;
+            float lift=pressed?h*.002f:h*.004f;
+            RectF outer=new RectF(l,t+lift,r,b);
+            p.setShader(null);p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.argb(75,20,28,24));
+            c.drawRoundRect(new RectF(l,t+lift+h*.004f,r,b+h*.004f),radius,radius,p);
+            p.setColor(shade(color,pressed?.72f:1.16f));
+            c.drawRoundRect(outer,radius,radius,p);
+            RectF face=new RectF(l+h*.003f,t+lift+h*.003f,r-h*.003f,b-h*.003f);
+            p.setShader(new LinearGradient(0,face.top,0,face.bottom,
+                    pressed?shade(color,.88f):shade(color,1.12f),
+                    pressed?shade(color,.72f):shade(color,.88f),Shader.TileMode.CLAMP));
+            c.drawRoundRect(face,radius*.82f,radius*.82f,p);p.setShader(null);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1.5f,h*.0022f));
+            p.setColor(Color.argb(165,255,255,255));
+            c.drawRoundRect(face,radius*.82f,radius*.82f,p);p.setStyle(Paint.Style.FILL);
+            float textSize=Math.min(h*.043f,(r-l)*.105f);
+            p.setTextSize(textSize);p.setFakeBoldText(true);
+            while(p.measureText(s)>(r-l)*.88f && textSize>h*.020f){textSize*=.94f;p.setTextSize(textSize);}
+            txt(c,s,(l+r)/2,(t+b)/2+textSize*.34f+(pressed?h*.002f:0),textSize,Color.WHITE,true);
         }
         private int[] positions(int side) { return side==1 ? pos1 : pos2; }
         private boolean[] destroyed(int side) { return side==1 ? dead1 : dead2; }
@@ -727,7 +747,7 @@ public class MainActivity extends Activity {
                     txt(c,levels[i],left+w*.08f,h*.733f,h*.025f,dark,difficulty==i);
                 }
                 txt(c,"اختر الشخصية — 16 بطلاً وبطلة",w*.5f,h*.785f,h*.026f,dark,true);
-                for(int i=0;i<16;i++) drawAvatar(c,i,w*(.29f+(i%4)*.14f),h*(.82f+(i/4)*.032f),h*.019f,avatars[idx]==i);
+                for(int i=0;i<16;i++) drawAvatar(c,i,w*(.29f+(i%4)*.14f),h*(.81f+(i/4)*.026f),h*.017f,avatars[idx]==i);
             } else {
                 txt(c,"اختر الشخصية — 16 بطلاً وبطلة",w*.5f,h*.735f,h*.027f,dark,true);
                 for(int i=0;i<16;i++) drawAvatar(c,i,w*(.29f+(i%4)*.14f),h*(.765f+(i/4)*.036f),h*.021f,avatars[idx]==i);
@@ -735,7 +755,7 @@ public class MainActivity extends Activity {
             String startLabel=setupSide==1 && mode==1?"التالي":
                     (mode==4 && onlineQuickMatch?"ابحث عن لاعب":
                     (mode==4 && onlineInvitePending?"إنشاء الدعوة":"ابدأ المباراة"));
-            btn(c,startLabel,w*.36f,h*.925f,w*.64f,h*.985f,setupSide==1?blue:red);
+            btn(c,startLabel,w*.36f,h*.92f,w*.64f,h*.985f,setupSide==1?blue:red);
         }
 
 
@@ -1395,9 +1415,9 @@ public class MainActivity extends Activity {
 
         @Override public boolean onTouchEvent(MotionEvent e) {
             if(e.getAction()==MotionEvent.ACTION_DOWN) {
-                touchDown=true;touchDownX=e.getX();touchDownY=e.getY();return true;
+                touchDown=true;touchDownX=e.getX();touchDownY=e.getY();invalidate();return true;
             }
-            if(e.getAction()==MotionEvent.ACTION_CANCEL){touchDown=false;return true;}
+            if(e.getAction()==MotionEvent.ACTION_CANCEL){touchDown=false;invalidate();return true;}
             if(e.getAction()!=MotionEvent.ACTION_UP)return true;
             if(!touchDown)return true;
             float x=e.getX(),y=e.getY();
@@ -1428,15 +1448,15 @@ public class MainActivity extends Activity {
                     int level=Math.round((x/w-.24f)/.18f);
                     if(level>=0 && level<4) difficulty=level;
                 } else if(x>=w*.26f && x<=w*.74f
-                        && ((mode==2 && y>=h*.80f && y<=h*.935f)
+                        && ((mode==2 && y>=h*.795f && y<=h*.905f)
                         || (mode!=2 && y>=h*.74f && y<=h*.90f))) {
-                    float firstRow=mode==2?.82f:.765f;
-                    float rowStep=mode==2?.032f:.036f;
+                    float firstRow=mode==2?.81f:.765f;
+                    float rowStep=mode==2?.026f:.036f;
                     int row=Math.round((y/h-firstRow)/rowStep);
                     int col=Math.round((x/w-.29f)/.14f);
                     int choice=row*4+col;
                     if(row>=0 && row<4 && col>=0 && col<4 && choice<avatarColors.length) avatars[idx]=choice;
-                } else if(x>=w*.36f && x<=w*.64f && y>=h*.925f && y<=h*.985f) {
+                } else if(x>=w*.36f && x<=w*.64f && y>=h*.92f && y<=h*.985f) {
                     if(setupSide==1 && mode==1) setupSide=2;
                     else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
                     else if(mode==4){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;onlineOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
