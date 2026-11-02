@@ -170,11 +170,21 @@ public class MainActivity extends Activity {
         private void vibrateForExplosion() {
             if(!vibrationEnabled)return;
             try {
-                Vibrator vibrator=(Vibrator)getSystemService(VIBRATOR_SERVICE);
-                if(vibrator==null || !vibrator.hasVibrator())return;
-                if(Build.VERSION.SDK_INT>=26)vibrator.vibrate(VibrationEffect.createOneShot(1000,VibrationEffect.DEFAULT_AMPLITUDE));
-                else vibrator.vibrate(1000);
-            } catch(Exception ignored) {}
+                Vibrator vibrator=getSystemService(Vibrator.class);
+                if(vibrator==null || !vibrator.hasVibrator()) {
+                    performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+                    return;
+                }
+                vibrator.cancel();
+                if(Build.VERSION.SDK_INT>=26) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(1000,255));
+                } else {
+                    vibrator.vibrate(1000);
+                }
+            } catch(Exception ignored) {
+                try { performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS); }
+                catch(Exception ignoredAgain) {}
+            }
         }
         private void txt(Canvas c,String s,float x,float y,float size,int color,boolean bold) {
             p.setColor(color); p.setTextSize(size); p.setFakeBoldText(bold);
@@ -681,7 +691,7 @@ public class MainActivity extends Activity {
             choosing=false;
             playGameSound(lane);
             muzzleFlashAt=System.currentTimeMillis();
-            muzzleFlashX=side==1?w*.126f:w*.874f;
+            muzzleFlashX=side==1?w*.874f:w*.126f;
             muzzleFlashY=new float[]{h*.29f,h*.49f,h*.69f}[lane];
             final int start=positions(side)[lane];
             final int target=Math.min(15,start+amount);
@@ -964,9 +974,13 @@ public class MainActivity extends Activity {
             }
             drawMuzzleFlash(c);
             drawExplosion(c);
-            float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
-            if((mode==1 || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected())) && !choosing && die==0) {
-                btn(c,mode==3?("أطلق ("+lanCountdown+")"):"أطلق",w*.39f,h*.80f,w*.61f,h*.93f,player==1?blue:red);
+            float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
+            boolean localRollTurn=(mode==1 || (mode==2 && player==1)
+                    || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected()));
+            if(localRollTurn && !choosing && die==0) {
+                float buttonHalf=w*.115f;
+                btn(c,mode==3?("أطلق ("+lanCountdown+")"):"أطلق",
+                        diceCx-buttonHalf,h*.80f,diceCx+buttonHalf,h*.93f,player==1?blue:red);
             } else {
                 int diceColor=winner!=0?dark:(player==1?blue:red);
                 box(c,diceCx-diceSize/2,diceCy-diceSize/2,diceCx+diceSize/2,diceCy+diceSize/2,diceColor);
@@ -989,7 +1003,7 @@ public class MainActivity extends Activity {
             float x=e.getX(),y=e.getY();
             if(Math.hypot(x-touchDownX,y-touchDownY)>h*.10f){touchDown=false;return true;}
             touchDown=false;
-            float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
+            float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
             boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
             if(y>=h*.025f && y<=h*.11f) {
                 if(x>=w*.015f && x<=w*.19f)showSettingsDialog();
@@ -1037,7 +1051,9 @@ public class MainActivity extends Activity {
                 }
                 invalidate();return true;
             }
-            boolean launchTapped=(mode==1 || (mode==3 && player==lanLocalSide)) && !choosing && die==0 && y>=h*.80f && y<=h*.94f && x>=w*.39f && x<=w*.61f;
+            boolean localRollTurn=(mode==1 || (mode==2 && player==1) || (mode==3 && player==lanLocalSide));
+            boolean launchTapped=localRollTurn && !choosing && die==0
+                    && y>=h*.80f && y<=h*.94f && Math.abs(x-diceCx)<=w*.115f;
             if(!choosing && !diceTapped && !launchTapped)return true;
             if(stage<2 && diceTapped) {
                 // قرعة البداية أصبحت تلقائية وتُعرض بجانب كل لاعب.
