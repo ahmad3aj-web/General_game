@@ -870,8 +870,8 @@ public class MainActivity extends Activity {
                     drawBullet(c,bx,y-gap,bulletW,bulletH,leftDead?Color.GRAY:blue,!leftDead && i<pos1[lane],false);
                     drawBullet(c,rx,y+gap,bulletW,bulletH,rightDead?Color.GRAY:red,!rightDead && i<pos2[lane],true);
                 }
-                drawWeapon(c,lane,w*.925f,y,blue,true);
-                drawWeapon(c,lane,w*.075f,y,red,false);
+                drawWeapon(c,lane,w*.925f,y,blue,false);
+                drawWeapon(c,lane,w*.075f,y,red,true);
                 if(dead1[lane]) txt(c,"×",w*.925f,y-gap,h*.07f,Color.RED,true);
                 if(dead2[lane]) txt(c,"×",w*.075f,y+gap,h*.07f,Color.RED,true);
                 if(choosing && winner==0) {
