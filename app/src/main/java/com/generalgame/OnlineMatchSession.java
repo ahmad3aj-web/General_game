@@ -48,6 +48,7 @@ public final class OnlineMatchSession {
     private final DatabaseReference quickMatches = database.getReference("quickMatch");
     private Boolean databaseConnected = null;
     private volatile String httpsProbeResult = "لم يكتمل فحص HTTPS بعد";
+    private volatile String controlProbeResult = "لم يكتمل فحص الاتصال العام بعد";
     private volatile String connectionError = "";
     private final ValueEventListener connectionListener = new ValueEventListener() {
         @Override public void onDataChange(DataSnapshot snapshot) {
@@ -164,7 +165,8 @@ public final class OnlineMatchSession {
                     + "تشخيص الاتصال: " + connection + ".\n"
                     + "حالة المصادقة: " + authState + ".\n"
                     + "قاعدة البيانات: europe-west1.\n"
-                    + "فحص HTTPS من داخل التطبيق: " + httpsProbeResult + ".\n"
+                    + "فحص Firebase HTTPS من داخل التطبيق: " + httpsProbeResult + ".\n"
+                    + "فحص HTTPS عام (Google): " + controlProbeResult + ".\n"
                     + (connectionError.isEmpty() ? "" : "تفصيل خطأ الاتصال: " + connectionError + ".\n")
                     + "لم يصل تأكيد الكتابة من الخادم؛ لا تغيّر قواعد Firebase الآن.");
         };
@@ -200,32 +202,42 @@ public final class OnlineMatchSession {
      */
     private void startHttpsProbe() {
         httpsProbeResult = "جارٍ الفحص";
+        controlProbeResult = "جارٍ الفحص";
+        runHttpsProbe(DATABASE_URL + "/.json", true);
+        runHttpsProbe("https://www.google.com/generate_204", false);
+    }
+
+    private void runHttpsProbe(String address, boolean firebase) {
         Thread probe = new Thread(() -> {
             HttpsURLConnection connection = null;
             long started = System.currentTimeMillis();
             try {
-                URL url = new URL(DATABASE_URL + "/.json");
+                URL url = new URL(address);
                 connection = (HttpsURLConnection) url.openConnection();
                 connection.setRequestMethod("GET");
-                connection.setConnectTimeout(6000);
-                connection.setReadTimeout(6000);
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
                 connection.setUseCaches(false);
                 int status = connection.getResponseCode();
                 long elapsed = System.currentTimeMillis() - started;
-                if (status == 401 || status == 403) {
-                    httpsProbeResult = "HTTPS وصل بنجاح (HTTP " + status
+                String result;
+                if (firebase && (status == 401 || status == 403)) {
+                    result = "وصل بنجاح (HTTP " + status
                             + "؛ رفض القراءة متوقع بسبب قواعد الحماية، " + elapsed + "ms)";
                 } else {
-                    httpsProbeResult = "وصل HTTPS ورد الخادم HTTP " + status
-                            + " خلال " + elapsed + "ms";
+                    result = "وصل بنجاح (HTTP " + status + "، " + elapsed + "ms)";
                 }
+                if (firebase) httpsProbeResult = result;
+                else controlProbeResult = result;
             } catch (Exception error) {
-                httpsProbeResult = "فشل HTTPS: " + error.getClass().getSimpleName()
+                String result = "فشل: " + error.getClass().getSimpleName()
                         + (error.getMessage() == null ? "" : " - " + error.getMessage());
+                if (firebase) httpsProbeResult = result;
+                else controlProbeResult = result;
             } finally {
                 if (connection != null) connection.disconnect();
             }
-        }, "GENERAL-https-probe");
+        }, firebase ? "GENERAL-firebase-https-probe" : "GENERAL-control-https-probe");
         probe.setDaemon(true);
         probe.start();
     }
