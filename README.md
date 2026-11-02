@@ -1,4 +1,4 @@
-# GENERAL - جينيرال
+# GENERAL - جنيرال
 
 أول نسخة تجريبية للعبة GENERAL على Android.
 
