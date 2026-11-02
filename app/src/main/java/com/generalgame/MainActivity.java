@@ -108,7 +108,7 @@ public class MainActivity extends Activity {
         }
 
         private void playTone(int tone,int duration){if(soundOn&&tones!=null)tones.startTone(tone,duration);}
-        private void explodeFeedback(){playTone(ToneGenerator.TONE_PROP_NACK,260);if(vibrationOn&&vibrator!=null){try{if(android.os.Build.VERSION.SDK_INT>=26){if(vibrator.hasVibrator())vibrator.vibrate(VibrationEffect.createOneShot(230,150));}else{vibrator.vibrate(230);}}catch(SecurityException|RuntimeException ignored){}}}
+        private void explodeFeedback(){playTone(ToneGenerator.TONE_PROP_NACK,260);if(vibrationOn&&vibrator!=null){try{if(android.os.Build.VERSION.SDK_INT>=26){if(vibrator.hasVibrator())vibrator.vibrate(VibrationEffect.createOneShot(230,150));}else{vibrator.vibrate(230);}}catch(RuntimeException ignored){}}}
         private void showSettings(){final String[] labels={"المؤثرات الصوتية","موسيقى خلفية خفيفة","الاهتزاز عند الانفجار"};final boolean[] values={soundOn,musicOn,vibrationOn};
             new AlertDialog.Builder(MainActivity.this).setTitle("إعدادات اللعبة").setMultiChoiceItems(labels,values,(d,i,checked)->values[i]=checked)
             .setPositiveButton("حفظ",(d,which)->{soundOn=values[0];musicOn=values[1];vibrationOn=values[2];getSharedPreferences("GENERAL_PREFS",MODE_PRIVATE).edit().putBoolean("sound",soundOn).putBoolean("music",musicOn).putBoolean("vibration",vibrationOn).apply();if(musicOn)playTone(ToneGenerator.TONE_PROP_BEEP,180);invalidate();}).setNegativeButton("إلغاء",null).show();}
