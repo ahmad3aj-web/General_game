@@ -758,26 +758,51 @@ public class MainActivity extends Activity {
 
         @Override protected void onDraw(Canvas c) {
             super.onDraw(c); w=getWidth(); h=getHeight();
-            // Warm, layered cartoon desert battlefield.
-            p.setShader(new LinearGradient(0,0,0,h,Color.rgb(104,177,225),Color.rgb(250,205,137),Shader.TileMode.CLAMP));
+            // Richer layered cartoon battlefield: atmospheric sky, distant ridge, ruins and foreground terrain.
+            p.setShader(new LinearGradient(0,0,0,h,Color.rgb(92,166,220),Color.rgb(255,218,157),Shader.TileMode.CLAMP));
             c.drawRect(0,0,w,h,p);p.setShader(null);
-            p.setColor(Color.rgb(255,225,166));c.drawCircle(w*.78f,h*.16f,h*.075f,p);
-            p.setColor(Color.rgb(194,151,130));
-            Path far=new Path();far.moveTo(0,h*.43f);far.lineTo(w*.12f,h*.23f);far.lineTo(w*.22f,h*.38f);far.lineTo(w*.39f,h*.19f);far.lineTo(w*.55f,h*.39f);far.lineTo(w*.73f,h*.22f);far.lineTo(w*.88f,h*.37f);far.lineTo(w,h*.24f);far.lineTo(w,h*.66f);far.lineTo(0,h*.66f);far.close();c.drawPath(far,p);
-            p.setColor(Color.rgb(225,177,139));
-            Path near=new Path();near.moveTo(0,h*.49f);near.lineTo(w*.18f,h*.34f);near.lineTo(w*.34f,h*.48f);near.lineTo(w*.52f,h*.32f);near.lineTo(w*.70f,h*.49f);near.lineTo(w*.86f,h*.35f);near.lineTo(w,h*.47f);near.lineTo(w,h*.75f);near.lineTo(0,h*.75f);near.close();c.drawPath(near,p);
-            p.setColor(Color.rgb(199,139,89));c.drawRect(0,h*.48f,w,h*.94f,p);
-            p.setColor(Color.rgb(218,161,105));c.drawOval(new RectF(-w*.12f,h*.55f,w*.58f,h*.98f),p);
-            p.setColor(Color.rgb(185,123,78));c.drawOval(new RectF(w*.42f,h*.58f,w*1.12f,h*.98f),p);
-            p.setColor(Color.rgb(126,91,73));
-            c.drawRect(w*.12f,h*.34f,w*.19f,h*.49f,p);c.drawRect(w*.14f,h*.29f,w*.21f,h*.49f,p);
-            c.drawRect(w*.77f,h*.36f,w*.84f,h*.49f,p);c.drawRect(w*.80f,h*.31f,w*.87f,h*.49f,p);
-            p.setColor(Color.rgb(91,75,65));c.drawRect(w*.69f,h*.24f,w*.695f,h*.49f,p);c.drawRect(w*.66f,h*.24f,w*.73f,h*.26f,p);c.drawRect(w*.66f,h*.29f,w*.73f,h*.31f,p);
-            p.setColor(Color.rgb(151,106,78));c.drawRect(0,h*.91f,w,h*.12f,p);
-            p.setColor(Color.rgb(103,79,65));
-            for(int i=0;i<26;i++){float x=(i*137%997)/997f*w;float y=h*(.49f+(i*43%390)/1000f);float rr=h*(.004f+(i%4)*.002f);c.drawOval(new RectF(x-rr*1.5f,y-rr,x+rr*1.5f,y+rr),p);}
-            p.setColor(Color.argb(55,255,255,255));
-            for(int i=0;i<12;i++)c.drawCircle((i*173%1000)/1000f*w,h*(.12f+(i*37%200)/1000f),h*.012f,p);
+            // Soft sun halo.
+            p.setColor(Color.argb(35,255,246,198));c.drawCircle(w*.78f,h*.17f,h*.13f,p);
+            p.setColor(Color.rgb(255,226,155));c.drawCircle(w*.78f,h*.17f,h*.052f,p);
+            // High, soft clouds.
+            p.setColor(Color.argb(105,255,255,245));
+            c.drawOval(new RectF(w*.10f,h*.105f,w*.23f,h*.16f),p);
+            c.drawOval(new RectF(w*.15f,h*.085f,w*.28f,h*.16f),p);
+            c.drawOval(new RectF(w*.53f,h*.12f,w*.65f,h*.165f),p);
+            c.drawOval(new RectF(w*.58f,h*.095f,w*.70f,h*.165f),p);
+            // Distant mountains.
+            p.setColor(Color.rgb(154,145,139));
+            Path far=new Path();far.moveTo(0,h*.44f);far.lineTo(w*.12f,h*.25f);far.lineTo(w*.22f,h*.39f);far.lineTo(w*.39f,h*.20f);far.lineTo(w*.55f,h*.40f);far.lineTo(w*.73f,h*.23f);far.lineTo(w*.88f,h*.38f);far.lineTo(w,h*.25f);far.lineTo(w,h*.68f);far.lineTo(0,h*.68f);far.close();c.drawPath(far,p);
+            p.setColor(Color.argb(85,255,238,205));
+            c.drawLine(w*.12f,h*.25f,w*.18f,h*.34f,p);c.drawLine(w*.39f,h*.20f,w*.47f,h*.32f,p);c.drawLine(w*.73f,h*.23f,w*.80f,h*.34f,p);
+            // Low hills and a distant ruined settlement.
+            p.setColor(Color.rgb(205,157,126));
+            Path near=new Path();near.moveTo(0,h*.50f);near.lineTo(w*.18f,h*.35f);near.lineTo(w*.34f,h*.49f);near.lineTo(w*.52f,h*.33f);near.lineTo(w*.70f,h*.50f);near.lineTo(w*.86f,h*.36f);near.lineTo(w,h*.48f);near.lineTo(w,h*.76f);near.lineTo(0,h*.76f);near.close();c.drawPath(near,p);
+            p.setColor(Color.rgb(126,94,76));
+            // Small ruined towers, intentionally kept behind the playfield.
+            c.drawRect(w*.105f,h*.405f,w*.145f,h*.505f,p);c.drawRect(w*.115f,h*.375f,w*.135f,h*.425f,p);
+            c.drawRect(w*.155f,h*.435f,w*.195f,h*.51f,p);c.drawRect(w*.165f,h*.415f,w*.185f,h*.45f,p);
+            c.drawRect(w*.79f,h*.405f,w*.835f,h*.51f,p);c.drawRect(w*.80f,h*.375f,w*.825f,h*.43f,p);
+            // Palm silhouettes at the far edges.
+            p.setColor(Color.rgb(105,91,69));
+            c.drawRect(w*.055f,h*.35f,w*.063f,h*.53f,p);c.drawRect(w*.925f,h*.34f,w*.933f,h*.53f,p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.004f));p.setStrokeCap(Paint.Cap.ROUND);
+            for(int side=0;side<2;side++){
+                float px=side==0?w*.059f:w*.929f, py=h*.355f;
+                for(int j=0;j<5;j++){float endX=px+(j-2)*w*.025f;float endY=py-h*(.025f+(j%2)*.012f);c.drawLine(px,py,endX,endY,p);}
+            }
+            p.setStyle(Paint.Style.FILL);p.setStrokeCap(Paint.Cap.BUTT);
+            // Sandy battlefield with rolling patches and a central track.
+            p.setColor(Color.rgb(190,132,84));c.drawRect(0,h*.49f,w,h*.94f,p);
+            p.setColor(Color.rgb(215,157,101));c.drawOval(new RectF(-w*.12f,h*.55f,w*.58f,h*.98f),p);
+            p.setColor(Color.rgb(177,116,75));c.drawOval(new RectF(w*.42f,h*.58f,w*1.12f,h*.98f),p);
+            p.setColor(Color.argb(55,111,78,57));
+            c.drawOval(new RectF(w*.22f,h*.70f,w*.78f,h*.92f),p);
+            p.setColor(Color.rgb(139,99,72));c.drawRect(0,h*.91f,w,h*.12f,p);
+            p.setColor(Color.argb(100,255,221,165));
+            for(int i=0;i<34;i++){float x=(i*137%997)/997f*w;float y=h*(.50f+(i*43%390)/1000f);float rr=h*(.003f+(i%4)*.0018f);c.drawOval(new RectF(x-rr*1.5f,y-rr,x+rr*1.5f,y+rr),p);}
+            p.setColor(Color.argb(35,255,255,255));
+            for(int i=0;i<10;i++)c.drawCircle((i*173%1000)/1000f*w,h*(.12f+(i*37%200)/1000f),h*.010f,p);
             txt(c,"GENERAL  •  جنيرال",w*.5f,h*.075f,h*.06f,dark,true);
             if(setup) { drawSetup(c); return; }
             if(mode==0) {
