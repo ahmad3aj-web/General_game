@@ -46,6 +46,8 @@ public final class OnlineMatchSession {
     private boolean quickMatchMode;
     private long quickMatchCreatedAt;
     private long quickMatchStartedAt;
+    private String quickMatchName = "لاعب";
+    private int quickMatchAvatar;
     private Runnable quickMatchPoll;
     private DatabaseReference room;
     private ChildEventListener actionListener;
@@ -88,8 +90,10 @@ public final class OnlineMatchSession {
 
     public void quickMatch(String name, int avatar) {
         quickMatchMode = true;
+        quickMatchName = name == null || name.trim().isEmpty() ? "لاعب" : name.trim();
+        quickMatchAvatar = Math.max(0, Math.min(7, avatar));
         quickMatchStartedAt = System.currentTimeMillis();
-        authenticate(() -> createRoomAfterAuth(name, avatar));
+        authenticate(() -> createRoomAfterAuth(quickMatchName, quickMatchAvatar));
     }
 
     public void joinRoom(String code, String name, int avatar) {
@@ -198,6 +202,7 @@ public final class OnlineMatchSession {
                         connected = true;
                         attachListeners();
                         removeQuickMatchEntry();
+                        quickMatchMode = false;
                         listener.onConnected(code);
                         listener.onPeerJoined();
                     });
@@ -270,7 +275,7 @@ public final class OnlineMatchSession {
             if (best != null) {
                 String code = best.child("roomCode").getValue(String.class);
                 main.removeCallbacks(quickMatchPoll);
-                joinRoomAfterAuth(code, "لاعب", 1);
+                joinRoomAfterAuth(code, quickMatchName, quickMatchAvatar);
             } else {
                 scheduleQuickMatchPoll();
             }
@@ -338,7 +343,10 @@ public final class OnlineMatchSession {
                             avatar == null ? 0 : Math.max(0, Math.min(5, avatar)));
                 }
                 if (peerFound) {
-                    if (quickMatchMode && localSide == 1) removeQuickMatchEntry();
+                    if (quickMatchMode && localSide == 1) {
+                        removeQuickMatchEntry();
+                        quickMatchMode = false;
+                    }
                     listener.onPeerJoined();
                 }
             }
