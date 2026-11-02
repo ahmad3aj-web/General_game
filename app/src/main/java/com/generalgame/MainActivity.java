@@ -1373,7 +1373,7 @@ public class MainActivity extends Activity {
             if(winner!=0 && !bonusAttempt) {
                 if(y>=h*.70f&&y<=h*.80f) {
                     if(x>=w*.25f&&x<=w*.48f) resetMatch();
-                    else if(x>=w*.52f&&x<=w*.75f) { matchEpoch++; timerlessCloseLan(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; battleIntro=false; progressScreen=false; explosionAt=0; message="اختر طريقة اللعب"; }
+                    else if(x>=w*.52f&&x<=w*.75f) { matchEpoch++; timerlessCloseLan(); timerlessCloseOnline(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; battleIntro=false; progressScreen=false; explosionAt=0; message="اختر طريقة اللعب"; }
                 }
                 invalidate();return true;
             }
