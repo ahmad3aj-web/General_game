@@ -11,6 +11,11 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import javax.net.ssl.HttpsURLConnection;
 import java.net.URL;
+import java.net.InetAddress;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -49,6 +54,7 @@ public final class OnlineMatchSession {
     private Boolean databaseConnected = null;
     private volatile String httpsProbeResult = "لم يكتمل فحص HTTPS بعد";
     private volatile String controlProbeResult = "لم يكتمل فحص الاتصال العام بعد";
+    private volatile String addressProbeResult = "لم يكتمل فحص IPv4/IPv6 بعد";
     private volatile String connectionError = "";
     private final ValueEventListener connectionListener = new ValueEventListener() {
         @Override public void onDataChange(DataSnapshot snapshot) {
@@ -167,6 +173,7 @@ public final class OnlineMatchSession {
                     + "قاعدة البيانات: europe-west1.\n"
                     + "فحص Firebase HTTPS من داخل التطبيق: " + httpsProbeResult + ".\n"
                     + "فحص HTTPS عام (Google): " + controlProbeResult + ".\n"
+                    + "فحص مسارات IPv4/IPv6 إلى Firebase: " + addressProbeResult + ".\n"
                     + (connectionError.isEmpty() ? "" : "تفصيل خطأ الاتصال: " + connectionError + ".\n")
                     + "لم يصل تأكيد الكتابة من الخادم؛ لا تغيّر قواعد Firebase الآن.");
         };
@@ -205,6 +212,51 @@ public final class OnlineMatchSession {
         controlProbeResult = "جارٍ الفحص";
         runHttpsProbe(DATABASE_URL + "/.json", true);
         runHttpsProbe("https://www.google.com/generate_204", false);
+        runFirebaseAddressProbe();
+    }
+
+    /**
+     * Compares raw TCP reachability to Firebase on IPv4 and IPv6.
+     * This is diagnostic only; it does not change Firebase transport or security.
+     */
+    private void runFirebaseAddressProbe() {
+        Thread probe = new Thread(() -> {
+            StringBuilder result = new StringBuilder();
+            try {
+                String host = new URL(DATABASE_URL).getHost();
+                InetAddress[] addresses = InetAddress.getAllByName(host);
+                if (addresses.length == 0) {
+                    addressProbeResult = "DNS لم يُرجع عناوين";
+                    return;
+                }
+                int tested = 0;
+                for (InetAddress address : addresses) {
+                    if (tested++ >= 4) break;
+                    String family = address instanceof Inet4Address ? "IPv4"
+                            : (address instanceof Inet6Address ? "IPv6" : "IP");
+                    Socket socket = new Socket();
+                    long started = System.currentTimeMillis();
+                    try {
+                        socket.connect(new InetSocketAddress(address, 443), 3500);
+                        if (result.length() > 0) result.append("؛ ");
+                        result.append(family).append(" نجح ")
+                                .append(System.currentTimeMillis() - started).append("ms");
+                    } catch (Exception error) {
+                        if (result.length() > 0) result.append("؛ ");
+                        result.append(family).append(" فشل ")
+                                .append(error.getClass().getSimpleName());
+                    } finally {
+                        try { socket.close(); } catch (Exception ignored) { }
+                    }
+                }
+                addressProbeResult = result.length() == 0 ? "لم تُختبر أي عناوين" : result.toString();
+            } catch (Exception error) {
+                addressProbeResult = "فشل DNS/الفحص: " + error.getClass().getSimpleName()
+                        + (error.getMessage() == null ? "" : " - " + error.getMessage());
+            }
+        }, "GENERAL-firebase-ip-family-probe");
+        probe.setDaemon(true);
+        probe.start();
     }
 
     private void runHttpsProbe(String address, boolean firebase) {
