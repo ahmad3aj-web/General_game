@@ -452,8 +452,10 @@ public class MainActivity extends Activity {
                 });}
                 @Override public void onPeerJoined(){runOnUiThread(()->{
                     if(mode!=4)return;
-                    message=onlineQuickMatch?"تم العثور على لاعب — جارٍ إجراء قرعة البداية":
+                    boolean quickMatchFound=onlineQuickMatch;
+                    message=quickMatchFound?"تم العثور على لاعب — جارٍ إجراء قرعة البداية":
                             (onlineLocalSide==1?"تم انضمام اللاعب — جارٍ إجراء قرعة البداية":"تم الاتصال بالمضيف — بانتظار القرعة");
+                    onlineQuickMatch=false;
                     if(!onlineOpeningStarted) {
                         onlineOpeningStarted=true;
                         if(onlineLocalSide==1)onlineSession.startOpeningToss();
