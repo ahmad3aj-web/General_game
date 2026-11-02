@@ -822,10 +822,10 @@ public class MainActivity extends Activity {
                 int winnerAvatar=winner==1?avatars[0]:(mode==2?5:avatars[1]);
                 int loserAvatar=winner==1?(mode==2?5:avatars[1]):avatars[0];
                 float portraitY=h*.39f, portraitR=h*.085f;
-                if(mode==2 && winner==2) drawGeneralAvatar(c,w*.34f,portraitY,portraitR,true,false); else drawAvatar(c,winnerAvatar,w*.34f,portraitY,portraitR,true);
-                if(mode==2 && winner==1) drawGeneralAvatar(c,w*.66f,portraitY,portraitR,false,true); else drawAvatar(c,loserAvatar,w*.66f,portraitY,portraitR,false,true);
-                txt(c,winnerName,w*.34f,h*.52f,h*.038f,blue,true);
-                txt(c,loserName,w*.66f,h*.52f,h*.038f,dark,true);
+                if(mode==2 && winner==2) drawGeneralAvatar(c,w*.66f,portraitY,portraitR,true,false); else drawAvatar(c,winnerAvatar,w*.66f,portraitY,portraitR,true);
+                if(mode==2 && winner==1) drawGeneralAvatar(c,w*.34f,portraitY,portraitR,false,true); else drawAvatar(c,loserAvatar,w*.34f,portraitY,portraitR,false,true);
+                txt(c,winnerName,w*.66f,h*.52f,h*.038f,blue,true);
+                txt(c,loserName,w*.34f,h*.52f,h*.038f,dark,true);
                 txt(c,"الفائز: "+winnerName,w*.5f,h*.60f,h*.05f,dark,true);
                 btn(c,"إعادة المحاولة",w*.25f,h*.68f,w*.48f,h*.77f,blue);
                 btn(c,"العودة إلى الرئيسية",w*.52f,h*.68f,w*.75f,h*.77f,dark);
