@@ -884,7 +884,7 @@ public class MainActivity extends Activity {
             }
             drawMuzzleFlash(c);
             drawExplosion(c);
-            float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
+            float diceSize=h*.075f, diceCx=player==1?w*.92f:w*.08f, diceCy=h*.155f;
             if((mode==1 || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected())) && !choosing && die==0) {
                 btn(c,mode==3?("أطلق ("+lanCountdown+")"):"أطلق",w*.39f,h*.80f,w*.61f,h*.93f,player==1?blue:red);
             } else {
@@ -902,8 +902,8 @@ public class MainActivity extends Activity {
         @Override public boolean onTouchEvent(MotionEvent e) {
             if(e.getAction()!=MotionEvent.ACTION_UP)return true;
             float x=e.getX(),y=e.getY(),by=h*.795f, buttonBottom=h*.935f;
-            float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
-            boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
+            float diceSize=h*.075f, diceCx=player==1?w*.92f:w*.08f, diceCy=h*.155f;
+            boolean diceTapped=false;
             if(mode==0) {
                 if(historyScreen) { if(y>=h*.93f)historyScreen=false; }
                 else if(y>=h*.37f&&y<=h*.53f){mode=x<w*.5f?1:2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
