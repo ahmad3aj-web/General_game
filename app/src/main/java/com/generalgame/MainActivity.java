@@ -578,6 +578,12 @@ public class MainActivity extends Activity {
                     postDelayed(()->{
                         if(epoch!=matchEpoch || !battleIntro)return;
                         battleIntro=false;
+                        if(stage<2) {
+                            message="استعدوا — النظام يحدد من يبدأ";
+                            invalidate();
+                            startOpeningToss();
+                            return;
+                        }
                         message=player==1?(mode==2?"أنت تبدأ — دورك":"اللاعب الأول يبدأ"):(mode==2?"جنيرال يبدأ":"اللاعب الثاني يبدأ");
                         invalidate();
                         if(mode==2 && player==2)computerTurn();
@@ -756,8 +762,8 @@ public class MainActivity extends Activity {
                 message="طلب إعادة المباراة — بانتظار موافقة اللاعب الآخر";
                 lanSession.requestRematch();
             } else {
-                message="استعدوا — النظام يحدد من يبدأ";
-                startOpeningToss();
+                message="استعدوا للحرب";
+                startBattleIntro();
             }
         }
         private void startOpeningToss() {
@@ -774,7 +780,8 @@ public class MainActivity extends Activity {
                 player=openingRoll1>openingRoll2?1:2;
                 openingToss=false; stage=2;
                 message=player==1?(mode==2?"أنت تبدأ — دورك":"اللاعب الأول يبدأ"):(mode==2?"جنيرال يبدأ":"اللاعب الثاني يبدأ");
-                startBattleIntro();invalidate();
+                invalidate();
+                if(mode==2 && player==2)computerTurn();
             }},2600);
         }
         private void finishCheck() {
