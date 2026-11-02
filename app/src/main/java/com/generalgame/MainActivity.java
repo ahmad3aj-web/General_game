@@ -129,7 +129,6 @@ public class MainActivity extends Activity {
                 gameSoundPool = null;
             }
             if(backgroundMusic!=null){backgroundMusic.release();backgroundMusic=null;}
-            }
             super.onDetachedFromWindow();
         }
         private void updateBackgroundMusic() {
