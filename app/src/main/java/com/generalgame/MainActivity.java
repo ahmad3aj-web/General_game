@@ -591,7 +591,7 @@ public class MainActivity extends Activity {
             int ink=monochrome?Color.rgb(75,75,75):Color.rgb(43,48,49);
             int[] skinTones={Color.rgb(255,218,178),Color.rgb(225,177,137),Color.rgb(190,137,101),Color.rgb(145,99,72)};
             int skin=monochrome?grayColor(skinTones[index%skinTones.length]):skinTones[index%skinTones.length];
-            int hair=monochrome?Color.rgb(90,90,90):new int[]{Color.rgb(54,39,31),Color.rgb(35,34,34),Color.rgb(105,63,35),Color.rgb(47,43,65),Color.rgb(76,48,35),Color.rgb(35,54,65),Color.rgb(72,43,35),Color.rgb(38,35,31)}[index%8];
+            int hair=monochrome?Color.rgb(90,90,90):new int[]{Color.rgb(54,39,31),Color.rgb(35,34,34),Color.rgb(105,63,35),Color.rgb(47,43,65),Color.rgb(76,48,35),Color.rgb(35,54,65),Color.rgb(72,43,35),Color.rgb(38,35,31),Color.rgb(157,103,43),Color.rgb(89,52,42),Color.rgb(40,55,48),Color.rgb(119,77,58),Color.rgb(34,39,54),Color.rgb(174,125,75),Color.rgb(62,42,36),Color.rgb(53,61,69)}[index%16];
             c.save();
             p.setShader(null);p.setStyle(Paint.Style.FILL);
             p.setColor(Color.argb(55,20,30,20));c.drawOval(new RectF(cx-radius*.72f,cy+radius*.68f,cx+radius*.72f,cy+radius*.91f),p);
@@ -727,15 +727,15 @@ public class MainActivity extends Activity {
                     txt(c,levels[i],left+w*.08f,h*.733f,h*.025f,dark,difficulty==i);
                 }
                 txt(c,"اختر الشخصية — 16 بطلاً وبطلة",w*.5f,h*.785f,h*.026f,dark,true);
-                for(int i=0;i<16;i++) drawAvatar(c,i,w*(.29f+(i%4)*.14f),h*(.805f+(i/4)*.043f),h*.019f,avatars[idx]==i);
+                for(int i=0;i<16;i++) drawAvatar(c,i,w*(.29f+(i%4)*.14f),h*(.82f+(i/4)*.032f),h*.019f,avatars[idx]==i);
             } else {
                 txt(c,"اختر الشخصية — 16 بطلاً وبطلة",w*.5f,h*.735f,h*.027f,dark,true);
-                for(int i=0;i<16;i++) drawAvatar(c,i,w*(.29f+(i%4)*.14f),h*(.765f+(i/4)*.043f),h*.021f,avatars[idx]==i);
+                for(int i=0;i<16;i++) drawAvatar(c,i,w*(.29f+(i%4)*.14f),h*(.765f+(i/4)*.036f),h*.021f,avatars[idx]==i);
             }
             String startLabel=setupSide==1 && mode==1?"التالي":
                     (mode==4 && onlineQuickMatch?"ابحث عن لاعب":
                     (mode==4 && onlineInvitePending?"إنشاء الدعوة":"ابدأ المباراة"));
-            btn(c,startLabel,w*.36f,h*.90f,w*.64f,h*.985f,setupSide==1?blue:red);
+            btn(c,startLabel,w*.36f,h*.925f,w*.64f,h*.985f,setupSide==1?blue:red);
         }
 
 
@@ -1428,14 +1428,15 @@ public class MainActivity extends Activity {
                     int level=Math.round((x/w-.24f)/.18f);
                     if(level>=0 && level<4) difficulty=level;
                 } else if(x>=w*.26f && x<=w*.74f
-                        && ((mode==2 && y>=h*.785f && y<=h*.925f)
-                        || (mode!=2 && y>=h*.75f && y<=h*.925f))) {
-                    float firstRow=mode==2?.805f:.765f;
-                    int row=Math.round((y/h-firstRow)/.043f);
+                        && ((mode==2 && y>=h*.80f && y<=h*.935f)
+                        || (mode!=2 && y>=h*.74f && y<=h*.90f))) {
+                    float firstRow=mode==2?.82f:.765f;
+                    float rowStep=mode==2?.032f:.036f;
+                    int row=Math.round((y/h-firstRow)/rowStep);
                     int col=Math.round((x/w-.29f)/.14f);
                     int choice=row*4+col;
                     if(row>=0 && row<4 && col>=0 && col<4 && choice<avatarColors.length) avatars[idx]=choice;
-                } else if(x>=w*.36f && x<=w*.64f && y>=h*.90f && y<=h*.985f) {
+                } else if(x>=w*.36f && x<=w*.64f && y>=h*.925f && y<=h*.985f) {
                     if(setupSide==1 && mode==1) setupSide=2;
                     else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
                     else if(mode==4){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;onlineOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
