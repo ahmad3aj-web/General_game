@@ -106,6 +106,7 @@ public class MainActivity extends Activity {
         private String onlineJoinCode=null;
         private boolean onlineQuickMatch=false;
         private boolean onlineInvitePending=false;
+        private boolean onlineWaitingForPeer=false;
 
         GameView() {
             super(MainActivity.this);
@@ -455,6 +456,7 @@ public class MainActivity extends Activity {
                     boolean quickMatchFound=onlineQuickMatch;
                     message=quickMatchFound?"تم العثور على لاعب — جارٍ إجراء قرعة البداية":
                             (onlineLocalSide==1?"تم انضمام اللاعب — جارٍ إجراء قرعة البداية":"تم الاتصال بالمضيف — بانتظار القرعة");
+                    onlineWaitingForPeer=false;
                     onlineQuickMatch=false;
                     if(!onlineOpeningStarted) {
                         onlineOpeningStarted=true;
@@ -507,6 +509,7 @@ public class MainActivity extends Activity {
                     }
                 });}
                 @Override public void onDisconnected(String reason){runOnUiThread(()->{
+                    onlineWaitingForPeer=false;
                     timerlessCloseOnline();message="انقطع اتصال الإنترنت: "+reason;
                     new AlertDialog.Builder(MainActivity.this).setTitle("انقطع اتصال الإنترنت")
                         .setMessage(reason).setPositiveButton("العودة للرئيسية",(d,which)->{
@@ -515,6 +518,7 @@ public class MainActivity extends Activity {
                 });}
                 @Override public void onError(String reason){runOnUiThread(()->{
                     message=reason;
+                    onlineWaitingForPeer=false;
                     if(onlineQuickMatch) {
                         timerlessCloseOnline();
                         onlineQuickMatch=false;
@@ -526,11 +530,13 @@ public class MainActivity extends Activity {
             });
         }
         private void startOnlineHost(String name,int avatar) {
-            onlineLocalSide=1; createOnlineSession(); message="جارٍ إنشاء غرفة الإنترنت...";
+            onlineLocalSide=1; onlineWaitingForPeer=onlineInvitePending;
+            createOnlineSession(); message="جارٍ إنشاء غرفة الإنترنت...";
             onlineSession.createRoom(name,avatar); invalidate();
         }
         private void startOnlineQuickMatch(String name,int avatar) {
-            onlineLocalSide=1; createOnlineSession(); message="جارٍ البحث عن لاعب متاح...";
+            onlineLocalSide=1; onlineWaitingForPeer=true;
+            createOnlineSession(); message="جارٍ البحث عن لاعب متاح...";
             onlineSession.quickMatch(name,avatar); invalidate();
         }
         private void startOnlineJoin(String code,String name,int avatar) {
@@ -1316,6 +1322,11 @@ public class MainActivity extends Activity {
                 return;
             }
             txt(c,message,w*.5f,h*.145f,h*.036f,dark,true);
+            if(mode==4 && onlineWaitingForPeer) {
+                btn(c,onlineQuickMatch?"إلغاء البحث والعودة":"إلغاء الدعوة والعودة",
+                        w*.31f,h*.81f,w*.69f,h*.92f,dark);
+                return;
+            }
             if((mode==3 && (lanSession==null || !lanSession.isConnected()))
                     || (mode==4 && (onlineSession==null || !onlineSession.isConnected()))) {
                 btn(c,"إلغاء الاتصال والعودة",w*.31f,h*.81f,w*.69f,h*.92f,dark);
@@ -1429,6 +1440,14 @@ public class MainActivity extends Activity {
                         else if(onlineLocalSide==1)startOnlineHost(playerNames[0],avatars[0]);
                         else startOnlineJoin(onlineJoinCode,playerNames[1],avatars[1]);}
                     else { setup=false;resetMatch(); }
+                }
+                invalidate();return true;
+            }
+            if(mode==4 && onlineWaitingForPeer) {
+                if(x>=w*.31f && x<=w*.69f && y>=h*.81f && y<=h*.92f) {
+                    timerlessCloseOnline();
+                    onlineWaitingForPeer=false; onlineQuickMatch=false; onlineInvitePending=false;
+                    mode=0; setup=false; message="اختر طريقة اللعب";
                 }
                 invalidate();return true;
             }
