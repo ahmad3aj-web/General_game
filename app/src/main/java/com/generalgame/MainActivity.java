@@ -400,8 +400,9 @@ public class MainActivity extends Activity {
                 @Override public void onPeerJoined(){runOnUiThread(()->{
                     if(mode!=4)return;
                     message=onlineLocalSide==1?"تم انضمام اللاعب — جارٍ إجراء قرعة البداية":"تم الاتصال بالمضيف — بانتظار القرعة";
-                    if(onlineLocalSide==1 && !onlineOpeningStarted) {
-                        onlineOpeningStarted=true; onlineSession.startOpeningToss();
+                    if(!onlineOpeningStarted) {
+                        onlineOpeningStarted=true;
+                        if(onlineLocalSide==1)onlineSession.startOpeningToss();
                     }
                     invalidate();
                 });}
