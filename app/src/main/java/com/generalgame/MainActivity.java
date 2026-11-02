@@ -262,6 +262,21 @@ public class MainActivity extends Activity {
                 })
                 .setNeutralButton("إلغاء",null).show();
         }
+        private void showOnlineModeDialog() {
+            new AlertDialog.Builder(MainActivity.this)
+                .setTitle("اللعب عبر الإنترنت")
+                .setMessage("اختر طريقة اللعب. ستتم المباراة برمز غرفة، دون الحاجة إلى أن يكون الجهازان على شبكة Wi-Fi نفسها.")
+                .setPositiveButton("إنشاء غرفة", (d,which)->showOnlineSetupNotice(true))
+                .setNegativeButton("الانضمام برمز", (d,which)->showOnlineSetupNotice(false))
+                .setNeutralButton("إلغاء",null).show();
+        }
+        private void showOnlineSetupNotice(boolean createRoom) {
+            String action=createRoom?"إنشاء غرفة وإصدار رمز للمباراة":"إدخال رمز الغرفة والانضمام";
+            new AlertDialog.Builder(MainActivity.this)
+                .setTitle(createRoom?"إنشاء غرفة عبر الإنترنت":"الانضمام إلى غرفة")
+                .setMessage(action+"\\n\\nواجهة الخيارين جاهزة، لكن تشغيل الاتصال الفعلي يحتاج ربط مشروع Firebase الخاص باللعبة أولاً. لم يتم بدء مباراة وهمية أو عرض رمز غير صالح.")
+                .setPositiveButton("حسناً",null).show();
+        }
         private void showLanHostAddress() {
             String ip=LanConnection.getLocalIpv4();
             new AlertDialog.Builder(MainActivity.this).setTitle("عنوان الجهاز المضيف")
@@ -1080,13 +1095,14 @@ public class MainActivity extends Activity {
             if(mode==0) {
                 if(historyScreen){drawHistory(c);return;}
                 if(progressScreen){drawProgress(c);return;}
-                txt(c,"اختر طريقة اللعب",w*.5f,h*.31f,h*.065f,dark,true);
-                btn(c,"لاعبان على نفس الجهاز",w*.12f,h*.37f,w*.48f,h*.53f,blue);
-                btn(c,"ضد جنيرال الكمبيوتر",w*.52f,h*.37f,w*.88f,h*.53f,red);
-                btn(c,"مواجهة عبر Wi-Fi",w*.30f,h*.56f,w*.70f,h*.68f,Color.rgb(52,125,91));
-                btn(c,"سجل المباريات",w*.16f,h*.73f,w*.48f,h*.83f,dark);
-                btn(c,"لوحة التقدم",w*.52f,h*.73f,w*.84f,h*.83f,Color.rgb(155,105,28));
-                txt(c,"جنيرال يلعب وحده ويتخذ قراراته",w*.5f,h*.90f,h*.028f,dark,false);
+                txt(c,"اختر طريقة اللعب",w*.5f,h*.285f,h*.065f,dark,true);
+                btn(c,"لاعبان على نفس الجهاز",w*.07f,h*.35f,w*.47f,h*.49f,blue);
+                btn(c,"ضد جنيرال الكمبيوتر",w*.53f,h*.35f,w*.93f,h*.49f,red);
+                btn(c,"اللعب عبر الإنترنت",w*.07f,h*.535f,w*.47f,h*.675f,Color.rgb(37,105,160));
+                btn(c,"مواجهة عبر Wi-Fi",w*.53f,h*.535f,w*.93f,h*.675f,Color.rgb(52,125,91));
+                btn(c,"سجل المباريات",w*.16f,h*.735f,w*.48f,h*.835f,dark);
+                btn(c,"لوحة التقدم",w*.52f,h*.735f,w*.84f,h*.835f,Color.rgb(155,105,28));
+                txt(c,"الإنترنت: برمز غرفة  •  Wi-Fi: على الشبكة نفسها",w*.5f,h*.91f,h*.026f,dark,false);
                 return;
             }
             if(winner!=0 && !bonusAttempt) {
@@ -1198,11 +1214,12 @@ public class MainActivity extends Activity {
             }
             if(mode==0) {
                 if(historyScreen || progressScreen) { if(x>=w*.40f&&x<=w*.60f&&y>=h*.93f&&y<=h*.995f){historyScreen=false;progressScreen=false;} }
-                else if(y>=h*.37f&&y<=h*.53f&&x>=w*.12f&&x<=w*.48f){mode=1;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.37f&&y<=h*.53f&&x>=w*.52f&&x<=w*.88f){mode=2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.56f&&y<=h*.68f&&x>=w*.30f&&x<=w*.70f)showLanModeDialog();
-                else if(y>=h*.73f&&y<=h*.83f&&x>=w*.16f&&x<=w*.48f)historyScreen=true;
-                else if(y>=h*.73f&&y<=h*.83f&&x>=w*.52f&&x<=w*.84f)progressScreen=true;
+                else if(y>=h*.35f&&y<=h*.49f&&x>=w*.07f&&x<=w*.47f){mode=1;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.35f&&y<=h*.49f&&x>=w*.53f&&x<=w*.93f){mode=2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.535f&&y<=h*.675f&&x>=w*.07f&&x<=w*.47f)showOnlineModeDialog();
+                else if(y>=h*.535f&&y<=h*.675f&&x>=w*.53f&&x<=w*.93f)showLanModeDialog();
+                else if(y>=h*.735f&&y<=h*.835f&&x>=w*.16f&&x<=w*.48f)historyScreen=true;
+                else if(y>=h*.735f&&y<=h*.835f&&x>=w*.52f&&x<=w*.84f)progressScreen=true;
                 invalidate();return true;
             }
             if(setup) {
