@@ -72,6 +72,8 @@ public class MainActivity extends Activity {
         private boolean choosing = false;
         private String message = "اختر طريقة اللعب";
         private float w, h;
+        private float touchDownX, touchDownY;
+        private boolean touchDown = false;
         private long explosionAt = 0;
         private float explosionX = 0, explosionY = 0;
         private long muzzleFlashAt = 0;
@@ -978,25 +980,33 @@ public class MainActivity extends Activity {
         }
 
         @Override public boolean onTouchEvent(MotionEvent e) {
+            if(e.getAction()==MotionEvent.ACTION_DOWN) {
+                touchDown=true;touchDownX=e.getX();touchDownY=e.getY();return true;
+            }
+            if(e.getAction()==MotionEvent.ACTION_CANCEL){touchDown=false;return true;}
             if(e.getAction()!=MotionEvent.ACTION_UP)return true;
+            if(!touchDown)return true;
             float x=e.getX(),y=e.getY();
+            if(Math.hypot(x-touchDownX,y-touchDownY)>h*.10f){touchDown=false;return true;}
+            touchDown=false;
             float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
             boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
             if(y>=h*.025f && y<=h*.11f) {
-                if(x<=w*.19f)showSettingsDialog();
-                else if(x>=w*.81f)showExitConfirmation();
+                if(x>=w*.015f && x<=w*.19f)showSettingsDialog();
+                else if(x>=w*.81f && x<=w*.985f)showExitConfirmation();
                 invalidate();return true;
             }
             if(mode==0) {
-                if(historyScreen) { if(y>=h*.93f)historyScreen=false; }
-                else if(y>=h*.37f&&y<=h*.53f){mode=x<w*.5f?1:2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.56f&&y<=h*.68f)showLanModeDialog();
-                else if(y>=h*.73f&&y<=h*.84f)historyScreen=true;
+                if(historyScreen) { if(x>=w*.40f&&x<=w*.60f&&y>=h*.94f&&y<=h*.995f)historyScreen=false; }
+                else if(y>=h*.37f&&y<=h*.53f&&x>=w*.12f&&x<=w*.48f){mode=1;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.37f&&y<=h*.53f&&x>=w*.52f&&x<=w*.88f){mode=2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.56f&&y<=h*.68f&&x>=w*.30f&&x<=w*.70f)showLanModeDialog();
+                else if(y>=h*.73f&&y<=h*.83f&&x>=w*.36f&&x<=w*.64f)historyScreen=true;
                 invalidate();return true;
             }
             if(setup) {
                 int idx=setupSide-1;
-                if(y>=h*.50f && y<=h*.60f) { showNameDialog(); return true; }
+                if(x>=w*.27f && x<=w*.73f && y>=h*.50f && y<=h*.60f) { showNameDialog(); return true; }
                 if(mode==2 && y>=h*.695f && y<=h*.76f) {
                     int level=Math.round((x/w-.16f)/.18f);
                     if(level>=0 && level<4) difficulty=level;
@@ -1005,7 +1015,7 @@ public class MainActivity extends Activity {
                     int col=Math.round((x/w-.29f)/.14f);
                     int choice=row*4+col;
                     if(col>=0 && col<4 && choice<avatarColors.length) avatars[idx]=choice;
-                } else if(y>=h*.89f && y<=h*.995f) {
+                } else if(x>=w*.36f && x<=w*.64f && y>=h*.90f && y<=h*.985f) {
                     if(setupSide==1 && mode==1) setupSide=2;
                     else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
                     else { setup=false;resetMatch(); }
@@ -1014,7 +1024,7 @@ public class MainActivity extends Activity {
             }
             if(openingToss)return true;
             if(mode==3 && (lanSession==null || !lanSession.isConnected())) {
-                if(y>=h*.80f && y<=h*.94f) {
+                if(x>=w*.31f && x<=w*.69f && y>=h*.81f && y<=h*.92f) {
                     timerlessCloseLan();lanHostPending=false;lanJoinAddress=null;
                     mode=0;setup=false;message="اختر طريقة اللعب";
                 }
