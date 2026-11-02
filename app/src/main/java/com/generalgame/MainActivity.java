@@ -5,6 +5,9 @@ import android.app.AlertDialog;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Build;
+import android.os.Vibrator;
+import android.os.VibrationEffect;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -16,6 +19,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.media.AudioAttributes;
 import android.media.SoundPool;
+import android.media.MediaPlayer;
 import android.widget.EditText;
 import android.text.InputType;
 import java.util.Random;
@@ -26,18 +30,25 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class MainActivity extends Activity {
+    private GameView gameView;
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().getDecorView().setSystemUiVisibility(
             View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
             View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-        setContentView(new GameView());
+        gameView = new GameView();
+        setContentView(gameView);
     }
+
+    @Override protected void onPause() { if(gameView!=null)gameView.pauseMusic(); super.onPause(); }
+    @Override protected void onResume() { super.onResume(); if(gameView!=null)gameView.resumeMusic(); }
 
     private class GameView extends View {
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         private SoundPool gameSoundPool;
+        private MediaPlayer backgroundMusic;
+        private boolean soundEnabled, musicEnabled, vibrationEnabled;
         private final int[] gameSoundIds = new int[4];
         private final boolean[] gameSoundLoaded = new boolean[4];
         private final Random random = new Random();
@@ -77,6 +88,10 @@ public class MainActivity extends Activity {
         GameView() {
             super(MainActivity.this);
             setLayerType(View.LAYER_TYPE_SOFTWARE,null);
+            android.content.SharedPreferences prefs=getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE);
+            soundEnabled=prefs.getBoolean("sound",true);
+            musicEnabled=prefs.getBoolean("music",true);
+            vibrationEnabled=prefs.getBoolean("vibration",true);
             AudioAttributes attributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_GAME)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -98,9 +113,10 @@ public class MainActivity extends Activity {
             gameSoundIds[1] = gameSoundPool.load(MainActivity.this, R.raw.aircraft_fire, 1);
             gameSoundIds[2] = gameSoundPool.load(MainActivity.this, R.raw.cannon_fire, 1);
             gameSoundIds[3] = gameSoundPool.load(MainActivity.this, R.raw.explosion, 1);
+            updateBackgroundMusic();
         }
         private void playGameSound(int index) {
-            if (gameSoundPool != null && index >= 0 && index < gameSoundIds.length
+            if (soundEnabled && gameSoundPool != null && index >= 0 && index < gameSoundIds.length
                     && gameSoundLoaded[index]) {
                 gameSoundPool.play(gameSoundIds[index], 0.95f, 0.95f, 1, 0, 1.0f);
             }
@@ -112,7 +128,52 @@ public class MainActivity extends Activity {
                 gameSoundPool.release();
                 gameSoundPool = null;
             }
+            if(backgroundMusic!=null){backgroundMusic.release();backgroundMusic=null;}
+            }
             super.onDetachedFromWindow();
+        }
+        private void updateBackgroundMusic() {
+            if(!musicEnabled) {
+                if(backgroundMusic!=null){backgroundMusic.release();backgroundMusic=null;}
+                return;
+            }
+            if(backgroundMusic==null) {
+                backgroundMusic=MediaPlayer.create(MainActivity.this,R.raw.battle_music);
+                if(backgroundMusic!=null){backgroundMusic.setLooping(true);backgroundMusic.setVolume(.22f,.22f);}
+            }
+            if(backgroundMusic!=null && !backgroundMusic.isPlaying()) {
+                try{backgroundMusic.start();}catch(IllegalStateException ignored){}
+            }
+        }
+        void pauseMusic(){if(backgroundMusic!=null && backgroundMusic.isPlaying())backgroundMusic.pause();}
+        void resumeMusic(){if(musicEnabled)updateBackgroundMusic();}
+        private void showSettingsDialog() {
+            final String[] labels={"المؤثرات الصوتية","الموسيقى","الاهتزاز عند الانفجار"};
+            final boolean[] values={soundEnabled,musicEnabled,vibrationEnabled};
+            new AlertDialog.Builder(MainActivity.this).setTitle("إعدادات اللعبة")
+                .setMultiChoiceItems(labels,values,(dialog,which,checked)->{
+                    if(which==0)soundEnabled=checked;
+                    else if(which==1){musicEnabled=checked;updateBackgroundMusic();}
+                    else vibrationEnabled=checked;
+                    getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE).edit()
+                        .putBoolean("sound",soundEnabled).putBoolean("music",musicEnabled)
+                        .putBoolean("vibration",vibrationEnabled).apply();
+                }).setPositiveButton("تم",null).show();
+        }
+        private void showExitConfirmation() {
+            new AlertDialog.Builder(MainActivity.this).setTitle("تأكيد الخروج")
+                .setMessage("هل أنت متأكد أنك تريد الخروج من لعبة GENERAL؟")
+                .setPositiveButton("خروج",(dialog,which)->{timerlessCloseLan();finish();})
+                .setNegativeButton("إلغاء",null).show();
+        }
+        private void vibrateForExplosion() {
+            if(!vibrationEnabled)return;
+            try {
+                Vibrator vibrator=(Vibrator)getSystemService(VIBRATOR_SERVICE);
+                if(vibrator==null || !vibrator.hasVibrator())return;
+                if(Build.VERSION.SDK_INT>=26)vibrator.vibrate(VibrationEffect.createOneShot(1000,VibrationEffect.DEFAULT_AMPLITUDE));
+                else vibrator.vibrate(1000);
+            } catch(Exception ignored) {}
         }
         private void txt(Canvas c,String s,float x,float y,float size,int color,boolean bold) {
             p.setColor(color); p.setTextSize(size); p.setFakeBoldText(bold);
@@ -651,6 +712,7 @@ public class MainActivity extends Activity {
             postDelayed(step[0],180);
         }
         private void spawnExplosion(float x,float y) {
+            vibrateForExplosion();
             explosionX=x; explosionY=y; explosionAt=System.currentTimeMillis();
             invalidate();
         }
@@ -819,6 +881,8 @@ public class MainActivity extends Activity {
             p.setColor(Color.argb(55,255,255,255));
             for(int i=0;i<12;i++)c.drawCircle((i*173%1000)/1000f*w,h*(.12f+(i*37%200)/1000f),h*.012f,p);
             txt(c,"GENERAL  •  جنيرال",w*.5f,h*.075f,h*.06f,dark,true);
+            btn(c,"الإعدادات",w*.015f,h*.025f,w*.17f,h*.105f,dark);
+            btn(c,"خروج",w*.83f,h*.025f,w*.985f,h*.105f,Color.rgb(135,48,43));
             if(setup) { drawSetup(c); return; }
             if(mode==0) {
                 if(historyScreen){drawHistory(c);return;}
@@ -832,15 +896,23 @@ public class MainActivity extends Activity {
             }
             if(winner!=0) {
                 box(c,w*.12f,h*.19f,w*.88f,h*.80f,Color.rgb(245,249,239));
-                String winnerName=winner==1?playerNames[0]:(mode==2?"جنيرال":playerNames[1]);
-                String loserName=winner==1?(mode==2?"جنيرال":playerNames[1]):playerNames[0];
-                int winnerAvatar=winner==1?avatars[0]:(mode==2?5:avatars[1]);
-                int loserAvatar=winner==1?(mode==2?5:avatars[1]):avatars[0];
                 float portraitY=h*.39f, portraitR=h*.085f;
-                if(mode==2 && winner==2) drawGeneralAvatar(c,w*.34f,portraitY,portraitR,true,false); else drawAvatar(c,winnerAvatar,w*.34f,portraitY,portraitR,true);
-                if(mode==2 && winner==1) drawGeneralAvatar(c,w*.66f,portraitY,portraitR,false,true); else drawAvatar(c,loserAvatar,w*.66f,portraitY,portraitR,false,true);
-                txt(c,winnerName,w*.34f,h*.52f,h*.038f,blue,true);
-                txt(c,loserName,w*.66f,h*.52f,h*.038f,dark,true);
+                if(mode==2) {
+                    boolean generalWon=winner==2;
+                    drawGeneralAvatar(c,w*.34f,portraitY,portraitR,generalWon,!generalWon);
+                    drawAvatar(c,avatars[0],w*.66f,portraitY,portraitR,!generalWon,generalWon);
+                    txt(c,"جنيرال",w*.34f,h*.52f,h*.038f,dark,true);
+                    txt(c,playerNames[0],w*.66f,h*.52f,h*.038f,blue,true);
+                } else {
+                    String winnerName=winner==1?playerNames[0]:playerNames[1];
+                    String loserName=winner==1?playerNames[1]:playerNames[0];
+                    int winnerAvatar=winner==1?avatars[0]:avatars[1];
+                    int loserAvatar=winner==1?avatars[1]:avatars[0];
+                    drawAvatar(c,winnerAvatar,w*.34f,portraitY,portraitR,true);
+                    drawAvatar(c,loserAvatar,w*.66f,portraitY,portraitR,false,true);
+                    txt(c,winnerName,w*.34f,h*.52f,h*.038f,blue,true);
+                    txt(c,loserName,w*.66f,h*.52f,h*.038f,dark,true);
+                }
                 txt(c,"الفائز: "+winnerName,w*.5f,h*.60f,h*.05f,dark,true);
                 btn(c,"إعادة المحاولة",w*.25f,h*.68f,w*.48f,h*.77f,blue);
                 btn(c,"العودة إلى الرئيسية",w*.52f,h*.68f,w*.75f,h*.77f,dark);
@@ -877,8 +949,8 @@ public class MainActivity extends Activity {
                     drawBullet(c,bx,y-gap,bulletW,bulletH,leftDead?Color.GRAY:blue,!leftDead && i<pos1[lane],false);
                     drawBullet(c,rx,y+gap,bulletW,bulletH,rightDead?Color.GRAY:red,!rightDead && i<pos2[lane],true);
                 }
-                drawWeapon(c,lane,w*.925f,y,blue,true);
-                drawWeapon(c,lane,w*.075f,y,red,false);
+                drawWeapon(c,lane,w*.925f,y,blue,false);
+                drawWeapon(c,lane,w*.075f,y,red,true);
                 if(dead1[lane]) txt(c,"×",w*.925f,y-gap,h*.07f,Color.RED,true);
                 if(dead2[lane]) txt(c,"×",w*.075f,y+gap,h*.07f,Color.RED,true);
                 if(choosing && winner==0) {
@@ -908,9 +980,14 @@ public class MainActivity extends Activity {
 
         @Override public boolean onTouchEvent(MotionEvent e) {
             if(e.getAction()!=MotionEvent.ACTION_UP)return true;
-            float x=e.getX(),y=e.getY(),by=h*.795f, buttonBottom=h*.935f;
+            float x=e.getX(),y=e.getY();
             float diceSize=h*.14f, diceCx=w*.5f, diceCy=h*.865f;
             boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
+            if(y>=h*.025f && y<=h*.11f) {
+                if(x<=w*.19f)showSettingsDialog();
+                else if(x>=w*.81f)showExitConfirmation();
+                invalidate();return true;
+            }
             if(mode==0) {
                 if(historyScreen) { if(y>=h*.93f)historyScreen=false; }
                 else if(y>=h*.37f&&y<=h*.53f){mode=x<w*.5f?1:2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
