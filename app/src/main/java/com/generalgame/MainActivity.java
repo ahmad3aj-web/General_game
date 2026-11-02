@@ -925,25 +925,24 @@ public class MainActivity extends Activity {
             float diceSize=h*.075f, diceCx=player==1?w*.92f:w*.08f, diceCy=h*.155f;
             boolean diceTapped=false;
             if(mode==0) {
-                if(historyScreen) { if(y>=h*.93f)historyScreen=false; }
-                else if(y>=h*.37f&&y<=h*.53f){mode=x<w*.5f?1:2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.56f&&y<=h*.68f)showLanModeDialog();
-                else if(y>=h*.70f&&y<=h*.80f)historyScreen=true;
-                else if(y>=h*.82f&&y<=h*.92f){if(x<w*.5f)showSettings();else confirmExit();}
+                if(historyScreen) { if(x>=w*.40f&&x<=w*.60f&&y>=h*.94f&&y<=h*.995f)historyScreen=false; }
+                else if(y>=h*.37f&&y<=h*.53f&&((x>=w*.12f&&x<=w*.48f)||(x>=w*.52f&&x<=w*.88f))){mode=x<w*.5f?1:2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                else if(x>=w*.30f&&x<=w*.70f&&y>=h*.56f&&y<=h*.68f)showLanModeDialog();
+                else if(x>=w*.36f&&x<=w*.64f&&y>=h*.70f&&y<=h*.79f)historyScreen=true;
+                else if(y>=h*.82f&&y<=h*.92f&&((x>=w*.20f&&x<=w*.46f)||(x>=w*.54f&&x<=w*.80f))){if(x<w*.5f)showSettings();else confirmExit();}
                 invalidate();return true;
             }
             if(setup) {
                 int idx=setupSide-1;
-                if(y>=h*.50f && y<=h*.60f) { showNameDialog(); return true; }
-                if(mode==2 && y>=h*.695f && y<=h*.76f) {
-                    int level=Math.round((x/w-.16f)/.18f);
-                    if(level>=0 && level<4) difficulty=level;
+                if(x>=w*.27f&&x<=w*.73f&&y>=h*.50f&&y<=h*.59f) { showNameDialog(); return true; }
+                if(mode==2 && y>=h*.695f && y<=h*.755f) {
+                    for(int level=0;level<4;level++){float left=w*(.16f+level*.18f);if(x>=left&&x<=left+w*.16f)difficulty=level;}
                 } else if((mode==2 && y>=h*.80f && y<=h*.90f) || (mode!=2 && y>=h*.76f && y<=h*.88f)) {
                     int row=(mode==2?(y>=h*.855f?1:0):(y>=h*.82f?1:0));
                     int col=Math.round((x/w-.29f)/.14f);
                     int choice=row*4+col;
-                    if(col>=0 && col<4 && choice<avatarColors.length) avatars[idx]=choice;
-                } else if(y>=h*.89f && y<=h*.995f) {
+                    if(col>=0 && col<4 && choice<avatarColors.length && Math.abs(x-w*(.29f+col*.14f))<=w*.055f) avatars[idx]=choice;
+                } else if(x>=w*.36f&&x<=w*.64f&&y>=h*.90f&&y<=h*.985f) {
                     if(setupSide==1 && mode==1) setupSide=2;
                     else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
                     else { setup=false;resetMatch(); }
@@ -952,14 +951,14 @@ public class MainActivity extends Activity {
             }
             if(openingToss)return true;
             if(mode==3 && (lanSession==null || !lanSession.isConnected())) {
-                if(y>=h*.80f && y<=h*.94f) {
+                if(x>=w*.31f&&x<=w*.69f&&y>=h*.81f&&y<=h*.92f) {
                     timerlessCloseLan();lanHostPending=false;lanJoinAddress=null;
                     mode=0;setup=false;message="اختر طريقة اللعب";
                 }
                 invalidate();return true;
             }
             if(winner!=0) {
-                if(y>=h*.68f&&y<=h*.78f) {
+                if(y>=h*.68f&&y<=h*.77f&&((x>=w*.25f&&x<=w*.48f)||(x>=w*.52f&&x<=w*.75f))) {
                     if(x>=w*.25f&&x<=w*.48f) resetMatch();
                     else if(x>=w*.52f&&x<=w*.75f) { matchEpoch++; timerlessCloseLan(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; explosionAt=0; message="اختر طريقة اللعب"; }
                 }
