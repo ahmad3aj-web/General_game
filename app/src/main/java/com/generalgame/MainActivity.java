@@ -905,7 +905,7 @@ public class MainActivity extends Activity {
             drawMuzzleFlash(c);
             drawExplosion(c);
             float diceSize=h*.075f, diceCx=player==1?w*.92f:w*.08f, diceCy=h*.155f;
-            if((mode==1 || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected())) && !choosing && die==0) {
+            if((mode==1 || (mode==2 && player==1) || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected())) && !choosing && die==0) {
                 btn(c,mode==3?("أطلق ("+lanCountdown+")"):"أطلق",w*.39f,h*.80f,w*.61f,h*.93f,player==1?blue:red);
             } else {
                 int diceColor=winner!=0?dark:(player==1?blue:red);
@@ -964,7 +964,7 @@ public class MainActivity extends Activity {
                 }
                 invalidate();return true;
             }
-            boolean launchTapped=(mode==1 || (mode==3 && player==lanLocalSide)) && !choosing && die==0 && y>=h*.80f && y<=h*.94f && x>=w*.39f && x<=w*.61f;
+            boolean launchTapped=(mode==1 || (mode==2 && player==1) || (mode==3 && player==lanLocalSide)) && !choosing && die==0 && y>=h*.80f && y<=h*.94f && x>=w*.39f && x<=w*.61f;
             if(!choosing && !diceTapped && !launchTapped)return true;
             if(stage<2 && diceTapped) {
                 // قرعة البداية أصبحت تلقائية وتُعرض بجانب كل لاعب.
