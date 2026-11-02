@@ -735,8 +735,10 @@ public class MainActivity extends Activity {
                     postDelayed(step[0],115);
                 } else {
                     if(target>=15){
-                        if(side==1){dead2[lane]=true;spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
-                        else {dead1[lane]=true;spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                        // The blue weapon is on the right and the red weapon is on the left.
+                        // Explosions must appear on the opposing weapon that was destroyed.
+                        if(side==1){dead2[lane]=true;spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                        else {dead1[lane]=true;spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
                     }
                     finishCheck();
                     if(winner==0){
