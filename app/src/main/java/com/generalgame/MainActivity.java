@@ -148,8 +148,9 @@ public class MainActivity extends Activity {
                         .setUsage(AudioAttributes.USAGE_GAME)
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .build();
-                    backgroundMusic=MediaPlayer.create(MainActivity.this,R.raw.battle_music,musicAttributes);
+                    backgroundMusic=MediaPlayer.create(MainActivity.this,R.raw.battle_music);
                     if(backgroundMusic!=null) {
+                        backgroundMusic.setAudioAttributes(musicAttributes);
                         backgroundMusic.setLooping(true);
                         backgroundMusic.setVolume(0.80f,0.80f);
                     }
