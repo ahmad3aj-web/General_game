@@ -9,6 +9,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import javax.net.ssl.HttpsURLConnection;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -45,6 +47,8 @@ public final class OnlineMatchSession {
     private final DatabaseReference rooms = database.getReference("rooms");
     private final DatabaseReference quickMatches = database.getReference("quickMatch");
     private Boolean databaseConnected = null;
+    private volatile String httpsProbeResult = "لم يكتمل فحص HTTPS بعد";
+    private volatile String connectionError = "";
     private final ValueEventListener connectionListener = new ValueEventListener() {
         @Override public void onDataChange(DataSnapshot snapshot) {
             Boolean value = snapshot.getValue(Boolean.class);
@@ -52,6 +56,7 @@ public final class OnlineMatchSession {
         }
         @Override public void onCancelled(DatabaseError error) {
             databaseConnected = false;
+            connectionError = error == null ? "خطأ غير معروف" : error.getMessage();
         }
     };
     private boolean quickMatchMode;
@@ -135,6 +140,7 @@ public final class OnlineMatchSession {
     }
 
     private void createRoomAfterAuth(String name, int avatar) {
+        startHttpsProbe();
         String code = makeCode();
         DatabaseReference candidate = rooms.child(code);
         Map<String, Object> profile = profile(1, name, avatar);
@@ -158,6 +164,8 @@ public final class OnlineMatchSession {
                     + "تشخيص الاتصال: " + connection + ".\n"
                     + "حالة المصادقة: " + authState + ".\n"
                     + "قاعدة البيانات: europe-west1.\n"
+                    + "فحص HTTPS من داخل التطبيق: " + httpsProbeResult + ".\n"
+                    + (connectionError.isEmpty() ? "" : "تفصيل خطأ الاتصال: " + connectionError + ".\n")
                     + "لم يصل تأكيد الكتابة من الخادم؛ لا تغيّر قواعد Firebase الآن.");
         };
         main.postDelayed(timeout, 15000L);
@@ -183,6 +191,43 @@ public final class OnlineMatchSession {
             listener.onConnected(code);
             if (quickMatchMode) publishQuickMatch(name, avatar);
         });
+    }
+
+    /**
+     * Checks ordinary HTTPS reachability from inside the app while the RTDB SDK
+     * attempts its persistent connection. HTTP 401/403 is expected because
+     * unauthenticated root reads are intentionally denied by database rules.
+     */
+    private void startHttpsProbe() {
+        httpsProbeResult = "جارٍ الفحص";
+        Thread probe = new Thread(() -> {
+            HttpsURLConnection connection = null;
+            long started = System.currentTimeMillis();
+            try {
+                URL url = new URL(DATABASE_URL + "/.json");
+                connection = (HttpsURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(6000);
+                connection.setReadTimeout(6000);
+                connection.setUseCaches(false);
+                int status = connection.getResponseCode();
+                long elapsed = System.currentTimeMillis() - started;
+                if (status == 401 || status == 403) {
+                    httpsProbeResult = "HTTPS وصل بنجاح (HTTP " + status
+                            + "؛ رفض القراءة متوقع بسبب قواعد الحماية، " + elapsed + "ms)";
+                } else {
+                    httpsProbeResult = "وصل HTTPS ورد الخادم HTTP " + status
+                            + " خلال " + elapsed + "ms";
+                }
+            } catch (Exception error) {
+                httpsProbeResult = "فشل HTTPS: " + error.getClass().getSimpleName()
+                        + (error.getMessage() == null ? "" : " - " + error.getMessage());
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        }, "GENERAL-https-probe");
+        probe.setDaemon(true);
+        probe.start();
     }
 
     private void joinRoomAfterAuth(String code, String name, int avatar) {
