@@ -58,7 +58,14 @@ public class MainActivity extends Activity {
         private int mode = 0; // 0 menu, 1 local two-player, 2 vs General, 3 Wi-Fi
         private boolean setup = false;
         private boolean historyScreen = false;
+        private boolean progressScreen = false;
         private boolean recorded = false;
+        private boolean bonusAttempt = false, perfectWin = false, pointsAwarded = false;
+        private int matchPoints = 0;
+        private boolean battleIntro = false;
+        private int introStep = 0;
+        private final String[] rankNames = {"جندي","عريف","رقيب","ملازم","نقيب","رائد","عقيد","لواء"};
+        private final int[] rankThresholds = {0,100,250,500,850,1300,1900,2700};
         private int matchEpoch = 0;
         private int setupSide = 1;
         private int difficulty = 1; // 0 beginner, 1 medium, 2 professional, 3 legendary
@@ -296,7 +303,7 @@ public class MainActivity extends Activity {
                     if(!lanOpeningStarted || mode!=3)return;
                     openingToss=false;stage=2;player=side;die=0;choosing=false;lanTurnId=1;
                     message=(side==lanLocalSide?"أنت تبدأ":"الخصم يبدأ");
-                    lanSession.beginTurn(lanTurnId,side);invalidate();
+                    lanSession.beginTurn(lanTurnId,side);startBattleIntro();invalidate();
                 });}
                 @Override public void onTurnStarted(int id,int side,boolean local){runOnUiThread(()->{
                     lanTurnId=id;player=side;die=0;choosing=false;lanCountdown=30;
@@ -309,7 +316,7 @@ public class MainActivity extends Activity {
                     die=value;choosing=true;
                     message=(side==lanLocalSide?"أنت":"الخصم")+" رمى "+value+(automatic?" تلقائياً":"")+" — اختر السلاح";
                     if(!anyMove(side)){
-                        message="لا يوجد سلاح مناسب! الدور ملغي";choosing=false;die=0;invalidate();
+                        message="لا توجد حركة متاحة — نتيجة النرد: "+die+" — تم تجاوز الدور";choosing=false;invalidate();
                         if(side==lanLocalSide)lanSession.cancelTurn();
                     }
                     invalidate();
@@ -324,7 +331,12 @@ public class MainActivity extends Activity {
                     animateMove(side,lane,value);invalidate();
                 });}
                 @Override public void onTurnCancelled(int side){runOnUiThread(()->{
-                    if(mode==3 && winner==0 && side==player){die=0;choosing=false;message="الدور ملغي";postDelayed(()->afterTurn(),650);invalidate();}
+                    if(mode==3 && side==player){
+                        final int epoch=matchEpoch;
+                        message="الدور ملغي — النرد: "+die;
+                        postDelayed(()->{if(epoch==matchEpoch && mode==3 && side==player){die=0;choosing=false;if(bonusAttempt)finishMatch();else afterTurn();invalidate();}},1100);
+                        invalidate();
+                    }
                 });}
                 @Override public void onDisconnected(String reason){runOnUiThread(()->{
                     timerlessCloseLan();message="انقطع الاتصال: "+reason;
@@ -525,6 +537,97 @@ public class MainActivity extends Activity {
         }
 
 
+        private int rankIndex(int points) {
+            int rank=0;
+            for(int i=0;i<rankThresholds.length;i++)if(points>=rankThresholds[i])rank=i;
+            return rank;
+        }
+        private void awardProgressPoints() {
+            if(pointsAwarded || mode!=2 || winner!=1)return;
+            int[] base={10,20,35,50}, perfectBonus={5,10,20,30};
+            int level=Math.max(0,Math.min(3,difficulty));
+            int earned=base[level]+(perfectWin?perfectBonus[level]:0);
+            android.content.SharedPreferences prefs=getSharedPreferences("GENERAL_PROGRESS",MODE_PRIVATE);
+            prefs.edit().putInt("points",prefs.getInt("points",0)+earned)
+                .putInt("wins",prefs.getInt("wins",0)+1)
+                .putInt("perfectWins",prefs.getInt("perfectWins",0)+(perfectWin?1:0))
+                .putInt("lastEarned",earned).putInt("lastDifficulty",difficulty).apply();
+            matchPoints=earned;pointsAwarded=true;
+        }
+        private void finishMatch() {
+            if(winner==0)return;
+            awardProgressPoints();
+            bonusAttempt=false;battleIntro=false;die=0;choosing=false;
+            if(mode==2)message=winner==1?"انتهت المباراة — أنت الفائز!":"انتهت المباراة — فاز جنيرال!";
+            else message="انتهت المباراة — الفائز: "+(winner==1?playerNames[0]:playerNames[1]);
+            saveMatchResult();invalidate();
+        }
+        private void beginBonusAttempt() {
+            bonusAttempt=true;player=1;die=0;choosing=false;
+            message="فزت! لديك رمية إضافية لتدمير السلاح الثالث والحصول على نقاط أكثر";
+            invalidate();
+        }
+        private void startBattleIntro() {
+            battleIntro=true;introStep=3;
+            final int epoch=matchEpoch;invalidate();
+            postDelayed(new Runnable(){@Override public void run(){
+                if(epoch!=matchEpoch || !battleIntro)return;
+                if(introStep>1){introStep--;invalidate();postDelayed(this,700);}
+                else if(introStep==1){
+                    introStep=0;invalidate();
+                    postDelayed(()->{
+                        if(epoch!=matchEpoch || !battleIntro)return;
+                        battleIntro=false;
+                        message=player==1?(mode==2?"أنت تبدأ — دورك":"اللاعب الأول يبدأ"):(mode==2?"جنيرال يبدأ":"اللاعب الثاني يبدأ");
+                        invalidate();
+                        if(mode==2 && player==2)computerTurn();
+                    },800);
+                }
+            }},700);
+        }
+        private void drawBattleIntro(Canvas c) {
+            p.setColor(Color.argb(224,12,20,18));c.drawRect(0,0,w,h,p);
+            box(c,w*.12f,h*.16f,w*.88f,h*.86f,Color.rgb(29,39,35));
+            txt(c,"استعدوا للحرب",w*.5f,h*.25f,h*.055f,Color.rgb(245,190,65),true);
+            if(mode==2) {
+                drawGeneralAvatar(c,w*.30f,h*.45f,h*.115f,false,false);
+                drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.115f,true);
+                txt(c,"جنيرال",w*.30f,h*.61f,h*.036f,Color.WHITE,true);
+                txt(c,playerNames[0],w*.70f,h*.61f,h*.036f,Color.WHITE,true);
+            } else {
+                drawAvatar(c,avatars[1],w*.30f,h*.45f,h*.115f,false);
+                drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.115f,true);
+                txt(c,playerNames[1],w*.30f,h*.61f,h*.036f,Color.WHITE,true);
+                txt(c,playerNames[0],w*.70f,h*.61f,h*.036f,Color.WHITE,true);
+            }
+            txt(c,"VS",w*.5f,h*.47f,h*.052f,Color.rgb(245,190,65),true);
+            txt(c,introStep>0?String.valueOf(introStep):"FIGHT!",w*.5f,h*.77f,
+                introStep>0?h*.17f:h*.105f,introStep>0?Color.WHITE:Color.rgb(245,190,65),true);
+        }
+        private void drawProgress(Canvas c) {
+            android.content.SharedPreferences prefs=getSharedPreferences("GENERAL_PROGRESS",MODE_PRIVATE);
+            int points=prefs.getInt("points",0),wins=prefs.getInt("wins",0);
+            int perfect=prefs.getInt("perfectWins",0),last=prefs.getInt("lastEarned",0);
+            int rank=rankIndex(points),next=rank<rankNames.length-1?rank+1:rank;
+            txt(c,"لوحة التقدم",w*.5f,h*.16f,h*.055f,dark,true);
+            box(c,w*.12f,h*.22f,w*.88f,h*.48f,Color.rgb(244,248,235));
+            txt(c,"رتبتك العسكرية",w*.5f,h*.285f,h*.03f,dark,true);
+            txt(c,rankNames[rank],w*.5f,h*.385f,h*.075f,Color.rgb(155,105,28),true);
+            txt(c,"مجموع النقاط: "+points,w*.5f,h*.445f,h*.031f,dark,true);
+            if(next>rank) {
+                float left=w*.20f,right=w*.80f,top=h*.545f;
+                box(c,left,top,right,top+h*.025f,Color.rgb(220,226,211));
+                float ratio=(float)(points-rankThresholds[rank])/(rankThresholds[next]-rankThresholds[rank]);
+                box(c,left,top,left+(right-left)*Math.max(0f,Math.min(1f,ratio)),top+h*.025f,Color.rgb(52,135,83));
+                txt(c,"باقي "+Math.max(0,rankThresholds[next]-points)+" نقطة للترقية إلى "+rankNames[next],w*.5f,h*.615f,h*.026f,dark,false);
+            } else txt(c,"وصلت إلى أعلى رتبة عسكرية!",w*.5f,h*.615f,h*.029f,Color.rgb(155,105,28),true);
+            box(c,w*.12f,h*.68f,w*.88f,h*.85f,Color.rgb(244,248,235));
+            txt(c,"الانتصارات ضد جنيرال: "+wins,w*.5f,h*.735f,h*.031f,dark,true);
+            txt(c,"انتصارات بتدمير الأسلحة الثلاثة: "+perfect,w*.5f,h*.785f,h*.027f,dark,true);
+            txt(c,"نقاط آخر مباراة: "+last,w*.5f,h*.83f,h*.027f,dark,false);
+            btn(c,"عودة",w*.41f,h*.93f,w*.59f,h*.99f,dark);
+        }
+
         private JSONArray loadHistory() {
             try { return new JSONArray(getSharedPreferences("GENERAL_STATS",MODE_PRIVATE).getString("matches","[]")); }
             catch(Exception ex) { return new JSONArray(); }
@@ -546,6 +649,9 @@ public class MainActivity extends Activity {
                     item.put("winnerSide",winner);
                 }
                 item.put("mode",mode);
+                item.put("points",mode==2 && winner==1?matchPoints:0);
+                item.put("perfectWin",mode==2 && winner==1 && perfectWin);
+                item.put("difficulty",difficulty);
                 item.put("date",new SimpleDateFormat("EEEE dd/MM/yyyy HH:mm",new Locale("ar","JO")).format(new Date()));
                 updated.put(item);
                 int start=Math.max(0,old.length()-99);
@@ -642,6 +748,7 @@ public class MainActivity extends Activity {
             matchEpoch++;
             for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}
             stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false; recorded=false; explosionAt=0;
+            bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
             openingRoll1=0; openingRoll2=0; openingToss=false;
             if(mode==3 && lanSession!=null && lanSession.isConnected()) {
                 lanOpeningStarted=true;
@@ -666,29 +773,26 @@ public class MainActivity extends Activity {
                 if(openingRoll1==openingRoll2){ startOpeningToss(); return; }
                 player=openingRoll1>openingRoll2?1:2;
                 openingToss=false; stage=2;
-                message=player==1?(mode==2?"أنت تبدأ — دورك":"اللاعب 1 يبدأ"):(mode==2?"جنيرال يبدأ":"اللاعب 2 يبدأ");
-                invalidate();
-                if(mode==2 && player==2) postDelayed(new Runnable(){ @Override public void run(){ if(epoch==matchEpoch && mode==2 && winner==0 && player==2){computerTurn();invalidate();} }},700);
+                message=player==1?(mode==2?"أنت تبدأ — دورك":"اللاعب الأول يبدأ"):(mode==2?"جنيرال يبدأ":"اللاعب الثاني يبدأ");
+                startBattleIntro();invalidate();
             }},2600);
         }
         private void finishCheck() {
-            int p1Destroyed=0, p2Destroyed=0;
-            for(int i=0;i<3;i++) {
-                if(dead1[i]) p1Destroyed++;
-                if(dead2[i]) p2Destroyed++;
+            int p1Destroyed=0,p2Destroyed=0;
+            for(int i=0;i<3;i++){if(dead1[i])p1Destroyed++;if(dead2[i])p2Destroyed++;}
+            if(bonusAttempt) {
+                if(p2Destroyed>=3){perfectWin=true;finishMatch();}
+                return;
             }
-            // الفوز يتحقق عند تدمير سلاحين من أصل ثلاثة لدى الخصم.
-            if(p1Destroyed>=2) winner=2;
-            if(p2Destroyed>=2) winner=1;
-            if(winner!=0){
-                die=0;choosing=false;
-                if(mode==2) message=winner==1?"انتهت المباراة — أنت الفائز!":"انتهت المباراة — فاز جنيرال!";
-                else message="انتهت المباراة — الفائز: "+(winner==1?playerNames[0]:playerNames[1]);
-                saveMatchResult();
+            if(p1Destroyed>=2){winner=2;finishMatch();return;}
+            if(p2Destroyed>=2) {
+                winner=1;
+                if(mode==2){beginBonusAttempt();return;}
+                finishMatch();
             }
         }
         private void afterTurn() {
-            if(winner!=0)return;
+            if(winner!=0 && !bonusAttempt)return;
             die=0; choosing=false;
             if(mode==2) {
                 player=1;
@@ -739,7 +843,7 @@ public class MainActivity extends Activity {
                             if(epoch==matchEpoch && mode==2 && winner==0 && player==2) animateMove(2,selected,die);
                         }},650);
                     } else {
-                        message="لا يوجد سلاح مناسب! الدور ملغي";
+                        message="لا توجد حركة متاحة لجنيرال — نتيجة النرد: "+die+" — تم تجاوز الدور";
                         invalidate();
                         postDelayed(new Runnable(){ @Override public void run(){
                             if(epoch==matchEpoch && mode==2 && winner==0 && player==2) {
@@ -754,6 +858,7 @@ public class MainActivity extends Activity {
         }
         private void animateMove(final int side, final int lane, final int amount) {
             final int epoch=matchEpoch;
+            final boolean bonusShot=bonusAttempt;
             choosing=false;
             playGameSound(lane);
             muzzleFlashAt=System.currentTimeMillis();
@@ -764,7 +869,7 @@ public class MainActivity extends Activity {
             message=(side==1?"الأزرق":"الأحمر")+" يطلق...";
             final Runnable[] step=new Runnable[1];
             step[0]=new Runnable(){ @Override public void run(){
-                if(epoch!=matchEpoch || winner!=0)return;
+                if(epoch!=matchEpoch || (winner!=0 && !bonusAttempt))return;
                 if(positions(side)[lane]<target){
                     positions(side)[lane]++;
                     invalidate();
@@ -777,6 +882,7 @@ public class MainActivity extends Activity {
                         else {dead1[lane]=true;spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
                     }
                     finishCheck();
+                    if(bonusShot && bonusAttempt && winner==1)finishMatch();
                     if(winner==0){
                         if(mode==2 && side==1){
                             player=2; die=0; message="دور جنيرال";
@@ -962,18 +1068,21 @@ public class MainActivity extends Activity {
             txt(c,"GENERAL  •  جنيرال",w*.5f,h*.075f,h*.06f,dark,true);
             btn(c,"الإعدادات",w*.015f,h*.025f,w*.17f,h*.105f,dark);
             btn(c,"خروج",w*.83f,h*.025f,w*.985f,h*.105f,Color.rgb(135,48,43));
+            if(battleIntro){drawBattleIntro(c);return;}
             if(setup) { drawSetup(c); return; }
             if(mode==0) {
                 if(historyScreen){drawHistory(c);return;}
+                if(progressScreen){drawProgress(c);return;}
                 txt(c,"اختر طريقة اللعب",w*.5f,h*.31f,h*.065f,dark,true);
                 btn(c,"لاعبان على نفس الجهاز",w*.12f,h*.37f,w*.48f,h*.53f,blue);
                 btn(c,"ضد جنيرال الكمبيوتر",w*.52f,h*.37f,w*.88f,h*.53f,red);
                 btn(c,"مواجهة عبر Wi-Fi",w*.30f,h*.56f,w*.70f,h*.68f,Color.rgb(52,125,91));
-                btn(c,"سجل المباريات",w*.36f,h*.73f,w*.64f,h*.83f,dark);
+                btn(c,"سجل المباريات",w*.16f,h*.73f,w*.48f,h*.83f,dark);
+                btn(c,"لوحة التقدم",w*.52f,h*.73f,w*.84f,h*.83f,Color.rgb(155,105,28));
                 txt(c,"جنيرال يلعب وحده ويتخذ قراراته",w*.5f,h*.90f,h*.028f,dark,false);
                 return;
             }
-            if(winner!=0) {
+            if(winner!=0 && !bonusAttempt) {
                 box(c,w*.12f,h*.19f,w*.88f,h*.80f,Color.rgb(245,249,239));
                 String winnerName=winner==1?playerNames[0]:(mode==2?"جنيرال":playerNames[1]);
                 float portraitY=h*.39f, portraitR=h*.085f;
@@ -993,8 +1102,9 @@ public class MainActivity extends Activity {
                     txt(c,loserName,w*.66f,h*.52f,h*.038f,dark,true);
                 }
                 txt(c,"الفائز: "+winnerName,w*.5f,h*.60f,h*.05f,dark,true);
-                btn(c,"إعادة المحاولة",w*.25f,h*.68f,w*.48f,h*.77f,blue);
-                btn(c,"العودة إلى الرئيسية",w*.52f,h*.68f,w*.75f,h*.77f,dark);
+                if(mode==2 && winner==1)txt(c,"النقاط المكتسبة: "+matchPoints,w*.5f,h*.65f,h*.029f,Color.rgb(35,125,72),true);
+                btn(c,"إعادة المحاولة",w*.25f,h*.70f,w*.48f,h*.79f,blue);
+                btn(c,"العودة إلى الرئيسية",w*.52f,h*.70f,w*.75f,h*.79f,dark);
                 return;
             }
             txt(c,message,w*.5f,h*.145f,h*.036f,dark,true);
@@ -1071,6 +1181,7 @@ public class MainActivity extends Activity {
             float x=e.getX(),y=e.getY();
             if(Math.hypot(x-touchDownX,y-touchDownY)>h*.10f){touchDown=false;return true;}
             touchDown=false;
+            if(battleIntro)return true;
             float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
             boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
             if(y>=h*.025f && y<=h*.11f) {
@@ -1079,11 +1190,12 @@ public class MainActivity extends Activity {
                 invalidate();return true;
             }
             if(mode==0) {
-                if(historyScreen) { if(x>=w*.40f&&x<=w*.60f&&y>=h*.94f&&y<=h*.995f)historyScreen=false; }
+                if(historyScreen || progressScreen) { if(x>=w*.40f&&x<=w*.60f&&y>=h*.93f&&y<=h*.995f){historyScreen=false;progressScreen=false;} }
                 else if(y>=h*.37f&&y<=h*.53f&&x>=w*.12f&&x<=w*.48f){mode=1;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
                 else if(y>=h*.37f&&y<=h*.53f&&x>=w*.52f&&x<=w*.88f){mode=2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
                 else if(y>=h*.56f&&y<=h*.68f&&x>=w*.30f&&x<=w*.70f)showLanModeDialog();
-                else if(y>=h*.73f&&y<=h*.83f&&x>=w*.36f&&x<=w*.64f)historyScreen=true;
+                else if(y>=h*.73f&&y<=h*.83f&&x>=w*.16f&&x<=w*.48f)historyScreen=true;
+                else if(y>=h*.73f&&y<=h*.83f&&x>=w*.52f&&x<=w*.84f)progressScreen=true;
                 invalidate();return true;
             }
             if(setup) {
@@ -1099,7 +1211,7 @@ public class MainActivity extends Activity {
                     if(col>=0 && col<4 && choice<avatarColors.length) avatars[idx]=choice;
                 } else if(x>=w*.36f && x<=w*.64f && y>=h*.90f && y<=h*.985f) {
                     if(setupSide==1 && mode==1) setupSide=2;
-                    else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
+                    else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
                     else { setup=false;resetMatch(); }
                 }
                 invalidate();return true;
@@ -1112,10 +1224,10 @@ public class MainActivity extends Activity {
                 }
                 invalidate();return true;
             }
-            if(winner!=0) {
-                if(y>=h*.68f&&y<=h*.78f) {
+            if(winner!=0 && !bonusAttempt) {
+                if(y>=h*.70f&&y<=h*.80f) {
                     if(x>=w*.25f&&x<=w*.48f) resetMatch();
-                    else if(x>=w*.52f&&x<=w*.75f) { matchEpoch++; timerlessCloseLan(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; explosionAt=0; message="اختر طريقة اللعب"; }
+                    else if(x>=w*.52f&&x<=w*.75f) { matchEpoch++; timerlessCloseLan(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; battleIntro=false; progressScreen=false; explosionAt=0; message="اختر طريقة اللعب"; }
                 }
                 invalidate();return true;
             }
@@ -1132,13 +1244,14 @@ public class MainActivity extends Activity {
                 else {
                     die=random.nextInt(6)+1;choosing=true;
                     if(!anyMove(player)){
-                        message="لا يوجد سلاح مناسب! الدور ملغي";
-                        choosing=false;die=0;invalidate();
+                        message="لا توجد حركة متاحة — نتيجة النرد: "+die+" — تم تجاوز الدور";
+                        choosing=false;invalidate();
                         final int epoch=matchEpoch;
                         postDelayed(new Runnable(){ @Override public void run(){
-                            if(epoch!=matchEpoch || winner!=0)return;
+                            if(epoch!=matchEpoch || (winner!=0 && !bonusAttempt))return;
+                            if(bonusAttempt){finishMatch();return;}
                             if(mode==2){
-                                player=2;message="دور جنيرال";invalidate();
+                                die=0;player=2;message="دور جنيرال";invalidate();
                                 postDelayed(new Runnable(){@Override public void run(){
                                     if(epoch==matchEpoch && mode==2 && winner==0 && player==2)computerTurn();
                                 }},500);
