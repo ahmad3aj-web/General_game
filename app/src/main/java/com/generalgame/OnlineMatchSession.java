@@ -16,6 +16,14 @@ import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import android.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -55,6 +63,7 @@ public final class OnlineMatchSession {
     private volatile String httpsProbeResult = "لم يكتمل فحص HTTPS بعد";
     private volatile String controlProbeResult = "لم يكتمل فحص الاتصال العام بعد";
     private volatile String addressProbeResult = "لم يكتمل فحص IPv4/IPv6 بعد";
+    private volatile String websocketProbeResult = "لم يكتمل فحص WebSocket بعد";
     private volatile String connectionError = "";
     private final ValueEventListener connectionListener = new ValueEventListener() {
         @Override public void onDataChange(DataSnapshot snapshot) {
@@ -174,6 +183,7 @@ public final class OnlineMatchSession {
                     + "فحص Firebase HTTPS من داخل التطبيق: " + httpsProbeResult + ".\n"
                     + "فحص HTTPS عام (Google): " + controlProbeResult + ".\n"
                     + "فحص مسارات IPv4/IPv6 إلى Firebase: " + addressProbeResult + ".\n"
+                    + "فحص اتصال Firebase WebSocket الآمن: " + websocketProbeResult + ".\n"
                     + (connectionError.isEmpty() ? "" : "تفصيل خطأ الاتصال: " + connectionError + ".\n")
                     + "لم يصل تأكيد الكتابة من الخادم؛ لا تغيّر قواعد Firebase الآن.");
         };
@@ -213,12 +223,76 @@ public final class OnlineMatchSession {
         runHttpsProbe(DATABASE_URL + "/.json", true);
         runHttpsProbe("https://www.google.com/generate_204", false);
         runFirebaseAddressProbe();
+        runFirebaseWebSocketProbe();
     }
 
     /**
      * Compares raw TCP reachability to Firebase on IPv4 and IPv6.
      * This is diagnostic only; it does not change Firebase transport or security.
      */
+    /**
+     * Tests the same secure WebSocket upgrade used by the Realtime Database SDK.
+     * Diagnostic only: no database data is read or written and no auth/rules change.
+     */
+    private void runFirebaseWebSocketProbe() {
+        Thread probe = new Thread(() -> {
+            SSLSocket socket = null;
+            try {
+                String host = new URL(DATABASE_URL).getHost();
+                socket = (SSLSocket) SSLSocketFactory.getDefault().createSocket();
+                socket.connect(new InetSocketAddress(host, 443), 5000);
+                socket.setSoTimeout(6000);
+                socket.startHandshake();
+
+                byte[] nonce = new byte[16];
+                new SecureRandom().nextBytes(nonce);
+                String key = Base64.encodeToString(nonce, Base64.NO_WRAP);
+                String request = "GET /.ws?ns=general-online-2026-default-rtdb&v=5 HTTP/1.1\\r\\n"
+                        + "Host: " + host + "\\r\\n"
+                        + "Upgrade: websocket\\r\\n"
+                        + "Connection: Upgrade\\r\\n"
+                        + "Sec-WebSocket-Key: " + key + "\\r\\n"
+                        + "Sec-WebSocket-Version: 13\\r\\n"
+                        + "Origin: https://" + host + "\\r\\n\\r\\n";
+                BufferedOutputStream output = new BufferedOutputStream(socket.getOutputStream());
+                output.write(request.getBytes(StandardCharsets.US_ASCII));
+                output.flush();
+
+                BufferedInputStream input = new BufferedInputStream(socket.getInputStream());
+                ByteArrayOutputStream headers = new ByteArrayOutputStream();
+                int state = 0;
+                while (headers.size() < 8192) {
+                    int b = input.read();
+                    if (b < 0) break;
+                    headers.write(b);
+                    if ((state == 0 || state == 2) && b == '\\r') state++;
+                    else if ((state == 1 || state == 3) && b == '\\n') {
+                        if (state == 3) break;
+                        state++;
+                    } else state = 0;
+                }
+                String response = headers.toString("US-ASCII");
+                String firstLine = response.split("\\r?\\n", 2)[0].trim();
+                if (firstLine.contains(" 101 ")) {
+                    websocketProbeResult = "نجح TLS وطلب WebSocket (HTTP 101)";
+                } else if (!firstLine.isEmpty()) {
+                    websocketProbeResult = "اكتمل TLS لكن رفض/تعذر ترقية WebSocket: " + firstLine;
+                } else {
+                    websocketProbeResult = "اكتمل TLS لكن لم يصل رد WebSocket";
+                }
+            } catch (Exception error) {
+                websocketProbeResult = "فشل: " + error.getClass().getSimpleName()
+                        + (error.getMessage() == null ? "" : " - " + error.getMessage());
+            } finally {
+                if (socket != null) {
+                    try { socket.close(); } catch (Exception ignored) { }
+                }
+            }
+        }, "GENERAL-firebase-websocket-probe");
+        probe.setDaemon(true);
+        probe.start();
+    }
+
     private void runFirebaseAddressProbe() {
         Thread probe = new Thread(() -> {
             StringBuilder result = new StringBuilder();
