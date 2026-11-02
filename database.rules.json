@@ -1,0 +1,27 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$room": {
+        ".read": "auth != null && (data.child('hostUid').val() == auth.uid || data.child('guestUid').val() == auth.uid || (data.child('status').val() == 'waiting' && data.child('guestUid').val() == ''))",
+        ".write": "auth != null && !data.exists() && newData.child('hostUid').val() == auth.uid && newData.child('guestUid').val() == '' && newData.child('status').val() == 'waiting' && newData.child('players').child(auth.uid).child('side').val() == 1",
+        "guestUid": {
+          ".write": "auth != null && data.val() == '' && newData.val() == auth.uid && root.child('rooms').child($room).child('status').val() == 'waiting' && root.child('rooms').child($room).child('hostUid').val() != auth.uid"
+        },
+        "players": {
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid && (auth.uid == root.child('rooms').child($room).child('hostUid').val() || auth.uid == root.child('rooms').child($room).child('guestUid').val())",
+            ".validate": "newData.hasChildren(['side', 'name', 'avatar', 'connected']) && ((auth.uid == root.child('rooms').child($room).child('hostUid').val() && newData.child('side').val() == 1) || (auth.uid == root.child('rooms').child($room).child('guestUid').val() && newData.child('side').val() == 2))"
+          }
+        },
+        "actions": {
+          "$actionId": {
+            ".write": "auth != null && !data.exists() && newData.child('fromUid').val() == auth.uid && ((auth.uid == root.child('rooms').child($room).child('hostUid').val() && newData.child('side').val() == 1) || (auth.uid == root.child('rooms').child($room).child('guestUid').val() && newData.child('side').val() == 2))",
+            ".validate": "newData.hasChildren(['fromUid', 'side', 'type', 'turnId', 'value', 'lane', 'round', 'automatic', 'createdAt']) && (newData.child('type').val() == 'opening_roll' || newData.child('type').val() == 'roll' || newData.child('type').val() == 'move' || newData.child('type').val() == 'turn_cancel' || newData.child('type').val() == 'rematch')"
+          }
+        }
+      }
+    }
+  }
+}
