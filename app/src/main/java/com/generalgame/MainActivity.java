@@ -14,6 +14,8 @@ import android.graphics.LinearGradient;
 import android.graphics.Shader;
 import android.view.MotionEvent;
 import android.view.View;
+import android.media.AudioAttributes;
+import android.media.SoundPool;
 import android.widget.EditText;
 import android.text.InputType;
 import java.util.Random;
@@ -35,6 +37,9 @@ public class MainActivity extends Activity {
 
     private class GameView extends View {
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private SoundPool gameSoundPool;
+        private final int[] gameSoundIds = new int[4];
+        private final boolean[] gameSoundLoaded = new boolean[4];
         private final Random random = new Random();
         private final int[] pos1 = {0,0,0}, pos2 = {0,0,0};
         private final boolean[] dead1 = {false,false,false}, dead2 = {false,false,false};
@@ -69,10 +74,44 @@ public class MainActivity extends Activity {
         private boolean lanHostPending=false;
         private String lanJoinAddress=null;
 
-        GameView() { super(MainActivity.this); setLayerType(View.LAYER_TYPE_SOFTWARE,null); }
+        GameView() {
+            super(MainActivity.this);
+            setLayerType(View.LAYER_TYPE_SOFTWARE,null);
+            AudioAttributes attributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_GAME)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+            gameSoundPool = new SoundPool.Builder()
+                .setMaxStreams(4)
+                .setAudioAttributes(attributes)
+                .build();
+            gameSoundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+                @Override public void onLoadComplete(SoundPool pool, int sampleId, int status) {
+                    if (status == 0) {
+                        for (int i = 0; i < gameSoundIds.length; i++) {
+                            if (gameSoundIds[i] == sampleId) gameSoundLoaded[i] = true;
+                        }
+                    }
+                }
+            });
+            gameSoundIds[0] = gameSoundPool.load(MainActivity.this, R.raw.tank_fire, 1);
+            gameSoundIds[1] = gameSoundPool.load(MainActivity.this, R.raw.aircraft_fire, 1);
+            gameSoundIds[2] = gameSoundPool.load(MainActivity.this, R.raw.cannon_fire, 1);
+            gameSoundIds[3] = gameSoundPool.load(MainActivity.this, R.raw.explosion, 1);
+        }
+        private void playGameSound(int index) {
+            if (gameSoundPool != null && index >= 0 && index < gameSoundIds.length
+                    && gameSoundLoaded[index]) {
+                gameSoundPool.play(gameSoundIds[index], 0.95f, 0.95f, 1, 0, 1.0f);
+            }
+        }
 
         @Override protected void onDetachedFromWindow() {
             timerlessCloseLan();
+            if (gameSoundPool != null) {
+                gameSoundPool.release();
+                gameSoundPool = null;
+            }
             super.onDetachedFromWindow();
         }
         private void txt(Canvas c,String s,float x,float y,float size,int color,boolean bold) {
@@ -578,6 +617,7 @@ public class MainActivity extends Activity {
         private void animateMove(final int side, final int lane, final int amount) {
             final int epoch=matchEpoch;
             choosing=false;
+            playGameSound(lane);
             muzzleFlashAt=System.currentTimeMillis();
             muzzleFlashX=side==1?w*.126f:w*.874f;
             muzzleFlashY=new float[]{h*.29f,h*.49f,h*.69f}[lane];
@@ -593,8 +633,8 @@ public class MainActivity extends Activity {
                     postDelayed(step[0],115);
                 } else {
                     if(target>=15){
-                        if(side==1){dead2[lane]=true;spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);}
-                        else {dead1[lane]=true;spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);}
+                        if(side==1){dead2[lane]=true;spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                        else {dead1[lane]=true;spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
                     }
                     finishCheck();
                     if(winner==0){

@@ -1,0 +1,9 @@
+GENERAL game sound effects
+The four short in-game sound effects in this folder are sourced from the uploaded military_sfx_pack_v0.2.zip.
+The pack manifest and SOURCES_CC0.txt identify the selected source recordings as CC0 (Creative Commons Zero).
+Selected mapping:
+- tank_fire.mp3: tank firing
+- aircraft_fire.mp3: aircraft firing
+- cannon_fire.mp3: cannon firing
+- explosion.mp3: destruction explosion
+Source audit trail: see the uploaded pack's curated/SOURCES_CC0.txt and curated/manifest.csv.
