@@ -284,9 +284,9 @@ public class MainActivity extends Activity {
                     mode=4; setup=true; setupSide=1; onlineJoinCode=null;
                     playerNames[0]="أنت"; avatars[0]=0;
                     if(which==0) {
-                        onlineQuickMatch=true; onlineInvitePending=false;
+                        onlineLocalSide=1; onlineQuickMatch=true; onlineInvitePending=false;
                     } else if(which==1) {
-                        onlineQuickMatch=false; onlineInvitePending=true;
+                        onlineLocalSide=1; onlineQuickMatch=false; onlineInvitePending=true;
                     } else {
                         setup=false; onlineQuickMatch=false; onlineInvitePending=false;
                         showOnlineSetupNotice(false);
@@ -339,7 +339,8 @@ public class MainActivity extends Activity {
                         new AlertDialog.Builder(MainActivity.this).setMessage("الرمز يجب أن يتكون من 8 أحرف.").setPositiveButton("حسناً",null).show();
                         return;
                     }
-                    onlineJoinCode=code; mode=4; setup=true; setupSide=2;
+                    onlineJoinCode=code; onlineLocalSide=2; mode=4; setup=true; setupSide=2;
+                    onlineQuickMatch=false; onlineInvitePending=false;
                     playerNames[1]="أنت"; avatars[1]=1; invalidate();
                 }).setNegativeButton("إلغاء",null).show();
         }
@@ -512,6 +513,11 @@ public class MainActivity extends Activity {
                 });}
                 @Override public void onError(String reason){runOnUiThread(()->{
                     message=reason;
+                    if(onlineQuickMatch) {
+                        timerlessCloseOnline();
+                        onlineQuickMatch=false;
+                        mode=0; setup=false;
+                    }
                     new AlertDialog.Builder(MainActivity.this).setTitle("اللعب عبر الإنترنت")
                         .setMessage(reason).setPositiveButton("حسناً",null).show(); invalidate();
                 });}
