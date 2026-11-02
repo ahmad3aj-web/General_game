@@ -97,7 +97,8 @@ public final class OnlineMatchSession {
         }
         auth.signInAnonymously().addOnCompleteListener(task -> {
             if (!task.isSuccessful() || auth.getCurrentUser() == null) {
-                listener.onError("تعذر تسجيل الدخول إلى خدمة الإنترنت. تحقق من الاتصال وحاول مجدداً.");
+                String detail = task.getException() == null ? "سبب غير معروف" : task.getException().getMessage();
+                listener.onError("فشل تسجيل الدخول إلى Firebase: " + detail);
                 return;
             }
             uid = auth.getCurrentUser().getUid();
