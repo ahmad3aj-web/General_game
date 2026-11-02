@@ -135,18 +135,41 @@ public class MainActivity extends Activity {
         }
         private void updateBackgroundMusic() {
             if(!musicEnabled) {
-                if(backgroundMusic!=null){backgroundMusic.release();backgroundMusic=null;}
+                if(backgroundMusic!=null) {
+                    try { backgroundMusic.stop(); } catch(Exception ignored) {}
+                    backgroundMusic.release();
+                    backgroundMusic=null;
+                }
                 return;
             }
-            if(backgroundMusic==null) {
-                backgroundMusic=MediaPlayer.create(MainActivity.this,R.raw.battle_music);
-                if(backgroundMusic!=null){backgroundMusic.setLooping(true);backgroundMusic.setVolume(.22f,.22f);}
-            }
-            if(backgroundMusic!=null && !backgroundMusic.isPlaying()) {
-                try{backgroundMusic.start();}catch(IllegalStateException ignored){}
+            try {
+                if(backgroundMusic==null) {
+                    AudioAttributes musicAttributes = new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_GAME)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build();
+                    backgroundMusic=MediaPlayer.create(MainActivity.this,R.raw.battle_music,musicAttributes);
+                    if(backgroundMusic!=null) {
+                        backgroundMusic.setLooping(true);
+                        backgroundMusic.setVolume(0.80f,0.80f);
+                    }
+                }
+                if(backgroundMusic!=null && !backgroundMusic.isPlaying()) {
+                    backgroundMusic.start();
+                }
+            } catch(Exception error) {
+                if(backgroundMusic!=null) {
+                    try { backgroundMusic.release(); } catch(Exception ignored) {}
+                    backgroundMusic=null;
+                }
             }
         }
-        void pauseMusic(){if(backgroundMusic!=null && backgroundMusic.isPlaying())backgroundMusic.pause();}
+        void pauseMusic(){
+            if(backgroundMusic!=null) {
+                try { if(backgroundMusic.isPlaying())backgroundMusic.pause(); }
+                catch(Exception ignored) {}
+            }
+        }
         void resumeMusic(){if(musicEnabled)updateBackgroundMusic();}
         private void showSettingsDialog() {
             final String[] labels={"المؤثرات الصوتية","الموسيقى","الاهتزاز عند الانفجار"};
@@ -170,20 +193,26 @@ public class MainActivity extends Activity {
         private void vibrateForExplosion() {
             if(!vibrationEnabled)return;
             try {
-                Vibrator vibrator=getSystemService(Vibrator.class);
-                if(vibrator==null || !vibrator.hasVibrator()) {
-                    performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
-                    return;
-                }
-                vibrator.cancel();
-                if(Build.VERSION.SDK_INT>=26) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(1000,255));
+                Vibrator vibrator;
+                if(Build.VERSION.SDK_INT>=31) {
+                    android.os.VibratorManager manager=getSystemService(android.os.VibratorManager.class);
+                    vibrator=manager!=null?manager.getDefaultVibrator():null;
                 } else {
-                    vibrator.vibrate(1000);
+                    vibrator=(Vibrator)getSystemService(android.content.Context.VIBRATOR_SERVICE);
                 }
-            } catch(Exception ignored) {
+                if(vibrator!=null && vibrator.hasVibrator()) {
+                    vibrator.cancel();
+                    if(Build.VERSION.SDK_INT>=26) {
+                        vibrator.vibrate(VibrationEffect.createOneShot(450,VibrationEffect.DEFAULT_AMPLITUDE));
+                    } else {
+                        vibrator.vibrate(450);
+                    }
+                } else {
+                    performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+                }
+            } catch(Exception error) {
                 try { performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS); }
-                catch(Exception ignoredAgain) {}
+                catch(Exception ignored) {}
             }
         }
         private void txt(Canvas c,String s,float x,float y,float size,int color,boolean bold) {
