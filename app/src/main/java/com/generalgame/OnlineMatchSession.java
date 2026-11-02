@@ -238,6 +238,7 @@ public final class OnlineMatchSession {
         Thread probe = new Thread(() -> {
             Socket rawSocket = null;
             SSLSocket tlsSocket = null;
+            String stage = "DNS";
             try {
                 String host = new URL(DATABASE_URL).getHost();
                 InetAddress ipv4 = null;
@@ -254,14 +255,20 @@ public final class OnlineMatchSession {
 
                 // Pin only the TCP destination to the resolved IPv4 address.
                 // Keep the original hostname for TLS SNI and certificate validation.
+                stage = "TCP";
                 rawSocket = new Socket();
                 rawSocket.connect(new InetSocketAddress(ipv4, 443), 5000);
                 rawSocket.setSoTimeout(6000);
                 SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
                 tlsSocket = (SSLSocket) factory.createSocket(rawSocket, host, 443, true);
                 tlsSocket.setSoTimeout(6000);
+                javax.net.ssl.SSLParameters sslParameters = tlsSocket.getSSLParameters();
+                sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
+                tlsSocket.setSSLParameters(sslParameters);
+                stage = "TLS handshake";
                 tlsSocket.startHandshake();
 
+                stage = "WebSocket HTTP upgrade";
                 byte[] nonce = new byte[16];
                 new SecureRandom().nextBytes(nonce);
                 String key = Base64.encodeToString(nonce, Base64.NO_WRAP);
@@ -299,7 +306,7 @@ public final class OnlineMatchSession {
                     websocketProbeResult = "TLS عبر IPv4 نجح لكن لم يصل رد WebSocket";
                 }
             } catch (Exception error) {
-                websocketProbeResult = "فشل WebSocket عبر IPv4 المثبت: "
+                websocketProbeResult = "فشل في مرحلة " + stage + " عبر IPv4 المثبت: "
                         + error.getClass().getSimpleName()
                         + (error.getMessage() == null ? "" : " - " + error.getMessage());
             } finally {
