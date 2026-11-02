@@ -55,7 +55,7 @@ public class MainActivity extends Activity {
         private final int[] pos1 = {0,0,0}, pos2 = {0,0,0};
         private final boolean[] dead1 = {false,false,false}, dead2 = {false,false,false};
         private final String[] names = {"الدبابة","الطائرة","المدفع"};
-        private int mode = 0; // 0 menu, 1 local two-player, 2 vs General, 3 Wi-Fi
+        private int mode = 0; // 0 menu, 1 local two-player, 2 vs General, 3 Wi-Fi, 4 online
         private boolean setup = false;
         private boolean historyScreen = false;
         private boolean progressScreen = false;
@@ -93,6 +93,10 @@ public class MainActivity extends Activity {
         private boolean lanOpeningStarted=false;
         private boolean lanHostPending=false;
         private String lanJoinAddress=null;
+        private OnlineMatchSession onlineSession;
+        private int onlineLocalSide=1, onlineTurnId=0;
+        private boolean onlineOpeningStarted=false;
+        private String onlineJoinCode=null;
 
         GameView() {
             super(MainActivity.this);
@@ -133,6 +137,7 @@ public class MainActivity extends Activity {
 
         @Override protected void onDetachedFromWindow() {
             timerlessCloseLan();
+            timerlessCloseOnline();
             if (gameSoundPool != null) {
                 gameSoundPool.release();
                 gameSoundPool = null;
@@ -271,11 +276,28 @@ public class MainActivity extends Activity {
                 .setNeutralButton("إلغاء",null).show();
         }
         private void showOnlineSetupNotice(boolean createRoom) {
-            String action=createRoom?"إنشاء غرفة وإصدار رمز للمباراة":"إدخال رمز الغرفة والانضمام";
-            new AlertDialog.Builder(MainActivity.this)
-                .setTitle(createRoom?"إنشاء غرفة عبر الإنترنت":"الانضمام إلى غرفة")
-                .setMessage(action+"\\n\\nواجهة الخيارين جاهزة، لكن تشغيل الاتصال الفعلي يحتاج ربط مشروع Firebase الخاص باللعبة أولاً. لم يتم بدء مباراة وهمية أو عرض رمز غير صالح.")
-                .setPositiveButton("حسناً",null).show();
+            if(createRoom) {
+                mode=4; setup=true; setupSide=1; playerNames[0]="أنت"; avatars[0]=0;
+                onlineJoinCode=null; invalidate();
+                return;
+            }
+            final EditText input=new EditText(MainActivity.this);
+            input.setSingleLine(true);
+            input.setHint("مثال: A7K9M2QX");
+            input.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.AllCaps(),
+                    new android.text.InputFilter.LengthFilter(8)});
+            input.setInputType(InputType.TYPE_CLASS_TEXT);
+            new AlertDialog.Builder(MainActivity.this).setTitle("رمز غرفة الإنترنت")
+                .setMessage("أدخل الرمز المكوّن من 8 أحرف الذي أرسله لك اللاعب الآخر.")
+                .setView(input).setPositiveButton("متابعة",(d,which)->{
+                    String code=input.getText().toString().trim().toUpperCase(Locale.ROOT);
+                    if(code.length()!=8) {
+                        new AlertDialog.Builder(MainActivity.this).setMessage("الرمز يجب أن يتكون من 8 أحرف.").setPositiveButton("حسناً",null).show();
+                        return;
+                    }
+                    onlineJoinCode=code; mode=4; setup=true; setupSide=2;
+                    playerNames[1]="أنت"; avatars[1]=1; invalidate();
+                }).setNegativeButton("إلغاء",null).show();
         }
         private void showLanHostAddress() {
             String ip=LanConnection.getLocalIpv4();
@@ -361,6 +383,95 @@ public class MainActivity extends Activity {
                 @Override public void onProtocolError(String reason){runOnUiThread(()->{message=reason;invalidate();});}
             });
         }
+        private void createOnlineSession() {
+            if(onlineSession!=null)onlineSession.close();
+            onlineOpeningStarted=false; onlineTurnId=0;
+            onlineSession=new OnlineMatchSession(new OnlineMatchSession.Listener(){
+                @Override public void onConnected(String code){runOnUiThread(()->{
+                    message=onlineLocalSide==1?"الغرفة جاهزة — أرسل الرمز للاعب الثاني":"تم الانضمام — بانتظار بدء المباراة";
+                    if(onlineLocalSide==1) new AlertDialog.Builder(MainActivity.this).setTitle("رمز غرفة GENERAL")
+                        .setMessage("رمز غرفتك هو:\n\n"+code+"\n\nأرسل الرمز للاعب الثاني، وانتظر انضمامه.")
+                        .setPositiveButton("حسناً",null).show();
+                    invalidate();
+                });}
+                @Override public void onPeerInfo(int side,String name,int avatar){runOnUiThread(()->{
+                    playerNames[side-1]=name; avatars[side-1]=avatar; invalidate();
+                });}
+                @Override public void onPeerJoined(){runOnUiThread(()->{
+                    if(mode!=4)return;
+                    message=onlineLocalSide==1?"تم انضمام اللاعب — جارٍ إجراء قرعة البداية":"تم الاتصال بالمضيف — بانتظار القرعة";
+                    if(onlineLocalSide==1 && !onlineOpeningStarted) {
+                        onlineOpeningStarted=true; onlineSession.startOpeningToss();
+                    }
+                    invalidate();
+                });}
+                @Override public void onOpeningRolls(int b,int r,boolean tied){runOnUiThread(()->{
+                    openingRoll1=b;openingRoll2=r;openingToss=true;
+                    message=tied?"تعادل — إعادة القرعة تلقائياً":"قرعة البداية"; invalidate();
+                });}
+                @Override public void onOpeningWinner(int side){runOnUiThread(()->{
+                    if(!onlineOpeningStarted || mode!=4)return;
+                    openingToss=false;stage=2;player=side;die=0;choosing=false;onlineTurnId=1;
+                    message=(side==onlineLocalSide?"أنت تبدأ":"الخصم يبدأ");
+                    onlineSession.beginTurn(onlineTurnId,side);startBattleIntro();invalidate();
+                });}
+                @Override public void onRematchReady(){runOnUiThread(()->{
+                    message="اللاعبان جاهزان — قرعة البداية"; invalidate();
+                });}
+                @Override public void onTurnStarted(int id,int side,boolean local){runOnUiThread(()->{
+                    onlineTurnId=id;player=side;die=0;choosing=false;lanCountdown=30;
+                    message=local?"دورك — اضغط أطلق خلال 30 ثانية":"دور الخصم — بانتظار رمي النرد"; invalidate();
+                });}
+                @Override public void onCountdown(int seconds){runOnUiThread(()->{lanCountdown=seconds;invalidate();});}
+                @Override public void onRoll(int side,int value,boolean automatic){runOnUiThread(()->{
+                    if(mode!=4 || winner!=0 || side!=player)return;
+                    die=value;choosing=true;
+                    message=(side==onlineLocalSide?"أنت":"الخصم")+" رمى "+value+(automatic?" تلقائياً":"")+" — اختر السلاح";
+                    if(!anyMove(side)){
+                        message="لا توجد حركة متاحة — نتيجة النرد: "+die+" — تم تجاوز الدور";
+                        choosing=false;invalidate();
+                        if(side==onlineLocalSide)onlineSession.cancelTurn();
+                    }
+                    invalidate();
+                });}
+                @Override public void onMove(int side,int lane,int value){runOnUiThread(()->{
+                    if(mode!=4 || winner!=0 || side!=player || value!=die)return;
+                    if(lane<0 || lane>2 || !canMove(side,lane)){message="وصلت حركة غير ممكنة — تم تجاهلها";invalidate();return;}
+                    animateMove(side,lane,value);invalidate();
+                });}
+                @Override public void onTurnCancelled(int side){runOnUiThread(()->{
+                    if(mode==4 && side==player){
+                        final int epoch=matchEpoch;
+                        message="الدور ملغي — النرد: "+die;
+                        postDelayed(()->{if(epoch==matchEpoch && mode==4 && side==player){
+                            die=0;choosing=false;if(bonusAttempt)finishMatch();else afterTurn();invalidate();
+                        }},1100);
+                        invalidate();
+                    }
+                });}
+                @Override public void onDisconnected(String reason){runOnUiThread(()->{
+                    timerlessCloseOnline();message="انقطع اتصال الإنترنت: "+reason;
+                    new AlertDialog.Builder(MainActivity.this).setTitle("انقطع اتصال الإنترنت")
+                        .setMessage(reason).setPositiveButton("العودة للرئيسية",(d,which)->{
+                            mode=0;setup=false;message="اختر طريقة اللعب";invalidate();
+                        }).show();
+                });}
+                @Override public void onError(String reason){runOnUiThread(()->{
+                    message=reason;
+                    new AlertDialog.Builder(MainActivity.this).setTitle("اللعب عبر الإنترنت")
+                        .setMessage(reason).setPositiveButton("حسناً",null).show(); invalidate();
+                });}
+            });
+        }
+        private void startOnlineHost(String name,int avatar) {
+            onlineLocalSide=1; createOnlineSession(); message="جارٍ إنشاء غرفة الإنترنت...";
+            onlineSession.createRoom(name,avatar); invalidate();
+        }
+        private void startOnlineJoin(String code,String name,int avatar) {
+            onlineLocalSide=2; createOnlineSession(); message="جارٍ الانضمام إلى غرفة الإنترنت...";
+            onlineSession.joinRoom(code,name,avatar); invalidate();
+        }
+        private void timerlessCloseOnline(){if(onlineSession!=null){onlineSession.close();onlineSession=null;}}
         private void timerlessCloseLan(){if(lanSession!=null){lanSession.close();lanSession=null;}}
         private void startLanHost(){
             createLanSession();message="بانتظار اتصال اللاعب الثاني...";
