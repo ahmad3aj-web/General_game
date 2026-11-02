@@ -265,13 +265,13 @@ public final class OnlineMatchSession {
                 byte[] nonce = new byte[16];
                 new SecureRandom().nextBytes(nonce);
                 String key = Base64.encodeToString(nonce, Base64.NO_WRAP);
-                String request = "GET /.ws?ns=general-online-2026-default-rtdb&v=5 HTTP/1.1\\r\\n"
-                        + "Host: " + host + "\\r\\n"
-                        + "Upgrade: websocket\\r\\n"
-                        + "Connection: Upgrade\\r\\n"
-                        + "Sec-WebSocket-Key: " + key + "\\r\\n"
-                        + "Sec-WebSocket-Version: 13\\r\\n"
-                        + "Origin: https://" + host + "\\r\\n\\r\\n";
+                String request = "GET /.ws?ns=general-online-2026-default-rtdb&v=5 HTTP/1.1\r\n"
+                        + "Host: " + host + "\r\n"
+                        + "Upgrade: websocket\r\n"
+                        + "Connection: Upgrade\r\n"
+                        + "Sec-WebSocket-Key: " + key + "\r\n"
+                        + "Sec-WebSocket-Version: 13\r\n"
+                        + "Origin: https://" + host + "\r\n\r\n";
                 BufferedOutputStream output = new BufferedOutputStream(tlsSocket.getOutputStream());
                 output.write(request.getBytes(StandardCharsets.US_ASCII));
                 output.flush();
@@ -283,14 +283,14 @@ public final class OnlineMatchSession {
                     int b = input.read();
                     if (b < 0) break;
                     headers.write(b);
-                    if ((state == 0 || state == 2) && b == '\\r') state++;
-                    else if ((state == 1 || state == 3) && b == '\\n') {
+                    if ((state == 0 || state == 2) && b == '\r') state++;
+                    else if ((state == 1 || state == 3) && b == '\n') {
                         if (state == 3) break;
                         state++;
                     } else state = 0;
                 }
                 String response = headers.toString("US-ASCII");
-                String firstLine = response.split("\\r?\\n", 2)[0].trim();
+                String firstLine = response.split("\r?\n", 2)[0].trim();
                 if (firstLine.contains(" 101 ")) {
                     websocketProbeResult = "نجح WebSocket عبر IPv4 المثبت مع TLS باسم النطاق (HTTP 101)";
                 } else if (!firstLine.isEmpty()) {
