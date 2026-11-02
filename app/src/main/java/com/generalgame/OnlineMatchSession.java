@@ -264,7 +264,8 @@ public final class OnlineMatchSession {
                 String status = item.child("status").getValue(String.class);
                 Long created = item.child("createdAt").getValue(Long.class);
                 if (host == null || uid.equals(host) || code == null || code.length() != 8
-                        || !"waiting".equals(status) || created == null) continue;
+                        || !"waiting".equals(status) || created == null
+                        || created < System.currentTimeMillis() - 120000L) continue;
                 boolean older = created < quickMatchCreatedAt
                         || (created == quickMatchCreatedAt && host.compareTo(uid) < 0);
                 if (older && created < bestTime) {
