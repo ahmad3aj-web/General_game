@@ -813,36 +813,36 @@ public class MainActivity extends Activity {
             }
             float trackL=w*.18f, trackR=w*.82f, trackW=trackR-trackL;
             float[] rows={h*.29f,h*.49f,h*.69f};
-            txt(c,mode==2?"جنيرال":playerNames[1],w*.92f,h*.19f,h*.035f,red,true);
-            txt(c,playerNames[0],w*.08f,h*.19f,h*.035f,blue,true);
-            drawAvatar(c,avatars[0],w*.08f,h*.105f,h*.035f,false);
-            if(mode==2) drawGeneralAvatar(c,w*.92f,h*.105f,h*.035f,false,false); else drawAvatar(c,avatars[1],w*.92f,h*.105f,h*.035f,false);
+            txt(c,mode==2?"جنيرال":playerNames[1],w*.08f,h*.19f,h*.035f,red,true);
+            txt(c,playerNames[0],w*.92f,h*.19f,h*.035f,blue,true);
+            drawAvatar(c,avatars[0],w*.92f,h*.105f,h*.035f,false);
+            if(mode==2) drawGeneralAvatar(c,w*.08f,h*.105f,h*.035f,false,false); else drawAvatar(c,avatars[1],w*.08f,h*.105f,h*.035f,false);
             if(openingToss){
                 float ds=h*.075f;
-                box(c,w*.19f-ds/2,h*.145f,w*.19f+ds/2,h*.145f+ds,red);
-                txt(c,String.valueOf(openingRoll2),w*.19f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
-                box(c,w*.81f-ds/2,h*.145f,w*.81f+ds/2,h*.145f+ds,blue);
-                txt(c,String.valueOf(openingRoll1),w*.81f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
+                box(c,w*.81f-ds/2,h*.145f,w*.81f+ds/2,h*.145f+ds,red);
+                txt(c,String.valueOf(openingRoll2),w*.81f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
+                box(c,w*.19f-ds/2,h*.145f,w*.19f+ds/2,h*.145f+ds,blue);
+                txt(c,String.valueOf(openingRoll1),w*.19f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
             }
             for(int lane=0;lane<3;lane++) {
                 float y=rows[lane], gap=h*.038f;
                 // ستة صفوف واضحة: صفّان متقابلان لكل نوع سلاح.
-                // اللاعب الأزرق يساراً يطلق يميناً، والخصم الأحمر يميناً يطلق يساراً.
+                // اللاعب الأزرق يميناً يطلق يساراً، والخصم الأحمر يساراً يطلق يميناً.
                 float bulletW=trackW/17f, bulletH=h*.048f;
                 float leftStart=trackL+bulletW*.65f, rightStart=trackR-bulletW*.65f;
                 for(int i=0;i<15;i++) {
-                    float bx=leftStart+i*(trackW*.92f/14f);
-                    float rx=rightStart-i*(trackW*.92f/14f);
+                    float bx=rightStart-i*(trackW*.92f/14f);
+                    float rx=leftStart+i*(trackW*.92f/14f);
                     boolean leftDead=dead1[lane], rightDead=dead2[lane];
-                    drawBullet(c,bx,y-gap,bulletW,bulletH,leftDead?Color.GRAY:blue,!leftDead && i<pos1[lane],true);
-                    drawBullet(c,rx,y+gap,bulletW,bulletH,rightDead?Color.GRAY:red,!rightDead && i<pos2[lane],false);
+                    drawBullet(c,bx,y-gap,bulletW,bulletH,leftDead?Color.GRAY:blue,!leftDead && i<pos1[lane],false);
+                    drawBullet(c,rx,y+gap,bulletW,bulletH,rightDead?Color.GRAY:red,!rightDead && i<pos2[lane],true);
                 }
-                drawWeapon(c,lane,w*.075f,y,blue,true);
-                drawWeapon(c,lane,w*.925f,y,red,false);
-                if(dead1[lane]) txt(c,"×",w*.075f,y-gap,h*.07f,Color.RED,true);
-                if(dead2[lane]) txt(c,"×",w*.925f,y+gap,h*.07f,Color.RED,true);
+                drawWeapon(c,lane,w*.925f,y,blue,true);
+                drawWeapon(c,lane,w*.075f,y,red,false);
+                if(dead1[lane]) txt(c,"×",w*.925f,y-gap,h*.07f,Color.RED,true);
+                if(dead2[lane]) txt(c,"×",w*.075f,y+gap,h*.07f,Color.RED,true);
                 if(choosing && winner==0) {
-                    float ownX=player==1?w*.075f:w*.925f;
+                    float ownX=player==1?w*.925f:w*.075f;
                     if(canMove(player,lane)) {
                         p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(4); p.setColor(gold);
                         c.drawCircle(ownX,y,h*.055f,p); p.setStyle(Paint.Style.FILL);
@@ -939,7 +939,7 @@ public class MainActivity extends Activity {
                     else message=(mode==2?"أنت":"اللاعب "+player)+" رمى "+die+" — اختر سلاحاً";
                 }
             } else {
-                float ownX=player==1?w*.075f:w*.925f;
+                float ownX=player==1?w*.925f:w*.075f;
                 int lane=-1;
                 float[] weaponRows={h*.30f,h*.49f,h*.68f};
                 // اختيار السلاح بالضغط على رسمه نفسه، وليس على زر يحمل اسمه.
