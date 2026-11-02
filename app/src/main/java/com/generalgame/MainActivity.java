@@ -1007,10 +1007,10 @@ public class MainActivity extends Activity {
             if(setup) {
                 int idx=setupSide-1;
                 if(x>=w*.27f && x<=w*.73f && y>=h*.50f && y<=h*.60f) { showNameDialog(); return true; }
-                if(mode==2 && y>=h*.695f && y<=h*.76f) {
-                    int level=Math.round((x/w-.16f)/.18f);
+                if(mode==2 && x>=w*.16f && x<=w*.86f && y>=h*.695f && y<=h*.76f) {
+                    int level=Math.round((x/w-.24f)/.18f);
                     if(level>=0 && level<4) difficulty=level;
-                } else if((mode==2 && y>=h*.80f && y<=h*.90f) || (mode!=2 && y>=h*.76f && y<=h*.88f)) {
+                } else if(x>=w*.26f && x<=w*.74f && ((mode==2 && y>=h*.80f && y<=h*.90f) || (mode!=2 && y>=h*.76f && y<=h*.88f))) {
                     int row=(mode==2?(y>=h*.855f?1:0):(y>=h*.82f?1:0));
                     int col=Math.round((x/w-.29f)/.14f);
                     int choice=row*4+col;
