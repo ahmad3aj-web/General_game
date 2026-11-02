@@ -78,7 +78,7 @@ public class MainActivity extends Activity {
         private int difficulty = 1; // 0 beginner, 1 medium, 2 professional, 3 legendary
         private final String[] playerNames = {"أنت","اللاعب 2"};
         private final int[] avatars = {0,1};
-        private final int[] avatarColors = {Color.rgb(35,112,205),Color.rgb(205,69,54),Color.rgb(45,145,105),Color.rgb(142,85,180),Color.rgb(225,145,45),Color.rgb(65,115,155),Color.rgb(176,91,119),Color.rgb(105,137,91)};
+        private final int[] avatarColors = {Color.rgb(35,112,205),Color.rgb(205,69,54),Color.rgb(45,145,105),Color.rgb(142,85,180),Color.rgb(225,145,45),Color.rgb(65,115,155),Color.rgb(176,91,119),Color.rgb(105,137,91),Color.rgb(48,96,133),Color.rgb(166,91,61),Color.rgb(67,119,83),Color.rgb(116,82,145),Color.rgb(185,126,54),Color.rgb(54,124,132),Color.rgb(151,79,104),Color.rgb(112,125,73)};
         private int stage = 0; // opening toss: 0 or 1; 2 means game
         private int firstRoll = 0, player = 1, die = 0, winner = 0;
         private int openingRoll1 = 0, openingRoll2 = 0;
@@ -589,7 +589,8 @@ public class MainActivity extends Activity {
             int teamColor=avatarColors[index%avatarColors.length];
             if(monochrome)teamColor=grayColor(teamColor);
             int ink=monochrome?Color.rgb(75,75,75):Color.rgb(43,48,49);
-            int skin=monochrome?grayColor(Color.rgb(255,218,178)):Color.rgb(255,218,178);
+            int[] skinTones={Color.rgb(255,218,178),Color.rgb(225,177,137),Color.rgb(190,137,101),Color.rgb(145,99,72)};
+            int skin=monochrome?grayColor(skinTones[index%skinTones.length]):skinTones[index%skinTones.length];
             int hair=monochrome?Color.rgb(90,90,90):new int[]{Color.rgb(54,39,31),Color.rgb(35,34,34),Color.rgb(105,63,35),Color.rgb(47,43,65),Color.rgb(76,48,35),Color.rgb(35,54,65),Color.rgb(72,43,35),Color.rgb(38,35,31)}[index%8];
             c.save();
             p.setShader(null);p.setStyle(Paint.Style.FILL);
@@ -609,7 +610,7 @@ public class MainActivity extends Activity {
             p.setColor(ink);c.drawOval(new RectF(cx-radius*.36f,cy-radius*.48f,cx+radius*.36f,cy+radius*.37f),p);
             p.setColor(skin);c.drawOval(new RectF(cx-radius*.33f,cy-radius*.43f,cx+radius*.33f,cy+radius*.35f),p);
             // Hair silhouette: first four masculine cuts, next four feminine styles.
-            boolean female=index>=4;
+            boolean female=(index%2)==1;
             p.setColor(ink);
             if(female){
                 c.drawOval(new RectF(cx-radius*.39f,cy-radius*.57f,cx-radius*.20f,cy+radius*.48f),p);
@@ -725,11 +726,11 @@ public class MainActivity extends Activity {
                     box(c,left,h*.695f,left+w*.16f,h*.755f,difficulty==i?gold:Color.rgb(230,237,218));
                     txt(c,levels[i],left+w*.08f,h*.733f,h*.025f,dark,difficulty==i);
                 }
-                txt(c,"اختر الشخصية",w*.5f,h*.785f,h*.03f,dark,true);
-                for(int i=0;i<8;i++) drawAvatar(c,i,w*(.29f+(i%4)*.14f),h*(i<4?.825f:.885f),h*.027f,avatars[idx]==i);
+                txt(c,"اختر الشخصية — 16 بطلاً وبطلة",w*.5f,h*.785f,h*.026f,dark,true);
+                for(int i=0;i<16;i++) drawAvatar(c,i,w*(.29f+(i%4)*.14f),h*(.805f+(i/4)*.043f),h*.019f,avatars[idx]==i);
             } else {
-                txt(c,"اختر الشخصية",w*.5f,h*.73f,h*.035f,dark,true);
-                for(int i=0;i<8;i++) drawAvatar(c,i,w*(.29f+(i%4)*.14f),h*(i<4?.785f:.855f),h*.031f,avatars[idx]==i);
+                txt(c,"اختر الشخصية — 16 بطلاً وبطلة",w*.5f,h*.735f,h*.027f,dark,true);
+                for(int i=0;i<16;i++) drawAvatar(c,i,w*(.29f+(i%4)*.14f),h*(.765f+(i/4)*.043f),h*.021f,avatars[idx]==i);
             }
             String startLabel=setupSide==1 && mode==1?"التالي":
                     (mode==4 && onlineQuickMatch?"ابحث عن لاعب":
@@ -1426,11 +1427,14 @@ public class MainActivity extends Activity {
                 if(mode==2 && x>=w*.16f && x<=w*.86f && y>=h*.695f && y<=h*.76f) {
                     int level=Math.round((x/w-.24f)/.18f);
                     if(level>=0 && level<4) difficulty=level;
-                } else if(x>=w*.26f && x<=w*.74f && ((mode==2 && y>=h*.80f && y<=h*.90f) || (mode!=2 && y>=h*.76f && y<=h*.88f))) {
-                    int row=(mode==2?(y>=h*.855f?1:0):(y>=h*.82f?1:0));
+                } else if(x>=w*.26f && x<=w*.74f
+                        && ((mode==2 && y>=h*.785f && y<=h*.925f)
+                        || (mode!=2 && y>=h*.75f && y<=h*.925f))) {
+                    float firstRow=mode==2?.805f:.765f;
+                    int row=Math.round((y/h-firstRow)/.043f);
                     int col=Math.round((x/w-.29f)/.14f);
                     int choice=row*4+col;
-                    if(col>=0 && col<4 && choice<avatarColors.length) avatars[idx]=choice;
+                    if(row>=0 && row<4 && col>=0 && col<4 && choice<avatarColors.length) avatars[idx]=choice;
                 } else if(x>=w*.36f && x<=w*.64f && y>=h*.90f && y<=h*.985f) {
                     if(setupSide==1 && mode==1) setupSide=2;
                     else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
