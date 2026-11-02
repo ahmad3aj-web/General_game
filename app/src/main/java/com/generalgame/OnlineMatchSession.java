@@ -42,6 +42,11 @@ public final class OnlineMatchSession {
     private final Random random = new Random();
     private final FirebaseAuth auth = FirebaseAuth.getInstance();
     private final DatabaseReference rooms = FirebaseDatabase.getInstance(DATABASE_URL).getReference("rooms");
+    private final DatabaseReference quickMatches = FirebaseDatabase.getInstance(DATABASE_URL).getReference("quickMatch");
+    private boolean quickMatchMode;
+    private long quickMatchCreatedAt;
+    private long quickMatchStartedAt;
+    private Runnable quickMatchPoll;
     private DatabaseReference room;
     private ChildEventListener actionListener;
     private ValueEventListener playersListener;
@@ -77,6 +82,13 @@ public final class OnlineMatchSession {
     public boolean isLocalTurn() { return connected && activeSide == localSide; }
 
     public void createRoom(String name, int avatar) {
+        quickMatchMode = false;
+        authenticate(() -> createRoomAfterAuth(name, avatar));
+    }
+
+    public void quickMatch(String name, int avatar) {
+        quickMatchMode = true;
+        quickMatchStartedAt = System.currentTimeMillis();
         authenticate(() -> createRoomAfterAuth(name, avatar));
     }
 
@@ -141,6 +153,7 @@ public final class OnlineMatchSession {
             connected = true;
             attachListeners();
             listener.onConnected(code);
+            if (quickMatchMode) publishQuickMatch(name, avatar);
         });
     }
 
@@ -171,6 +184,8 @@ public final class OnlineMatchSession {
                         listener.onError("سبقك لاعب آخر إلى هذه الغرفة. اطلب رمزاً جديداً.");
                         return;
                     }
+                    detachRoomListeners();
+                    connected = false;
                     localSide = 2;
                     roomCode = code;
                     room = candidate;
@@ -182,12 +197,99 @@ public final class OnlineMatchSession {
                         }
                         connected = true;
                         attachListeners();
+                        removeQuickMatchEntry();
                         listener.onConnected(code);
                         listener.onPeerJoined();
                     });
                 }
             });
         });
+    }
+
+    private void publishQuickMatch(String name, int avatar) {
+        quickMatchCreatedAt = System.currentTimeMillis();
+        Map<String, Object> entry = new HashMap<>();
+        entry.put("hostUid", uid);
+        entry.put("roomCode", roomCode);
+        entry.put("createdAt", quickMatchCreatedAt);
+        entry.put("status", "waiting");
+        entry.put("name", name == null || name.trim().isEmpty() ? "لاعب" : name.trim());
+        entry.put("avatar", Math.max(0, Math.min(7, avatar)));
+        quickMatches.child(uid).onDisconnect().removeValue();
+        quickMatches.child(uid).setValue(entry).addOnCompleteListener(task -> {
+            if (!task.isSuccessful()) {
+                String detail = task.getException() == null ? "سبب غير معروف" : task.getException().getMessage();
+                listener.onError("تعذر دخول قائمة البحث السريع: " + detail);
+                return;
+            }
+            scheduleQuickMatchPoll();
+        });
+    }
+
+    private void scheduleQuickMatchPoll() {
+        if (!quickMatchMode || !connected || localSide != 1) return;
+        if (quickMatchPoll == null) {
+            quickMatchPoll = new Runnable() {
+                @Override public void run() { pollQuickMatch(); }
+            };
+        }
+        main.removeCallbacks(quickMatchPoll);
+        main.postDelayed(quickMatchPoll, 1800L);
+    }
+
+    private void pollQuickMatch() {
+        if (!quickMatchMode || !connected || localSide != 1) return;
+        if (System.currentTimeMillis() - quickMatchStartedAt > 90000L) {
+            removeQuickMatchEntry();
+            listener.onError("ما لقينا لاعب خلال 90 ثانية. جرّب مرة ثانية أو ادعُ صديقاً.");
+            return;
+        }
+        quickMatches.get().addOnCompleteListener(task -> {
+            if (!quickMatchMode || !connected || localSide != 1) return;
+            if (!task.isSuccessful()) {
+                String detail = task.getException() == null ? "سبب غير معروف" : task.getException().getMessage();
+                listener.onError("تعذر البحث عن لاعب: " + detail);
+                return;
+            }
+            DataSnapshot best = null;
+            long bestTime = Long.MAX_VALUE;
+            for (DataSnapshot item : task.getResult().getChildren()) {
+                String host = item.child("hostUid").getValue(String.class);
+                String code = item.child("roomCode").getValue(String.class);
+                String status = item.child("status").getValue(String.class);
+                Long created = item.child("createdAt").getValue(Long.class);
+                if (host == null || uid.equals(host) || code == null || code.length() != 8
+                        || !"waiting".equals(status) || created == null) continue;
+                boolean older = created < quickMatchCreatedAt
+                        || (created == quickMatchCreatedAt && host.compareTo(uid) < 0);
+                if (older && created < bestTime) {
+                    best = item;
+                    bestTime = created;
+                }
+            }
+            if (best != null) {
+                String code = best.child("roomCode").getValue(String.class);
+                main.removeCallbacks(quickMatchPoll);
+                joinRoomAfterAuth(code, "لاعب", 1);
+            } else {
+                scheduleQuickMatchPoll();
+            }
+        });
+    }
+
+    private void removeQuickMatchEntry() {
+        if (uid != null) quickMatches.child(uid).removeValue();
+        if (quickMatchPoll != null) main.removeCallbacks(quickMatchPoll);
+    }
+
+    private void detachRoomListeners() {
+        if (room != null) {
+            if (actionListener != null) room.child("actions").removeEventListener(actionListener);
+            if (playersListener != null) room.child("players").removeEventListener(playersListener);
+            if (uid != null) room.child("players").child(uid).child("connected").setValue(false);
+        }
+        actionListener = null;
+        playersListener = null;
     }
 
     private Map<String, Object> profile(int side, String name, int avatar) {
@@ -235,7 +337,10 @@ public final class OnlineMatchSession {
                     listener.onPeerInfo(side, name == null ? "لاعب" : name,
                             avatar == null ? 0 : Math.max(0, Math.min(5, avatar)));
                 }
-                if (peerFound) listener.onPeerJoined();
+                if (peerFound) {
+                    if (quickMatchMode && localSide == 1) removeQuickMatchEntry();
+                    listener.onPeerJoined();
+                }
             }
             @Override public void onCancelled(DatabaseError error) {
                 listener.onError("تعذر قراءة بيانات اللاعبين.");
@@ -403,12 +508,7 @@ public final class OnlineMatchSession {
     public void close() {
         connected = false;
         timer.cancel();
-        if (room != null) {
-            if (actionListener != null) room.child("actions").removeEventListener(actionListener);
-            if (playersListener != null) room.child("players").removeEventListener(playersListener);
-            room.child("players").child(uid == null ? "" : uid).child("connected").setValue(false);
-        }
-        actionListener = null;
-        playersListener = null;
+        removeQuickMatchEntry();
+        detachRoomListeners();
     }
 }
