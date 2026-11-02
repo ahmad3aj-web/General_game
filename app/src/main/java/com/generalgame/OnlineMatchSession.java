@@ -236,85 +236,90 @@ public final class OnlineMatchSession {
      */
     private void runFirebaseWebSocketProbe() {
         Thread probe = new Thread(() -> {
-            Socket rawSocket = null;
-            SSLSocket tlsSocket = null;
             String stage = "DNS";
+            StringBuilder attempts = new StringBuilder();
             try {
                 String host = new URL(DATABASE_URL).getHost();
-                InetAddress ipv4 = null;
-                for (InetAddress address : InetAddress.getAllByName(host)) {
-                    if (address instanceof Inet4Address) {
-                        ipv4 = address;
-                        break;
+                InetAddress[] addresses = InetAddress.getAllByName(host);
+                int tested = 0;
+                for (InetAddress address : addresses) {
+                    if (!(address instanceof Inet4Address)) continue;
+                    tested++;
+                    Socket rawSocket = null;
+                    SSLSocket tlsSocket = null;
+                    stage = "TCP " + address.getHostAddress();
+                    try {
+                        rawSocket = new Socket();
+                        rawSocket.connect(new InetSocketAddress(address, 443), 5000);
+                        rawSocket.setSoTimeout(6000);
+                        SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+                        tlsSocket = (SSLSocket) factory.createSocket(rawSocket, host, 443, true);
+                        tlsSocket.setSoTimeout(6000);
+                        javax.net.ssl.SSLParameters sslParameters = tlsSocket.getSSLParameters();
+                        sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
+                        tlsSocket.setSSLParameters(sslParameters);
+                        stage = "TLS handshake " + address.getHostAddress();
+                        tlsSocket.startHandshake();
+
+                        stage = "WebSocket HTTP upgrade " + address.getHostAddress();
+                        byte[] nonce = new byte[16];
+                        new SecureRandom().nextBytes(nonce);
+                        String key = Base64.encodeToString(nonce, Base64.NO_WRAP);
+                        String request = "GET /.ws?ns=general-online-2026-default-rtdb&v=5 HTTP/1.1\\r\\n"
+                                + "Host: " + host + "\\r\\n"
+                                + "Upgrade: websocket\\r\\n"
+                                + "Connection: Upgrade\\r\\n"
+                                + "Sec-WebSocket-Key: " + key + "\\r\\n"
+                                + "Sec-WebSocket-Version: 13\\r\\n"
+                                + "Origin: https://" + host + "\\r\\n\\r\\n";
+                        BufferedOutputStream output = new BufferedOutputStream(tlsSocket.getOutputStream());
+                        output.write(request.getBytes(StandardCharsets.US_ASCII));
+                        output.flush();
+
+                        BufferedInputStream input = new BufferedInputStream(tlsSocket.getInputStream());
+                        ByteArrayOutputStream headers = new ByteArrayOutputStream();
+                        int state = 0;
+                        while (headers.size() < 8192) {
+                            int b = input.read();
+                            if (b < 0) break;
+                            headers.write(b);
+                            if ((state == 0 || state == 2) && b == '\\r') state++;
+                            else if ((state == 1 || state == 3) && b == '\\n') {
+                                if (state == 3) break;
+                                state++;
+                            } else state = 0;
+                        }
+                        String response = headers.toString("US-ASCII");
+                        String firstLine = response.split("\\r?\\n", 2)[0].trim();
+                        if (firstLine.contains(" 101 ")) {
+                            websocketProbeResult = "نجح WebSocket عبر IPv4 " + address.getHostAddress() + " (HTTP 101)";
+                            return;
+                        }
+                        if (!firstLine.isEmpty()) {
+                            websocketProbeResult = "TLS نجح عبر " + address.getHostAddress() + "؛ رد WebSocket: " + firstLine;
+                            return;
+                        }
+                        attempts.append(address.getHostAddress()).append(": TLS نجح دون رد WebSocket؛ ");
+                    } catch (Exception error) {
+                        attempts.append(address.getHostAddress()).append(": ")
+                                .append(stage.startsWith("TLS") ? "TLS " : stage.startsWith("WebSocket") ? "WebSocket " : "TCP ")
+                                .append(error.getClass().getSimpleName()).append(" - ")
+                                .append(error.getMessage() == null ? "" : error.getMessage()).append("; ");
+                    } finally {
+                        if (tlsSocket != null) {
+                            try { tlsSocket.close(); } catch (Exception ignored) { }
+                        } else if (rawSocket != null) {
+                            try { rawSocket.close(); } catch (Exception ignored) { }
+                        }
                     }
                 }
-                if (ipv4 == null) {
-                    websocketProbeResult = "لم يُعثر على عنوان IPv4 لـ Firebase";
-                    return;
-                }
-
-                // Pin only the TCP destination to the resolved IPv4 address.
-                // Keep the original hostname for TLS SNI and certificate validation.
-                stage = "TCP";
-                rawSocket = new Socket();
-                rawSocket.connect(new InetSocketAddress(ipv4, 443), 5000);
-                rawSocket.setSoTimeout(6000);
-                SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-                tlsSocket = (SSLSocket) factory.createSocket(rawSocket, host, 443, true);
-                tlsSocket.setSoTimeout(6000);
-                javax.net.ssl.SSLParameters sslParameters = tlsSocket.getSSLParameters();
-                sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
-                tlsSocket.setSSLParameters(sslParameters);
-                stage = "TLS handshake";
-                tlsSocket.startHandshake();
-
-                stage = "WebSocket HTTP upgrade";
-                byte[] nonce = new byte[16];
-                new SecureRandom().nextBytes(nonce);
-                String key = Base64.encodeToString(nonce, Base64.NO_WRAP);
-                String request = "GET /.ws?ns=general-online-2026-default-rtdb&v=5 HTTP/1.1\r\n"
-                        + "Host: " + host + "\r\n"
-                        + "Upgrade: websocket\r\n"
-                        + "Connection: Upgrade\r\n"
-                        + "Sec-WebSocket-Key: " + key + "\r\n"
-                        + "Sec-WebSocket-Version: 13\r\n"
-                        + "Origin: https://" + host + "\r\n\r\n";
-                BufferedOutputStream output = new BufferedOutputStream(tlsSocket.getOutputStream());
-                output.write(request.getBytes(StandardCharsets.US_ASCII));
-                output.flush();
-
-                BufferedInputStream input = new BufferedInputStream(tlsSocket.getInputStream());
-                ByteArrayOutputStream headers = new ByteArrayOutputStream();
-                int state = 0;
-                while (headers.size() < 8192) {
-                    int b = input.read();
-                    if (b < 0) break;
-                    headers.write(b);
-                    if ((state == 0 || state == 2) && b == '\r') state++;
-                    else if ((state == 1 || state == 3) && b == '\n') {
-                        if (state == 3) break;
-                        state++;
-                    } else state = 0;
-                }
-                String response = headers.toString("US-ASCII");
-                String firstLine = response.split("\r?\n", 2)[0].trim();
-                if (firstLine.contains(" 101 ")) {
-                    websocketProbeResult = "نجح WebSocket عبر IPv4 المثبت مع TLS باسم النطاق (HTTP 101)";
-                } else if (!firstLine.isEmpty()) {
-                    websocketProbeResult = "TLS عبر IPv4 نجح؛ رد WebSocket: " + firstLine;
-                } else {
-                    websocketProbeResult = "TLS عبر IPv4 نجح لكن لم يصل رد WebSocket";
-                }
+                websocketProbeResult = tested == 0
+                        ? "لم يُعثر على عنوان IPv4 لـ Firebase"
+                        : "نتيجة فحص عناوين IPv4 (" + tested + "): " + attempts;
             } catch (Exception error) {
-                websocketProbeResult = "فشل في مرحلة " + stage + " عبر IPv4 المثبت: "
+                websocketProbeResult = "فشل في مرحلة " + stage + ": "
                         + error.getClass().getSimpleName()
                         + (error.getMessage() == null ? "" : " - " + error.getMessage());
-            } finally {
-                if (tlsSocket != null) {
-                    try { tlsSocket.close(); } catch (Exception ignored) { }
-                } else if (rawSocket != null) {
-                    try { rawSocket.close(); } catch (Exception ignored) { }
-                }
             }
         }, "GENERAL-firebase-websocket-ipv4-probe");
         probe.setDaemon(true);
