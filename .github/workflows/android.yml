@@ -35,7 +35,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
           curl -L --fail --retry 3 "https://upload.wikimedia.org/wikipedia/commons/6/6e/%E3%80%90%E7%84%A1%E6%96%99%E3%83%95%E3%83%AA%E3%83%BCBGM%E3%80%91%E6%BF%80%E3%81%97%E3%81%84%E3%82%AA%E3%83%BC%E3%82%B1%E3%82%B9%E3%83%88%E3%83%A9%E6%88%A6%E9%97%98%E6%9B%B2%E3%80%8CDramatic2%E3%80%8D.ogg" -o /tmp/general-battle.ogg
-          ffmpeg -y -i /tmp/general-battle.ogg -vn -ac 2 -ar 44100 -c:a pcm_s16le app/src/main/res/raw/battle_music.wav
+          ffmpeg -y -i /tmp/general-battle.ogg -vn -ac 2 -ar 44100 -c:a libmp3lame -b:a 160k app/src/main/res/raw/battle_music.mp3
+          rm -f app/src/main/res/raw/battle_music.wav
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
       - name: Upload APK
