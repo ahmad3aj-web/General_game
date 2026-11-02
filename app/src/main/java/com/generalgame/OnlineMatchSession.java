@@ -118,9 +118,21 @@ public final class OnlineMatchSession {
         Map<String, Object> players = new HashMap<>();
         players.put(uid, profile);
         data.put("players", players);
+        final boolean[] finished = {false};
+        Runnable timeout = () -> {
+            if (finished[0]) return;
+            finished[0] = true;
+            listener.onError("انتهت مهلة إنشاء الغرفة بعد 15 ثانية. افحص اتصال الإنترنت وصلاحيات Realtime Database ثم حاول مجدداً.");
+        };
+        main.postDelayed(timeout, 15000L);
         candidate.setValue(data).addOnCompleteListener(task -> {
+            if (finished[0]) return;
+            finished[0] = true;
+            main.removeCallbacks(timeout);
             if (!task.isSuccessful()) {
-                listener.onError("تعذر إنشاء الغرفة. تأكد من إعدادات قاعدة البيانات.");
+                String detail = task.getException() == null
+                        ? "سبب غير معروف" : task.getException().getMessage();
+                listener.onError("فشل إنشاء غرفة الإنترنت في Realtime Database: " + detail);
                 return;
             }
             localSide = 1;
