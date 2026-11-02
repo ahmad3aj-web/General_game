@@ -152,7 +152,7 @@ public class MainActivity extends Activity {
                     if(backgroundMusic!=null) {
                         backgroundMusic.setAudioAttributes(musicAttributes);
                         backgroundMusic.setLooping(true);
-                        backgroundMusic.setVolume(0.80f,0.80f);
+                        backgroundMusic.setVolume(0.40f,0.40f);
                     }
                 }
                 if(backgroundMusic!=null && !backgroundMusic.isPlaying()) {
@@ -194,19 +194,21 @@ public class MainActivity extends Activity {
         private void vibrateForExplosion() {
             if(!vibrationEnabled)return;
             try {
-                Vibrator vibrator;
+                Vibrator vibrator = null;
                 if(Build.VERSION.SDK_INT>=31) {
                     android.os.VibratorManager manager=getSystemService(android.os.VibratorManager.class);
-                    vibrator=manager!=null?manager.getDefaultVibrator():null;
-                } else {
+                    if(manager!=null) vibrator=manager.getDefaultVibrator();
+                }
+                if(vibrator==null) {
                     vibrator=(Vibrator)getSystemService(android.content.Context.VIBRATOR_SERVICE);
                 }
                 if(vibrator!=null && vibrator.hasVibrator()) {
                     vibrator.cancel();
                     if(Build.VERSION.SDK_INT>=26) {
-                        vibrator.vibrate(VibrationEffect.createOneShot(450,VibrationEffect.DEFAULT_AMPLITUDE));
+                        // Two distinct pulses make the explosion perceptible without being excessive.
+                        vibrator.vibrate(VibrationEffect.createWaveform(new long[]{0,110,65,190},-1));
                     } else {
-                        vibrator.vibrate(450);
+                        vibrator.vibrate(new long[]{0,110,65,190},-1);
                     }
                 } else {
                     performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
@@ -552,22 +554,15 @@ public class MainActivity extends Activity {
             } catch(Exception ignored) { }
         }
         private void drawHistory(Canvas c) {
-            txt(c,"سجل مباريات GENERAL",w*.5f,h*.16f,h*.06f,dark,true);
-            JSONArray data=loadHistory(); int total=data.length(),wins=0,losses=0;
-            for(int i=0;i<total;i++)try {
+            JSONArray data=loadHistory();
+            int total=data.length(),wins=0,losses=0;
+            java.util.LinkedHashMap<String,int[]> byOpponent=new java.util.LinkedHashMap<>();
+            for(int i=total-1;i>=0;i--)try {
                 JSONObject o=data.getJSONObject(i);
                 if("جنيرال".equals(o.optString("opponent"))) {
                     if("فوز".equals(o.optString("result")))wins++;
                     else if("خسارة".equals(o.optString("result")))losses++;
                 }
-            } catch(Exception ignored) { }
-            box(c,w*.10f,h*.23f,w*.90f,h*.36f,Color.rgb(245,249,239));
-            txt(c,"إجمالي المباريات: "+total,w*.5f,h*.275f,h*.036f,dark,true);
-            txt(c,"فوز ضد جنيرال: "+wins+"     خسارة: "+losses,w*.5f,h*.33f,h*.032f,blue,true);
-            txt(c,"السجل حسب الخصم",w*.5f,h*.42f,h*.038f,dark,true);
-            java.util.LinkedHashMap<String,int[]> byOpponent=new java.util.LinkedHashMap<>();
-            for(int i=total-1;i>=0;i--)try {
-                JSONObject o=data.getJSONObject(i);
                 if((o.optInt("mode",2)==1 || o.optInt("mode",2)==3)
                         && o.has("player1") && o.has("player2")) {
                     String p1=o.optString("player1"), p2=o.optString("player2");
@@ -576,30 +571,71 @@ public class MainActivity extends Activity {
                     if(first==null){first=new int[2];byOpponent.put(p1+" ضد "+p2,first);}
                     int[] second=byOpponent.get(p2+" ضد "+p1);
                     if(second==null){second=new int[2];byOpponent.put(p2+" ضد "+p1,second);}
-                    if(side==1){first[0]++;second[1]++;} else if(side==2){first[1]++;second[0]++;}
+                    if(side==1){first[0]++;second[1]++;}
+                    else if(side==2){first[1]++;second[0]++;}
                 } else {
                     String opponent=o.optString("opponent","غير معروف");
                     int[] counts=byOpponent.get(opponent);
                     if(counts==null){counts=new int[2];byOpponent.put(opponent,counts);}
                     String result=o.optString("result");
-                    if("فوز".equals(result))counts[0]++; else if("خسارة".equals(result))counts[1]++;
+                    if("فوز".equals(result))counts[0]++;
+                    else if("خسارة".equals(result))counts[1]++;
                 }
             } catch(Exception ignored) { }
+
+            txt(c,"إحصائيات GENERAL",w*.5f,h*.16f,h*.052f,dark,true);
+
+            // Three large, clearly labelled summary cards.
+            float cardTop=h*.205f, cardBottom=h*.365f, cardGap=w*.018f;
+            float cardW=w*.285f, cardStart=w*.055f;
+            int[] cardColors={Color.rgb(244,247,235),Color.rgb(225,242,226),Color.rgb(250,231,225)};
+            String[] labels={"إجمالي المباريات","الانتصارات","الخسائر"};
+            int[] values={total,wins,losses};
+            int[] valueColors={dark,Color.rgb(35,125,72),Color.rgb(180,65,53)};
+            for(int i=0;i<3;i++) {
+                float left=cardStart+i*(cardW+cardGap);
+                box(c,left,cardTop,left+cardW,cardBottom,cardColors[i]);
+                txt(c,labels[i],left+cardW*.5f,cardTop+h*.047f,h*.026f,dark,true);
+                txt(c,String.valueOf(values[i]),left+cardW*.5f,cardTop+h*.118f,h*.060f,valueColors[i],true);
+            }
+
+            // General match record with an easy-to-read win-rate bar.
+            float generalTop=h*.395f, generalBottom=h*.515f;
+            box(c,w*.055f,generalTop,w*.945f,generalBottom,Color.rgb(245,249,239));
+            txt(c,"نتائجك ضد جنيرال",w*.5f,generalTop+h*.038f,h*.027f,dark,true);
+            txt(c,"فوز  "+wins,w*.34f,generalTop+h*.083f,h*.027f,Color.rgb(35,125,72),true);
+            txt(c,"خسارة  "+losses,w*.66f,generalTop+h*.083f,h*.027f,Color.rgb(180,65,53),true);
+            float rateW=w*.76f, rateL=w*.12f, rateY=generalBottom-h*.018f;
+            box(c,rateL,rateY,rateL+rateW,rateY+h*.009f,Color.rgb(220,225,214));
+            float winRate=(wins+losses)==0?0f:(float)wins/(wins+losses);
+            if(winRate>0) box(c,rateL,rateY,rateL+rateW*winRate,rateY+h*.009f,Color.rgb(54,145,86));
+
+            txt(c,"السجل حسب الخصم",w*.5f,h*.565f,h*.031f,dark,true);
             int row=0;
             for(java.util.Map.Entry<String,int[]> entry:byOpponent.entrySet()) {
-                if(row>=4)break;
-                float y=h*(.49f+row*.075f);
-                txt(c,entry.getKey(),w*.30f,y,h*.029f,dark,true);
-                txt(c,"فوز "+entry.getValue()[0]+"  |  خسارة "+entry.getValue()[1],w*.70f,y,h*.029f,blue,false);
+                if(row>=3)break;
+                float top=h*(.59f+row*.075f);
+                box(c,w*.075f,top,w*.925f,top+h*.061f,Color.argb(225,248,250,241));
+                txt(c,entry.getKey(),w*.29f,top+h*.039f,h*.024f,dark,true);
+                txt(c,"فوز "+entry.getValue()[0],w*.63f,top+h*.039f,h*.023f,Color.rgb(35,125,72),true);
+                txt(c,"خسارة "+entry.getValue()[1],w*.82f,top+h*.039f,h*.023f,Color.rgb(180,65,53),true);
                 row++;
             }
-            if(total==0)txt(c,"لا توجد مباريات مسجلة حتى الآن",w*.5f,h*.58f,h*.032f,dark,false);
-            txt(c,"آخر المباريات",w*.5f,h*.81f,h*.034f,dark,true);
-            for(int i=0;i<Math.min(3,total);i++)try {
-                JSONObject o=data.getJSONObject(total-1-i);
-                txt(c,o.optString("winner")+" فاز على "+o.optString("loser"),w*.5f,h*(.855f+i*.04f),h*.025f,dark,false);
-            } catch(Exception ignored) { }
-            btn(c,"عودة",w*.40f,h*.94f,w*.60f,h*.995f,dark);
+            if(byOpponent.isEmpty()) {
+                txt(c,"ستظهر نتائج خصومك هنا بعد أول مباراة",w*.5f,h*.635f,h*.025f,dark,false);
+            }
+
+            txt(c,"آخر المباريات",w*.5f,h*.835f,h*.028f,dark,true);
+            if(total==0) {
+                txt(c,"لا توجد مباريات مسجلة حتى الآن",w*.5f,h*.885f,h*.025f,dark,false);
+            } else {
+                for(int i=0;i<Math.min(2,total);i++)try {
+                    JSONObject o=data.getJSONObject(i);
+                    String resultText=o.optString("winner")+" فاز على "+o.optString("loser");
+                    txt(c,resultText,w*.5f,h*(.872f+i*.038f),h*.023f,dark,false);
+                } catch(Exception ignored) { }
+            }
+            btn(c,"عودة",w*.41f,h*.945f,w*.59f,h*.995f,dark);
         }
 
         private void resetMatch() {
