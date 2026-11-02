@@ -1,0 +1,28 @@
+{
+  "project_info": {
+    "project_number": "476870108256",
+    "project_id": "general-online-2026",
+    "storage_bucket": "general-online-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:476870108256:android:459c683e1ed3a2cd4c8f05",
+        "android_client_info": {
+          "package_name": "com.generalgame"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7o7HKXvMFimUyu86j5n7BMbfvMImq0bo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
