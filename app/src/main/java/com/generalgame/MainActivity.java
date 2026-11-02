@@ -1422,7 +1422,7 @@ public class MainActivity extends Activity {
             if(!touchDown)return true;
             float x=e.getX(),y=e.getY();
             if(Math.hypot(x-touchDownX,y-touchDownY)>h*.10f){touchDown=false;return true;}
-            touchDown=false;
+            touchDown=false;invalidate();
             if(battleIntro)return true;
             float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
             boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
