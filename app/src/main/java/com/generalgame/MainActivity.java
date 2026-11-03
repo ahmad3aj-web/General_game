@@ -892,7 +892,7 @@ public class MainActivity extends Activity {
                 drawAvatar(c,avatars[1],w*.30f,h*.45f,h*.115f,false);
                 drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.115f,true);
                 txt(c,rankedPlayerName(playerNames[1]),w*.30f,h*.61f,h*.036f,Color.WHITE,true);
-                txt(c,playerNames[0],w*.70f,h*.61f,h*.036f,Color.WHITE,true);
+                txt(c,rankedPlayerName(playerNames[0]),w*.70f,h*.61f,h*.036f,Color.WHITE,true);
             }
             txt(c,"VS",w*.5f,h*.47f,h*.052f,Color.rgb(245,190,65),true);
             txt(c,String.valueOf(Math.max(1,introStep)),w*.5f,h*.77f,h*.17f,Color.WHITE,true);
@@ -1382,7 +1382,7 @@ public class MainActivity extends Activity {
                         diceCx-buttonHalf,h*.80f,diceCx+buttonHalf,h*.93f,player==1?blue:red);
             } else {
                 int diceColor=winner!=0?dark:(player==1?blue:red);
-                drawDiceFace(c,diceCx,diceCy,diceSize*.88f,die>0?die:1);
+                if((mode==3 || mode==4) && winner==0 && !choosing && die==0) {\n                    txt(c,"بانتظار دورك",diceCx,diceCy+h*.012f,h*.027f,Color.WHITE,true);\n                } else drawDiceFace(c,diceCx,diceCy,diceSize*.88f,die>0?die:1);
             }
             if(choosing) { txt(c,"اختر السلاح",w*.5f,h*.965f,h*.026f,dark,true);txt(c,"عدد الطلقات المطلوبة: "+die,w*.5f,h*.925f,h*.022f,Color.WHITE,true); }
         }
@@ -1461,7 +1461,8 @@ public class MainActivity extends Activity {
                 invalidate();return true;
             }
             boolean localRollTurn=(mode==1 || (mode==2 && player==1)
-                    || (mode==3 && player==lanLocalSide) || (mode==4 && player==onlineLocalSide));
+                    || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected())
+                    || (mode==4 && player==onlineLocalSide && onlineSession!=null && onlineSession.isConnected()));
             boolean launchTapped=localRollTurn && !choosing && die==0
                     && y>=h*.80f && y<=h*.94f && Math.abs(x-diceCx)<=w*.115f;
             if(!choosing && !diceTapped && !launchTapped)return true;
