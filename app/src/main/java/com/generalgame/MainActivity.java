@@ -123,7 +123,7 @@ public class MainActivity extends Activity {
                 String folder=name.startsWith("character_")?"characters":(name.startsWith("tank_")||name.startsWith("cannon_")||name.startsWith("fighter_"))?"vehicles":name.startsWith("dice_")?"dice":"ammo";
                 try { art.put(name,BitmapFactory.decodeStream(getAssets().open(folder+"/"+name))); } catch(Exception ignored) {}
             }
-            String[] scenes={"coastal_village.jpg","desert_ruins.jpg","airfield.jpg","mountain_valley.jpg"};
+            String[] scenes={"2112.w023.n001.1491B.p1.1491.jpg","2207_w023_n003_2757b_p1_2757.jpg","png.png","war-zone-landscape-with-apocalyptic-destruction.jpg"};
             for(String name:scenes)try{art.put(name,BitmapFactory.decodeStream(getAssets().open("backgrounds/"+name)));}catch(Exception ignored){}
             try { fireMovie=Movie.decodeStream(getAssets().open("vehicles/Flame_GIF_2.gif")); } catch(Exception ignored) {}
         }
@@ -295,7 +295,7 @@ public class MainActivity extends Activity {
         }
 
         private void drawBattlefield(Canvas c) {
-            String[] scenes={"coastal_village.jpg","desert_ruins.jpg","airfield.jpg","mountain_valley.jpg"};
+            String[] scenes={"2112.w023.n001.1491B.p1.1491.jpg","2207_w023_n003_2757b_p1_2757.jpg","png.png","war-zone-landscape-with-apocalyptic-destruction.jpg"};
             Bitmap image=art.get(scenes[Math.floorMod(matchEpoch,scenes.length)]);
             if(image!=null){p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);c.drawBitmap(image,null,new RectF(0,0,w,h),p);}else c.drawColor(Color.rgb(115,145,105));
             p.setColor(Color.argb(24,18,25,24));p.setStyle(Paint.Style.FILL);c.drawRect(0,0,w,h,p);
@@ -308,6 +308,13 @@ public class MainActivity extends Activity {
         private void box(Canvas c,float l,float t,float r,float b,int color) {
             p.setColor(color); p.setStyle(Paint.Style.FILL);
             c.drawRoundRect(new RectF(l,t,r,b),16,16,p);
+        }
+        private void namePlate(Canvas c,String name,float cx,float cy,int color) {
+            float width=Math.min(w*.18f,Math.max(w*.105f,p.measureText(name)*.95f));
+            box(c,cx-width*.5f,cy-h*.027f,cx+width*.5f,cy+h*.008f,Color.argb(225,20,29,25));
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0025f));p.setColor(color);
+            c.drawRoundRect(new RectF(cx-width*.5f,cy-h*.027f,cx+width*.5f,cy+h*.008f),h*.012f,h*.012f,p);p.setStyle(Paint.Style.FILL);
+            txt(c,name,cx,cy,h*.038f,Color.WHITE,true);
         }
         private void iconButton(Canvas c,float l,float t,float r,float b,int color,String glyph) {
             float radius=Math.min(b-t,r-l)*.22f;
@@ -971,7 +978,6 @@ public class MainActivity extends Activity {
             if(p1Destroyed>=2){winner=2;finishMatch();return;}
             if(p2Destroyed>=2) {
                 winner=1;
-                if(mode==2){beginBonusAttempt();return;}
                 finishMatch();
             }
         }
@@ -1140,7 +1146,7 @@ public class MainActivity extends Activity {
 
         @Override protected void onDraw(Canvas c) {
             super.onDraw(c); w=getWidth(); h=getHeight();
-            drawBattlefield(c);
+            c.drawColor(Color.rgb(23,34,29));
             if(titleScreen) {
                 p.setColor(Color.argb(205,9,17,15));c.drawRect(0,0,w,h,p);
                 txt(c,"WAR OF GENERALS",w*.5f,h*.40f,h*.105f,Color.rgb(245,190,65),true);
@@ -1148,9 +1154,7 @@ public class MainActivity extends Activity {
                 txt(c,"اضغط للمتابعة",w*.5f,h*.78f,h*.035f,Color.WHITE,true);
                 return;
             }
-            txt(c,"GENERAL  •  جنيرال",w*.5f,h*.075f,h*.06f,dark,true);
-            iconButton(c,w*.025f,h*.025f,w*.095f,h*.115f,dark,"⚙");
-            iconButton(c,w*.905f,h*.025f,w*.975f,h*.115f,Color.rgb(135,48,43),"↪");
+            txt(c,"GENERAL  •  جنيرال",w*.5f,h*.075f,h*.06f,Color.rgb(238,224,190),true);
             if(battleIntro){drawBattleIntro(c);return;}
             if(setup) { drawSetup(c); return; }
             if(mode==0) {
@@ -1201,12 +1205,15 @@ public class MainActivity extends Activity {
                 btn(c,"إلغاء الاتصال والعودة",w*.31f,h*.81f,w*.69f,h*.92f,dark);
                 return;
             }
+            drawBattlefield(c);
+            iconButton(c,w*.025f,h*.765f,w*.095f,h*.835f,dark,"⚙");
+            iconButton(c,w*.025f,h*.855f,w*.095f,h*.925f,Color.rgb(135,48,43),"↪");
             float trackL=w*.18f, trackR=w*.82f, trackW=trackR-trackL;
             float[] rows={h*.29f,h*.49f,h*.69f};
-            txt(c,mode==2?"جنيرال":playerNames[1],w*.08f,h*.19f,h*.035f,red,true);
-            txt(c,playerNames[0],w*.92f,h*.19f,h*.035f,blue,true);
             drawAvatar(c,avatars[0],w*.90f,h*.115f,h*.070f,false);
             if(mode==2) drawGeneralAvatar(c,w*.10f,h*.115f,h*.070f,false,false); else drawAvatar(c,avatars[1],w*.10f,h*.115f,h*.070f,false);
+            namePlate(c,mode==2?"جنيرال":playerNames[1],w*.10f,h*.205f,red);
+            namePlate(c,playerNames[0],w*.90f,h*.205f,blue);
             if(openingToss){
                 float ds=h*.075f;
                 box(c,w*.81f-ds/2,h*.145f,w*.81f+ds/2,h*.145f+ds,red);
@@ -1270,9 +1277,8 @@ public class MainActivity extends Activity {
             if(battleIntro)return true;
             float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
             boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
-            if(y>=h*.025f && y<=h*.115f) {
-                if(x>=w*.025f && x<=w*.095f)showSettingsDialog();
-                else if(x>=w*.905f && x<=w*.975f)showExitConfirmation();
+            if(y>=h*.765f && y<=h*.925f && x>=w*.025f && x<=w*.095f) {
+                if(y<=h*.835f)showSettingsDialog(); else showExitConfirmation();
                 invalidate();return true;
             }
             if(mode==0) {
