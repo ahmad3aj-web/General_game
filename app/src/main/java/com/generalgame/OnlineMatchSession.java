@@ -743,8 +743,10 @@ public final class OnlineMatchSession {
             moveReceived = true;
             listener.onMove(side, lane, rolledValue);
         } else if ("turn_cancel".equals(type)) {
-            if (turn != expectedTurn || activeSide != side || moveReceived || value != rolledValue) return;
+            if (turn != expectedTurn || activeSide != side || moveReceived
+                    || !rollReceived || value != rolledValue) return;
             timer.cancel();
+            moveReceived = true;
             listener.onTurnCancelled(side);
         }
     }
