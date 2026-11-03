@@ -403,45 +403,60 @@ public class MainActivity extends Activity {
             invalidate();
         }
 
-        private void drawDialogueBubble(Canvas c,String text,int speaker,float top) {
+        private long dialogueFirstDuration() {
+            return Math.max(1900L, battleDialogueText.codePointCount(0,battleDialogueText.length())*72L);
+        }
+
+        private void setNoMoveDialogue(int speaker) {
+            int other=speaker==1?2:1;
+            battleDialogueSpeaker=speaker;
+            battleDialogueReplySpeaker=other;
+            battleDialogueText=speaker==1 ? "النرد ما أعطاني حركة ممكنة، انتهى دوري!" : "ما في حركة متاحة إلي، دورك الآن!";
+            battleDialogueReplyText=other==1 ? "وصلتني الفرصة، رح أستغلها!" : "فرصتك انتهت، الآن دوري!";
+            battleDialogueStartedAt=System.currentTimeMillis();
+            invalidate();
+        }
+
+        private void drawDialogueBubble(Canvas c,String text,int speaker,float top,long elapsed) {
             if(text==null || text.isEmpty())return;
             boolean isBlue=speaker==1;
-            float left=isBlue?w*.535f:w*.135f;
-            float right=isBlue?w*.865f:w*.465f;
-            float bottom=top+h*.038f;
-            float radius=h*.012f;
+            float left=w*.145f, right=w*.855f;
+            float bottom=top+h*.078f;
+            float radius=h*.020f;
             int color=isBlue?blue:red;
             p.setShader(null);p.setStyle(Paint.Style.FILL);
-            p.setColor(Color.argb(238,12,22,20));
+            p.setColor(Color.argb(245,10,20,23));
             c.drawRoundRect(new RectF(left,top,right,bottom),radius,radius,p);
             Path tail=new Path();
-            float mid=top+h*.019f;
-            if(isBlue){tail.moveTo(right-h*.035f,top+h*.008f);tail.lineTo(right+h*.012f,mid);tail.lineTo(right-h*.035f,bottom-h*.008f);}
-            else {tail.moveTo(left+h*.035f,top+h*.008f);tail.lineTo(left-h*.012f,mid);tail.lineTo(left+h*.035f,bottom-h*.008f);}
+            float mid=top+h*.039f;
+            if(isBlue){tail.moveTo(right-h*.060f,top+h*.012f);tail.lineTo(right+h*.016f,mid);tail.lineTo(right-h*.060f,bottom-h*.012f);}
+            else {tail.moveTo(left+h*.060f,top+h*.012f);tail.lineTo(left-h*.016f,mid);tail.lineTo(left+h*.060f,bottom-h*.012f);}
             tail.close();c.drawPath(tail,p);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0022f));p.setColor(color);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.0035f));p.setColor(color);
             c.drawRoundRect(new RectF(left,top,right,bottom),radius,radius,p);
             p.setStyle(Paint.Style.FILL);
             int total=text.codePointCount(0,text.length());
-            int count=(int)Math.min(total,Math.max(1,(System.currentTimeMillis()-battleDialogueStartedAt)/48));
+            int count=(int)Math.min(total,Math.max(0,elapsed/68L));
             int finish=text.offsetByCodePoints(0,count);
             String visible=text.substring(0,finish);
-            p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.020f);p.setFakeBoldText(true);
-            while(p.measureText(visible)>right-left-h*.018f && p.getTextSize()>h*.014f)p.setTextSize(p.getTextSize()*.94f);
-            p.setColor(isBlue?Color.rgb(130,185,255):Color.rgb(255,150,135));
-            c.drawText(visible,(left+right)*.5f,top+h*.026f,p);
+            p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.030f);p.setFakeBoldText(true);
+            while(p.measureText(visible)>right-left-h*.06f && p.getTextSize()>h*.022f)p.setTextSize(p.getTextSize()*.96f);
+            p.setColor(isBlue?Color.rgb(145,198,255):Color.rgb(255,165,150));
+            c.drawText(visible,(left+right)*.5f,top+h*.050f,p);
             p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(false);p.setStyle(Paint.Style.FILL);
-            if(count<total)postInvalidateDelayed(35);
         }
 
         private void drawBattleDialogue(Canvas c) {
-            if(stage<2 || winner!=0 || bonusAttempt || battleDialogueText.isEmpty()
-                    || System.currentTimeMillis()-battleDialogueStartedAt>5200)return;
-            drawDialogueBubble(c,battleDialogueText,battleDialogueSpeaker,h*.105f);
-            drawDialogueBubble(c,battleDialogueReplyText,battleDialogueReplySpeaker,h*.150f);
-            postInvalidateDelayed(90);
+            if(stage<2 || winner!=0 || bonusAttempt || battleDialogueText.isEmpty())return;
+            long elapsed=System.currentTimeMillis()-battleDialogueStartedAt;
+            long firstDuration=dialogueFirstDuration();
+            long replyStart=firstDuration+500L;
+            long totalDuration=replyStart+Math.max(1900L,battleDialogueReplyText.codePointCount(0,battleDialogueReplyText.length())*72L)+1100L;
+            if(elapsed>totalDuration)return;
+            drawDialogueBubble(c,battleDialogueText,battleDialogueSpeaker,h*.355f,elapsed);
+            if(elapsed>=replyStart)drawDialogueBubble(c,battleDialogueReplyText,battleDialogueReplySpeaker,h*.455f,elapsed-replyStart);
+            postInvalidateDelayed(70);
         }
-
 
         private void drawBattlefield(Canvas c) {
             Bitmap image=art.get("1793716501127.jpg");
@@ -1269,6 +1284,7 @@ public class MainActivity extends Activity {
                             if(epoch==matchEpoch && mode==2 && winner==0 && player==2) animateMove(2,selected,die);
                         }},650);
                     } else {
+                        setNoMoveDialogue(2);
                         message="لا توجد حركة متاحة لجنيرال — نتيجة النرد: "+die+" — تم تجاوز الدور";
                         invalidate();
                         postDelayed(new Runnable(){ @Override public void run(){
@@ -1617,6 +1633,7 @@ public class MainActivity extends Activity {
                 else {
                     die=random.nextInt(6)+1;choosing=true;
                     if(!anyMove(player)){
+                        setNoMoveDialogue(player);
                         message="لا توجد حركة متاحة — نتيجة النرد: "+die+" — تم تجاوز الدور";
                         choosing=false;invalidate();
                         final int epoch=matchEpoch;
