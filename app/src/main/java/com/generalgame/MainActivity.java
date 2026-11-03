@@ -58,6 +58,7 @@ public class MainActivity extends Activity {
 
     private class GameView extends View {
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final CardInventory cardInventory;
         private final HashMap<String,Bitmap> art = new HashMap<>();
         private Movie fireMovie;
         private Movie winMovie;
@@ -171,6 +172,8 @@ public class MainActivity extends Activity {
 
         GameView() {
             super(MainActivity.this);
+            cardInventory = new CardInventory(MainActivity.this);
+            cardInventory.recordDailyLogin();
             loadGameArt();
             setLayerType(View.LAYER_TYPE_SOFTWARE,null);
             android.content.SharedPreferences prefs=getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE);
