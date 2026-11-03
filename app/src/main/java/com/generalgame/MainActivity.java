@@ -709,8 +709,10 @@ public class MainActivity extends Activity {
         }
 
         private void drawGeneralAvatar(Canvas c,float cx,float cy,float radius,boolean selected,boolean monochrome) {
-            // Use the supplied character art as-is; no glasses, beard, medals or added accessories.
-            drawAvatar(c,5,cx,cy,radius,selected,monochrome);
+            // Character 06 is reserved for General and is never remapped to a player portrait.
+            float rr=radius*1.18f;
+            drawArt(c,"character_06.png",cx-rr,cy-rr*1.03f,cx+rr,cy+rr*1.03f,false);
+            if(selected){p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.005f));p.setColor(gold);c.drawRoundRect(new RectF(cx-rr,cy-rr*1.03f,cx+rr,cy+rr*1.03f),radius*.22f,radius*.22f,p);p.setStyle(Paint.Style.FILL);}
         }
         private void arrowButton(Canvas c,float cx,float cy,boolean left) {
             float r=h*.045f;p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(225,25,48,38));c.drawCircle(cx,cy,r,p);
