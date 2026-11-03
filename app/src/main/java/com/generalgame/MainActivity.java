@@ -75,6 +75,7 @@ public class MainActivity extends Activity {
         private boolean setup = false;
         private boolean historyScreen = false;
         private boolean progressScreen = false;
+        private boolean helpScreen = false;
         private boolean recorded = false;
         private boolean bonusAttempt = false, perfectWin = false, pointsAwarded = false;
         private int matchPoints = 0;
@@ -848,6 +849,23 @@ public class MainActivity extends Activity {
             txt(c,"VS",w*.5f,h*.47f,h*.052f,Color.rgb(245,190,65),true);
             txt(c,String.valueOf(Math.max(1,introStep)),w*.5f,h*.77f,h*.17f,Color.WHITE,true);
         }
+        private void drawHelp(Canvas c) {
+            box(c,w*.055f,h*.105f,w*.945f,h*.895f,Color.rgb(244,248,235));
+            txt(c,"شرح لعبة GENERAL",w*.5f,h*.19f,h*.052f,dark,true);
+            txt(c,"هدف اللعبة",w*.5f,h*.275f,h*.031f,Color.rgb(155,105,28),true);
+            txt(c,"دمّر أسلحة الخصم الثلاثة: الدبابة والطائرة والمدفع.",w*.5f,h*.325f,h*.026f,dark,true);
+            txt(c,"طريقة اللعب",w*.5f,h*.405f,h*.031f,Color.rgb(155,105,28),true);
+            txt(c,"1) تبدأ المباراة بقرعة النرد لتحديد اللاعب الأول.",w*.5f,h*.455f,h*.024f,dark,false);
+            txt(c,"2) في دورك اضغط «أطلق» لتحصل على رقم من 1 إلى 6.",w*.5f,h*.505f,h*.024f,dark,false);
+            txt(c,"3) اختر دبابة أو طائرة أو مدفعاً متاحاً لتحريكه.",w*.5f,h*.555f,h*.024f,dark,false);
+            txt(c,"4) لكل سلاح مسار مستقل من 15 خطوة باتجاه سلاح الخصم المقابل.",w*.5f,h*.605f,h*.024f,dark,false);
+            txt(c,"5) عندما يصل السلاح إلى نهاية المسار يدمّر السلاح المقابل.",w*.5f,h*.655f,h*.024f,dark,false);
+            txt(c,"6) بعد تدمير أحد سلاحي المسار لا يمكن مواصلة اللعب فيه.",w*.5f,h*.705f,h*.024f,dark,false);
+            txt(c,"الفوز",w*.5f,h*.775f,h*.031f,Color.rgb(155,105,28),true);
+            txt(c,"تُحسم المواجهات الثلاث؛ والفائز من يحسم مسارين على الأقل.",w*.5f,h*.825f,h*.023f,dark,true);
+            btn(c,"العودة إلى الرئيسية",w*.38f,h*.91f,w*.62f,h*.985f,dark);
+        }
+
         private void drawProgress(Canvas c) {
             android.content.SharedPreferences prefs=getSharedPreferences("GENERAL_PROGRESS",MODE_PRIVATE);
             int points=prefs.getInt("points",0),wins=prefs.getInt("wins",0);
@@ -1209,7 +1227,7 @@ public class MainActivity extends Activity {
             if(setup) { drawSetup(c); return; }
             if(mode==0) {
                 drawMenuBackdrop(c);
-                if(historyScreen){drawHistory(c);return;}if(progressScreen){drawProgress(c);return;}
+                if(historyScreen){drawHistory(c);return;}if(progressScreen){drawProgress(c);return;}if(helpScreen){drawHelp(c);return;}
                 txt(c,"اختر ساحة المعركة",w*.5f,h*.205f,h*.060f,Color.rgb(248,232,190),true);
                 iconButton(c,w*.035f,h*.065f,w*.125f,h*.165f,dark,"⚙");iconButton(c,w*.875f,h*.065f,w*.965f,h*.165f,Color.rgb(135,48,43),"⏻");
                 menuButton(c,"⚔","لاعبان على نفس الجهاز",w*.075f,h*.29f,w*.475f,h*.465f,blue);
@@ -1217,6 +1235,7 @@ public class MainActivity extends Activity {
                 menuButton(c,"◎","اللعب عبر الإنترنت",w*.20f,h*.50f,w*.80f,h*.665f,Color.rgb(37,105,160));
                 menuButton(c,"▤","سجل المباريات",w*.075f,h*.70f,w*.475f,h*.865f,dark);
                 menuButton(c,"♜","لوحة التقدم",w*.525f,h*.70f,w*.925f,h*.865f,Color.rgb(155,105,28));
+                menuButton(c,"?","شرح اللعبة",w*.30f,h*.875f,w*.70f,h*.945f,Color.rgb(55,91,72));
                 p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(false);
                 p.setTextSize(h*.017f);p.setColor(Color.argb(205,238,232,211));
                 c.drawText("GENERAL  v0.3.5   |   © 2026 أحمد جرادات   |   ahmad3aj@gmail.com",w*.5f,h*.965f,p);
@@ -1335,7 +1354,7 @@ public class MainActivity extends Activity {
                 invalidate();return true;
             }
             if(mode==0) {
-                if(historyScreen || progressScreen) { if(x>=w*.40f&&x<=w*.60f&&y>=h*.93f&&y<=h*.995f){historyScreen=false;progressScreen=false;} }
+                if(historyScreen || progressScreen || helpScreen) { if(x>=w*.38f&&x<=w*.62f&&y>=h*.91f&&y<=h*.995f){historyScreen=false;progressScreen=false;helpScreen=false;} }
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
                 else if(y>=h*.29f&&y<=h*.465f&&x>=w*.075f&&x<=w*.475f){mode=1;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
@@ -1343,6 +1362,7 @@ public class MainActivity extends Activity {
                 else if(y>=h*.50f&&y<=h*.665f&&x>=w*.20f&&x<=w*.80f)showOnlineModeDialog();
                 else if(y>=h*.70f&&y<=h*.865f&&x>=w*.075f&&x<=w*.475f)historyScreen=true;
                 else if(y>=h*.70f&&y<=h*.865f&&x>=w*.525f&&x<=w*.925f)progressScreen=true;
+                else if(y>=h*.875f&&y<=h*.945f&&x>=w*.30f&&x<=w*.70f)helpScreen=true;
                 invalidate();return true;
             }
             if(setup) {
