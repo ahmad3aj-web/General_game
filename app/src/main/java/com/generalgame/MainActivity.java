@@ -1291,7 +1291,7 @@ public class MainActivity extends Activity {
                     if(bonusShot && bonusAttempt && winner==1)finishMatch();
                     if(winner==0){
                         if(mode==2 && side==1){
-                            player=2; die=0; message="دور جنيرال";
+                            player=2; setBattleDialogue(2,1); die=0; message="دور جنيرال";
                             postDelayed(new Runnable(){@Override public void run(){if(epoch==matchEpoch && mode==2 && winner==0 && player==2){computerTurn();invalidate();}}},650);
                         } else if(mode==2 && side==2){
                             player=1;die=0;choosing=false;message="دورك — اضغط النرد";
