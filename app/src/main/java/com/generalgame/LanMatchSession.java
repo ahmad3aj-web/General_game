@@ -300,12 +300,13 @@ public final class LanMatchSession implements LanConnection.Listener {
             moveReceived = true;
             listener.onMove(side, lane, rolledValue);
         } else if (LanGameProtocol.TURN_CANCEL.equals(type)) {
-            if (activeSide != side || moveReceived
+            if (activeSide != side || moveReceived || !rollReceived
                     || message.optInt("value", 0) != rolledValue) {
                 listener.onProtocolError("إلغاء دور غير صالح");
                 return;
             }
             timer.cancel();
+            moveReceived = true;
             listener.onTurnCancelled(side);
         } else {
             listener.onProtocolError("نوع رسالة غير معروف");
