@@ -1027,16 +1027,14 @@ public class MainActivity extends Activity {
             }},2600);
         }
         private void finishCheck() {
-            int blueLaneWins=0,redLaneWins=0;
+            int blueLaneWins=0,redLaneWins=0,resolvedDuels=0;
             for(int i=0;i<3;i++) {
-                if(dead2[i] && !dead1[i])blueLaneWins++;
-                else if(dead1[i] && !dead2[i])redLaneWins++;
+                if(dead2[i] && !dead1[i]){blueLaneWins++;resolvedDuels++;}
+                else if(dead1[i] && !dead2[i]){redLaneWins++;resolvedDuels++;}
             }
-            if(bonusAttempt) {
-                if(blueLaneWins>=3){perfectWin=true;finishMatch();}
-                return;
-            }
-            if(blueLaneWins>=2){winner=1;finishMatch();return;}
+            // Do not end after only two lanes: the third opposing pair must also be decided.
+            if(resolvedDuels<3)return;
+            if(blueLaneWins>=2){winner=1;perfectWin=blueLaneWins==3;finishMatch();return;}
             if(redLaneWins>=2){winner=2;finishMatch();}
         }
         private void afterTurn() {
