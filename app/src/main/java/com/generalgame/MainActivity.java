@@ -426,7 +426,7 @@ public class MainActivity extends Activity {
                 })
                 .setNegativeButton("انضمام لمباراة", (d,which)->{
                     mode=3; lanLocalSide=2; setup=true; setupSide=2;
-                    playerNames[0]="اللاعب الأزرق"; playerNames[1]=savedPlayerName(1);
+                    playerNames[0]=savedPlayerName(0); playerNames[1]=savedPlayerName(1);
                     showLanJoinDialog();
                 })
                 .setNeutralButton("إلغاء",null).show();
@@ -476,7 +476,7 @@ public class MainActivity extends Activity {
         }
         private void showOnlineSetupNotice(boolean createRoom) {
             if(createRoom) {
-                mode=4; setup=true; setupSide=1; playerNames[0]="أنت"; avatars[0]=0;
+                mode=4; setup=true; setupSide=1; playerNames[0]=savedPlayerName(0); avatars[0]=0;
                 onlineJoinCode=null; invalidate();
                 return;
             }
@@ -496,7 +496,7 @@ public class MainActivity extends Activity {
                     }
                     onlineJoinCode=code; onlineLocalSide=2; mode=4; setup=true; setupSide=2;
                     onlineQuickMatch=false; onlineInvitePending=false;
-                    playerNames[1]="أنت"; avatars[1]=1; invalidate();
+                    playerNames[1]=savedPlayerName(1); avatars[1]=1; invalidate();
                 }).setNegativeButton("إلغاء",null).show();
         }
         private void showLanHostAddress() {
@@ -1396,7 +1396,7 @@ public class MainActivity extends Activity {
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
                 else if(y>=h*.275f&&y<=h*.55f&&x>=w*.03f&&x<=w*.33f){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.35f&&x<=w*.65f){mode=2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.35f&&x<=w*.65f){mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
                 else if(y>=h*.275f&&y<=h*.55f&&x>=w*.67f&&x<=w*.97f)showOnlineModeDialog();
                 else if(y>=h*.59f&&y<=h*.89f&&x>=w*.03f&&x<=w*.33f)historyScreen=true;
                 else if(y>=h*.59f&&y<=h*.89f&&x>=w*.35f&&x<=w*.65f)progressScreen=true;
