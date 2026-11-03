@@ -119,9 +119,9 @@ public class MainActivity extends Activity {
         private boolean onlineWaitingForPeer=false;
 
         private void loadGameArt() {
-            String[] names={"character_01.png","character_02.png","character_03.png","character_04.png","character_05.png","character_06.png","character_07.png","character_08.png","character_09.png","character_10.png","character_11.png","character_12.png","character_13.png","character_14.png","character_15.png","character_16.png","character_17.png","character_18.png","tank_01.png","cannon_01.png","fighter_01.png","fighter_02.png","fighter_03.png","ammo_round_left_gold.png","ammo_round_right_gold.png","ammo_round_left_white.png","ammo_round_right_white.png","dice_single.png","dice_three.png","dice_four.png","dice_five.png","dice_six_detail.png"};
+            String[] names={"character_01.png","character_02.png","character_03.png","character_04.png","character_05.png","character_06.png","character_07.png","character_08.png","character_09.png","character_10.png","character_11.png","character_12.png","character_13.png","character_14.png","character_15.png","character_16.png","character_17.png","character_18.png","tank_01.png","cannon_01.png","fighter_01.png","fighter_02.png","fighter_03.png","ammo_round_left_gold.png","ammo_round_right_gold.png","ammo_round_left_white.png","ammo_round_right_white.png"};
             for(String name:names) {
-                String folder=name.startsWith("character_")?"characters":(name.startsWith("tank_")||name.startsWith("cannon_")||name.startsWith("fighter_"))?"vehicles":name.startsWith("dice_")?"dice":"ammo";
+                String folder=name.startsWith("character_")?"characters":(name.startsWith("tank_")||name.startsWith("cannon_")||name.startsWith("fighter_"))?"vehicles":"ammo";
                 try { art.put(name,BitmapFactory.decodeStream(getAssets().open(folder+"/"+name))); } catch(Exception ignored) {}
             }
             String[] generals={"1_Khabeer_Nashi.png","2_Qaid_Zou_Khabra.png","3_General_Mukhadram.png","4_Qaid_Faiq_Alkhabra.png"};
@@ -274,19 +274,37 @@ public class MainActivity extends Activity {
 
 
         private void drawDiceFace(Canvas c,float cx,float cy,float size,int value) {
-            String file=value==3?"dice_three.png":value==4?"dice_four.png":value==5?"dice_five.png":value==6?"dice_six_detail.png":null;
-            if(file!=null && art.get(file)!=null) {
-                drawArt(c,file,cx-size*.5f,cy-size*.5f,cx+size*.5f,cy+size*.5f,false);
-                return;
+            // رسم جميع أوجه النرد برمجياً لضمان تطابق الأرقام وعدم اختلاف ألوان الصور.
+            value=Math.max(1,Math.min(6,value));
+            RectF face=new RectF(cx-size*.5f,cy-size*.5f,cx+size*.5f,cy+size*.5f);
+            p.setShader(new LinearGradient(face.left,face.top,face.right,face.bottom,
+                    Color.rgb(255,255,247),Color.rgb(218,225,214),Shader.TileMode.CLAMP));
+            p.setStyle(Paint.Style.FILL);
+            c.drawRoundRect(face,size*.17f,size*.17f,p);
+            p.setShader(null);
+            p.setColor(Color.rgb(48,65,53));
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(Math.max(2,size*.035f));
+            c.drawRoundRect(new RectF(face.left+size*.012f,face.top+size*.012f,
+                    face.right-size*.012f,face.bottom-size*.012f),size*.15f,size*.15f,p);
+            p.setStyle(Paint.Style.FILL);
+            float d=size*.115f, a=size*.245f;
+            float[][] dots={
+                {0,0},
+                {-a,-a,a,a},
+                {-a,-a,0,0,a,a},
+                {-a,-a,a,-a,-a,a,a,a},
+                {-a,-a,a,-a,0,0,-a,a,a,a},
+                {-a,-a,a,-a,-a,0,a,0,-a,a,a,a}
+            };
+            float[] points=dots[value-1];
+            for(int i=0;i<points.length;i+=2) {
+                float dx=points[i],dy=points[i+1];
+                p.setColor(Color.rgb(35,48,39));
+                c.drawCircle(cx+dx,cy+dy,d,p);
+                p.setColor(Color.argb(65,255,255,255));
+                c.drawCircle(cx+dx-d*.22f,cy+dy-d*.22f,d*.22f,p);
             }
-            // Fallback for the missing one- and two-pip artwork: draw a complete die face.
-            p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(248,248,238));
-            c.drawRoundRect(new RectF(cx-size*.5f,cy-size*.5f,cx+size*.5f,cy+size*.5f),size*.16f,size*.16f,p);
-            p.setColor(Color.rgb(45,55,48));p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,size*.035f));
-            c.drawRoundRect(new RectF(cx-size*.48f,cy-size*.48f,cx+size*.48f,cy+size*.48f),size*.15f,size*.15f,p);p.setStyle(Paint.Style.FILL);
-            float d=size*.13f;
-            c.drawCircle(cx,cy,d,p);
-            if(value==2){c.drawCircle(cx-size*.23f,cy-size*.23f,d,p);c.drawCircle(cx+size*.23f,cy+size*.23f,d,p);}
         }
 
         private void drawFire(Canvas c,float cx,float cy) {
@@ -732,8 +750,12 @@ public class MainActivity extends Activity {
         private void drawGeneralAvatar(Canvas c,float cx,float cy,float radius,boolean selected,boolean monochrome) {
             Bitmap bitmap=art.get(generalImageName());
             if(bitmap==null){drawArt(c,"character_06.png",cx-radius,cy-radius,cx+radius,cy+radius,false);return;}
-            float imageW=radius*(radius>=h*.10f?1.58f:1.10f);
-            float imageH=imageW*((float)bitmap.getHeight()/Math.max(1,bitmap.getWidth()));
+            // احتواء صورة الجنيرال داخل مساحة ثابتة مع الحفاظ على أبعادها كاملة.
+            float maxW=Math.min(w*.135f,radius*(radius>=h*.10f?1.58f:1.10f));
+            float maxH=radius*(radius>=h*.10f?2.05f:2.00f);
+            float aspect=(float)bitmap.getWidth()/Math.max(1,bitmap.getHeight());
+            float imageW=maxW,imageH=imageW/aspect;
+            if(imageH>maxH){imageH=maxH;imageW=imageH*aspect;}
             RectF dst=new RectF(cx-imageW*.5f,cy-imageH*.5f,cx+imageW*.5f,cy+imageH*.5f);
             p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.WHITE);p.setAlpha(255);p.setFilterBitmap(true);
             c.drawBitmap(bitmap,null,dst,p);
@@ -772,10 +794,14 @@ public class MainActivity extends Activity {
 
 
         private void menuButton(Canvas c,String glyph,String label,float l,float t,float r,float b,int color) {
+            // تصغير الشكل المرئي للأزرار إلى نحو النصف مع إبقاء مساحة اللمس الأصلية مريحة.
+            float bw=(r-l)*.68f,bh=(b-t)*.68f;
+            float left=(l+r-bw)*.5f,top=(t+b-bh)*.5f,right=left+bw,bottom=top+bh;
             String texture=color==blue?"blue_button_01.png":color==red?"red_button_01.png":null;
-            if(texture!=null && art.get(texture)!=null)drawArt(c,texture,l,t,r,b,false);else btn(c,"",l,t,r,b,color);
-            txt(c,glyph,(l+r)*.5f,t+(b-t)*.43f,(b-t)*.43f,Color.WHITE,true);
-            txt(c,label,(l+r)*.5f,t+(b-t)*.82f,(b-t)*.19f,Color.WHITE,true);
+            if(texture!=null && art.get(texture)!=null)drawArt(c,texture,left,top,right,bottom,false);
+            else btn(c,"",left,top,right,bottom,color);
+            txt(c,glyph,(left+right)*.5f,top+(bottom-top)*.43f,(bottom-top)*.43f,Color.WHITE,true);
+            txt(c,label,(left+right)*.5f,top+(bottom-top)*.82f,(bottom-top)*.19f,Color.WHITE,true);
         }
         private int rankIndex(int points) {
             int rank=0;
