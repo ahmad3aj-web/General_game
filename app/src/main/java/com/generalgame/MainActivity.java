@@ -9,6 +9,8 @@ import android.os.Build;
 import android.os.Vibrator;
 import android.os.VibrationEffect;
 import android.graphics.Canvas;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -53,6 +55,7 @@ public class MainActivity extends Activity {
 
     private class GameView extends View {
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private Bitmap spriteSheet;
         private SoundPool gameSoundPool;
         private MediaPlayer backgroundMusic;
         private boolean soundEnabled, musicEnabled, vibrationEnabled;
@@ -110,6 +113,7 @@ public class MainActivity extends Activity {
 
         GameView() {
             super(MainActivity.this);
+            try { spriteSheet=BitmapFactory.decodeStream(getAssets().open("1793691666432.jpg")); } catch(Exception ignored) { spriteSheet=null; }
             setLayerType(View.LAYER_TYPE_SOFTWARE,null);
             android.content.SharedPreferences prefs=getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE);
             soundEnabled=prefs.getBoolean("sound",true);
@@ -240,6 +244,23 @@ public class MainActivity extends Activity {
                 catch(Exception ignored) {}
             }
         }
+
+        private void drawSprite(Canvas c,int sl,int st,int sr,int sb,float dl,float dt,float dr,float db,boolean flip) {
+            if(spriteSheet==null)return;
+            Rect src=new Rect(sl,st,sr,sb);
+            RectF dst=new RectF(dl,dt,dr,db);
+            p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.WHITE);p.setAlpha(255);p.setFilterBitmap(true);
+            if(flip){c.save();c.scale(-1f,1f,(dl+dr)*.5f,(dt+db)*.5f);c.drawBitmap(spriteSheet,src,dst,p);c.restore();}
+            else c.drawBitmap(spriteSheet,src,dst,p);
+        }
+        private void drawBattlefield(Canvas c) {
+            int scene=Math.floorMod(matchEpoch,4);
+            int[][] crops={{24,365,354,482},{383,365,713,482},{744,365,1072,482},{25,526,354,650}};
+            int[] q=crops[scene];
+            drawSprite(c,q[0],q[1],q[2],q[3],0,0,w,h,false);
+            p.setColor(Color.argb(28,18,25,24));p.setStyle(Paint.Style.FILL);c.drawRect(0,0,w,h,p);
+        }
+
         private void txt(Canvas c,String s,float x,float y,float size,int color,boolean bold) {
             p.setColor(color); p.setTextSize(size); p.setFakeBoldText(bold);
             p.setTextAlign(Paint.Align.CENTER); p.setStyle(Paint.Style.FILL); c.drawText(s,x,y,p);
@@ -263,6 +284,10 @@ public class MainActivity extends Activity {
                     pressed?shade(color,.88f):shade(color,1.12f),
                     pressed?shade(color,.72f):shade(color,.88f),Shader.TileMode.CLAMP));
             c.drawRoundRect(face,radius*.82f,radius*.82f,p);p.setShader(null);
+            if(spriteSheet!=null && (Color.blue(color)>Color.red(color)*1.15f || Color.red(color)>Color.blue(color)*1.15f)) {
+                boolean isBlue=Color.blue(color)>Color.red(color);
+                drawSprite(c,isBlue?378:731,644,isBlue?461:814,699,face.left,face.top,face.right,face.bottom,false);
+            }
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1.5f,h*.0022f));
             p.setColor(Color.argb(165,255,255,255));
             c.drawRoundRect(face,radius*.82f,radius*.82f,p);p.setStyle(Paint.Style.FILL);
@@ -606,6 +631,13 @@ public class MainActivity extends Activity {
             drawAvatar(c,index,cx,cy,radius,selected,false);
         }
         private void drawAvatar(Canvas c,int index,float cx,float cy,float radius,boolean selected,boolean monochrome) {
+            if(spriteSheet!=null) {
+                int[][] faces={{22,8,130,127},{145,8,253,127},{267,8,375,127},{389,8,497,127},{503,8,619,127},{842,8,953,127},{966,8,1077,127},{1082,8,1194,127},{1200,8,1312,127},{1320,8,1443,127},{22,138,136,254},{146,138,261,254},{267,138,381,254},{392,138,506,254},{963,138,1083,254},{1092,138,1208,254}};
+                int[] q=faces[Math.floorMod(index,faces.length)];float rr=radius*1.18f;
+                drawSprite(c,q[0],q[1],q[2],q[3],cx-rr,cy-rr*1.03f,cx+rr,cy+rr*1.03f,false);
+                if(selected){p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.005f));p.setColor(gold);c.drawRoundRect(new RectF(cx-rr,cy-rr*1.03f,cx+rr,cy+rr*1.03f),radius*.22f,radius*.22f,p);p.setStyle(Paint.Style.FILL);}
+                return;
+            }
             int teamColor=avatarColors[index%avatarColors.length];
             if(monochrome)teamColor=grayColor(teamColor);
             int ink=monochrome?Color.rgb(75,75,75):Color.rgb(43,48,49);
@@ -1179,6 +1211,10 @@ public class MainActivity extends Activity {
             return Color.rgb(Math.min(255,(int)(Color.red(color)*factor)),Math.min(255,(int)(Color.green(color)*factor)),Math.min(255,(int)(Color.blue(color)*factor)));
         }
         private void drawBullet(Canvas c,float cx,float cy,float bw,float bh,int color,boolean filled,boolean pointsRight) {
+            if(spriteSheet!=null) {
+                drawSprite(c,1115,filled?399:451,1265,filled?447:495,cx-bw*.52f,cy-bh*.55f,cx+bw*.52f,cy+bh*.55f,!pointsRight);
+                return;
+            }
             int body=filled?color:Color.rgb(247,248,239);
             int outline=Color.rgb(48,57,46);
             p.setStyle(Paint.Style.FILL);
@@ -1196,6 +1232,12 @@ public class MainActivity extends Activity {
             c.drawRect(baseX-bw*.035f,cy-bh*.39f,baseX+bw*.035f,cy+bh*.39f,p);
         }
         private void drawWeapon(Canvas c,int lane,float cx,float cy,int color,boolean faceRight) {
+            if(spriteSheet!=null) {
+                int[][] weapons={{8,258,196,349},{376,254,568,347},{219,258,365,347}};
+                int[] q=weapons[lane];float ww=w*.105f,hh=h*.105f;
+                drawSprite(c,q[0],q[1],q[2],q[3],cx-ww*.5f,cy-hh*.5f,cx+ww*.5f,cy+hh*.5f,!faceRight);
+                return;
+            }
             // Vector artwork: hand-inked outlines, soft highlights and a fixed team flag.
             int ink=Color.rgb(42,48,43), highlight=shade(color,1.28f), shadow=shade(color,.58f);
             float sx=w*.00098f, sy=h*.00088f;
@@ -1279,26 +1321,7 @@ public class MainActivity extends Activity {
 
         @Override protected void onDraw(Canvas c) {
             super.onDraw(c); w=getWidth(); h=getHeight();
-            // Warm, layered cartoon desert battlefield.
-            p.setShader(new LinearGradient(0,0,0,h,Color.rgb(104,177,225),Color.rgb(250,205,137),Shader.TileMode.CLAMP));
-            c.drawRect(0,0,w,h,p);p.setShader(null);
-            p.setColor(Color.rgb(255,225,166));c.drawCircle(w*.78f,h*.16f,h*.075f,p);
-            p.setColor(Color.rgb(194,151,130));
-            Path far=new Path();far.moveTo(0,h*.43f);far.lineTo(w*.12f,h*.23f);far.lineTo(w*.22f,h*.38f);far.lineTo(w*.39f,h*.19f);far.lineTo(w*.55f,h*.39f);far.lineTo(w*.73f,h*.22f);far.lineTo(w*.88f,h*.37f);far.lineTo(w,h*.24f);far.lineTo(w,h*.66f);far.lineTo(0,h*.66f);far.close();c.drawPath(far,p);
-            p.setColor(Color.rgb(225,177,139));
-            Path near=new Path();near.moveTo(0,h*.49f);near.lineTo(w*.18f,h*.34f);near.lineTo(w*.34f,h*.48f);near.lineTo(w*.52f,h*.32f);near.lineTo(w*.70f,h*.49f);near.lineTo(w*.86f,h*.35f);near.lineTo(w,h*.47f);near.lineTo(w,h*.75f);near.lineTo(0,h*.75f);near.close();c.drawPath(near,p);
-            p.setColor(Color.rgb(199,139,89));c.drawRect(0,h*.48f,w,h*.94f,p);
-            p.setColor(Color.rgb(218,161,105));c.drawOval(new RectF(-w*.12f,h*.55f,w*.58f,h*.98f),p);
-            p.setColor(Color.rgb(185,123,78));c.drawOval(new RectF(w*.42f,h*.58f,w*1.12f,h*.98f),p);
-            p.setColor(Color.rgb(126,91,73));
-            c.drawRect(w*.12f,h*.34f,w*.19f,h*.49f,p);c.drawRect(w*.14f,h*.29f,w*.21f,h*.49f,p);
-            c.drawRect(w*.77f,h*.36f,w*.84f,h*.49f,p);c.drawRect(w*.80f,h*.31f,w*.87f,h*.49f,p);
-            p.setColor(Color.rgb(91,75,65));c.drawRect(w*.69f,h*.24f,w*.695f,h*.49f,p);c.drawRect(w*.66f,h*.24f,w*.73f,h*.26f,p);c.drawRect(w*.66f,h*.29f,w*.73f,h*.31f,p);
-            p.setColor(Color.rgb(151,106,78));c.drawRect(0,h*.91f,w,h*.12f,p);
-            p.setColor(Color.rgb(103,79,65));
-            for(int i=0;i<26;i++){float x=(i*137%997)/997f*w;float y=h*(.49f+(i*43%390)/1000f);float rr=h*(.004f+(i%4)*.002f);c.drawOval(new RectF(x-rr*1.5f,y-rr,x+rr*1.5f,y+rr),p);}
-            p.setColor(Color.argb(55,255,255,255));
-            for(int i=0;i<12;i++)c.drawCircle((i*173%1000)/1000f*w,h*(.12f+(i*37%200)/1000f),h*.012f,p);
+            drawBattlefield(c);
             txt(c,"GENERAL  •  جنيرال",w*.5f,h*.075f,h*.06f,dark,true);
             btn(c,"الإعدادات",w*.015f,h*.025f,w*.17f,h*.105f,dark);
             btn(c,"خروج",w*.83f,h*.025f,w*.985f,h*.105f,Color.rgb(135,48,43));
@@ -1403,8 +1426,13 @@ public class MainActivity extends Activity {
                         diceCx-buttonHalf,h*.80f,diceCx+buttonHalf,h*.93f,player==1?blue:red);
             } else {
                 int diceColor=winner!=0?dark:(player==1?blue:red);
-                box(c,diceCx-diceSize/2,diceCy-diceSize/2,diceCx+diceSize/2,diceCy+diceSize/2,diceColor);
-                txt(c,die==0?"النرد":String.valueOf(die),diceCx,diceCy+h*.018f,diceSize*.48f,Color.WHITE,true);
+                if(spriteSheet!=null) {
+                    drawSprite(c,870,600,960,705,diceCx-diceSize*.62f,diceCy-diceSize*.62f,diceCx+diceSize*.62f,diceCy+diceSize*.62f,false);
+                    if(die>0)txt(c,String.valueOf(die),diceCx,diceCy+h*.018f,diceSize*.30f,Color.rgb(25,35,48),true);
+                } else {
+                    box(c,diceCx-diceSize/2,diceCy-diceSize/2,diceCx+diceSize/2,diceCy+diceSize/2,diceColor);
+                    txt(c,die==0?"النرد":String.valueOf(die),diceCx,diceCy+h*.018f,diceSize*.48f,Color.WHITE,true);
+                }
             }
             if(choosing) txt(c,"اختر السلاح",w*.5f,h*.965f,h*.026f,dark,true);
             if(winner!=0) {
