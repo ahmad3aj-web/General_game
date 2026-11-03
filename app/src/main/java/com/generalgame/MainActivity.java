@@ -408,7 +408,10 @@ public class MainActivity extends Activity {
             battleDialogueSpeaker=speaker;
             battleDialogueReplySpeaker=other;
             battleDialogueText=lines[speaker==2?1:0][index];
-            battleDialogueReplyText=lines[other==2?1:0][index];
+            // الحوار ليس تبادلاً إجبارياً: الرد يظهر أحياناً فقط، بحسب الموقف.
+            int replyChance=type==0?45:(type==1?22:38);
+            boolean shouldReply=random.nextInt(100)<replyChance;
+            battleDialogueReplyText=shouldReply?lines[other==2?1:0][index]:"";
             battleDialogueStartedAt=System.currentTimeMillis();
             invalidate();
         }
@@ -422,7 +425,8 @@ public class MainActivity extends Activity {
             battleDialogueSpeaker=speaker;
             battleDialogueReplySpeaker=other;
             battleDialogueText=speaker==1 ? "النرد ما أعطاني حركة ممكنة، انتهى دوري!" : "ما في حركة متاحة إلي، دورك الآن!";
-            battleDialogueReplyText=other==1 ? "وصلتني الفرصة، رح أستغلها!" : "فرصتك انتهت، الآن دوري!";
+            battleDialogueReplyText=random.nextInt(100)<45
+                    ? (other==1 ? "وصلتني الفرصة، رح أستغلها!" : "فرصتك انتهت، الآن دوري!") : "";
             battleDialogueStartedAt=System.currentTimeMillis();
             invalidate();
         }
@@ -1002,7 +1006,7 @@ public class MainActivity extends Activity {
             iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
             txt(c,"استعدوا للحرب",w*.5f,h*.25f,h*.055f,Color.rgb(245,190,65),true);
             if(mode==2) {
-                drawGeneralAvatar(c,w*.30f,h*.45f,h*.060f,false,false);
+                drawGeneralAvatar(c,w*.30f,h*.45f,h*.120f,false,false);
                 drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.115f,true);
                 txt(c,"جنيرال",w*.30f,h*.61f,h*.036f,Color.WHITE,true);
                 txt(c,rankedPlayerName(playerNames[0]),w*.70f,h*.61f,h*.036f,Color.WHITE,true);
