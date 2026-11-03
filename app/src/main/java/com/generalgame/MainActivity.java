@@ -82,7 +82,7 @@ public class MainActivity extends Activity {
         private boolean battleIntro = false;
         private int introStep = 0;
         private final String[] rankNames = {"جندي","عريف","رقيب","ملازم","نقيب","رائد","عقيد","لواء"};
-        private final int[] rankThresholds = {0,100,250,500,850,1300,1900,2700};
+        private final int[] rankThresholds = {0,130,320,650,1100,1700,2500,3600};
         private int matchEpoch = 0;
         private int setupSide = 1;
         private int difficulty = 1; // 0 beginner, 1 medium, 2 professional, 3 legendary
@@ -825,6 +825,11 @@ public class MainActivity extends Activity {
             for(int i=0;i<rankThresholds.length;i++)if(points>=rankThresholds[i])rank=i;
             return rank;
         }
+        private String playerRankPrefix() {
+            int points=getSharedPreferences("GENERAL_PROGRESS",MODE_PRIVATE).getInt("points",0);
+            return "["+rankNames[rankIndex(points)]+"] ";
+        }
+        private String rankedPlayerName(String name) { return playerRankPrefix()+name; }
         private void awardProgressPoints() {
             if(pointsAwarded || mode!=2 || winner!=1)return;
             int[] base={10,20,35,50}, perfectBonus={5,10,20,30};
@@ -882,11 +887,11 @@ public class MainActivity extends Activity {
                 drawGeneralAvatar(c,w*.30f,h*.45f,h*.060f,false,false);
                 drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.115f,true);
                 txt(c,"جنيرال",w*.30f,h*.61f,h*.036f,Color.WHITE,true);
-                txt(c,playerNames[0],w*.70f,h*.61f,h*.036f,Color.WHITE,true);
+                txt(c,rankedPlayerName(playerNames[0]),w*.70f,h*.61f,h*.036f,Color.WHITE,true);
             } else {
                 drawAvatar(c,avatars[1],w*.30f,h*.45f,h*.115f,false);
                 drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.115f,true);
-                txt(c,playerNames[1],w*.30f,h*.61f,h*.036f,Color.WHITE,true);
+                txt(c,rankedPlayerName(playerNames[1]),w*.30f,h*.61f,h*.036f,Color.WHITE,true);
                 txt(c,playerNames[0],w*.70f,h*.61f,h*.036f,Color.WHITE,true);
             }
             txt(c,"VS",w*.5f,h*.47f,h*.052f,Color.rgb(245,190,65),true);
@@ -1331,8 +1336,8 @@ public class MainActivity extends Activity {
             float[] rows={h*.29f,h*.49f,h*.69f};
             drawAvatar(c,avatars[0],w*.90f,h*.115f,h*.070f,false);
             if(mode==2) drawGeneralAvatar(c,w*.10f,h*.115f,h*.070f,false,false); else drawAvatar(c,avatars[1],w*.10f,h*.115f,h*.070f,false);
-            namePlate(c,mode==2?"جنيرال":playerNames[1],w*.10f,h*.235f,red);
-            namePlate(c,playerNames[0],w*.90f,h*.235f,blue);
+            namePlate(c,mode==2?"جنيرال":rankedPlayerName(playerNames[1]),w*.10f,h*.235f,red);
+            namePlate(c,rankedPlayerName(playerNames[0]),w*.90f,h*.235f,blue);
             if(openingToss){
                 float ds=h*.075f;
                 box(c,w*.81f-ds/2,h*.145f,w*.81f+ds/2,h*.145f+ds,red);
