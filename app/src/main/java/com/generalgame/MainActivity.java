@@ -60,6 +60,9 @@ public class MainActivity extends Activity {
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final HashMap<String,Bitmap> art = new HashMap<>();
         private Movie fireMovie;
+        private Movie winMovie;
+        private final boolean[] blueWinEffect = {false,false,false};
+        private final boolean[] redWinEffect = {false,false,false};
         private long fireStartedAt = System.currentTimeMillis();
         private boolean titleScreen = true;
         private SoundPool gameSoundPool;
@@ -140,6 +143,7 @@ public class MainActivity extends Activity {
             String[] scenes={"2112.w023.n001.1491B.p1.1491.jpg","2207_w023_n003_2757b_p1_2757.jpg","png.png","war-zone-landscape-with-apocalyptic-destruction.jpg","1793716501127.jpg","Intro.jpg"};
             for(String name:scenes)try{art.put(name,BitmapFactory.decodeStream(getAssets().open("backgrounds/"+name)));}catch(Exception ignored){}
             try { fireMovie=Movie.decodeStream(getAssets().open("vehicles/Flame_GIF_2.gif")); } catch(Exception ignored) {}
+            try { winMovie=Movie.decodeStream(getAssets().open("vehicles/Win.gif")); } catch(Exception ignored) {}
         }
         private void drawArt(Canvas c,String name,float l,float t,float r,float b,boolean flip) {
             Bitmap bitmap=art.get(name);if(bitmap==null)return;RectF dst=new RectF(l,t,r,b);
@@ -324,6 +328,24 @@ public class MainActivity extends Activity {
             c.save();c.translate(cx-fw*.5f,cy-fh*.5f);c.scale(fw/fireMovie.width(),fh/fireMovie.height());
             fireMovie.draw(c,0,0);c.restore();
             postInvalidateDelayed(45);
+        }
+
+        // Keep the victory animation behind the winning weapon until the match is reset.
+        private void drawWinEffect(Canvas c,float cx,float cy) {
+            if(winMovie==null)return;
+            int duration=Math.max(1,winMovie.duration());
+            winMovie.setTime((int)((System.currentTimeMillis()-fireStartedAt)%duration));
+            float fw=w*.105f,fh=h*.125f;
+            c.save();
+            c.translate(cx-fw*.5f,cy-fh*.5f);
+            c.scale(fw/Math.max(1,winMovie.width()),fh/Math.max(1,winMovie.height()));
+            winMovie.draw(c,0,0);
+            c.restore();
+            postInvalidateDelayed(45);
+        }
+
+        private void clearWinEffects() {
+            for(int i=0;i<3;i++){blueWinEffect[i]=false;redWinEffect[i]=false;}
         }
 
         private void drawMenuBackdrop(Canvas c) {
@@ -1078,7 +1100,7 @@ public class MainActivity extends Activity {
 
         private void resetMatch() {
             matchEpoch++;
-            for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}
+            for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}clearWinEffects();
             stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false; recorded=false; explosionAt=0;
             bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
             openingRoll1=0; openingRoll2=0; openingToss=false;
@@ -1213,8 +1235,8 @@ public class MainActivity extends Activity {
                     if(target>=15){
                         // The blue weapon is on the right and the red weapon is on the left.
                         // Explosions must appear on the opposing weapon that was destroyed.
-                        if(side==1){dead2[lane]=true;spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
-                        else {dead1[lane]=true;spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                        if(side==1){dead2[lane]=true;blueWinEffect[lane]=true;spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                        else {dead1[lane]=true;redWinEffect[lane]=true;spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
                     }
                     finishCheck();
                     if(bonusShot && bonusAttempt && winner==1)finishMatch();
@@ -1381,6 +1403,9 @@ public class MainActivity extends Activity {
                     drawBullet(c,bx,y-gap,bulletW,bulletH,leftDead?Color.GRAY:blue,!leftDead && i<pos1[lane],false);
                     drawBullet(c,rx,y+gap,bulletW,bulletH,rightDead?Color.GRAY:red,!rightDead && i<pos2[lane],true);
                 }
+                // Draw the GIF behind the weapon so the weapon remains unobstructed.
+                if(blueWinEffect[lane]) drawWinEffect(c,w*.925f,y);
+                if(redWinEffect[lane]) drawWinEffect(c,w*.075f,y);
                 drawWeapon(c,lane,w*.925f,y,blue,false);
                 drawWeapon(c,lane,w*.075f,y,red,true);
                 if(dead1[lane]) drawFire(c,w*.925f,y);
@@ -1456,8 +1481,8 @@ public class MainActivity extends Activity {
                 else if(mode!=2 && y>=h*.30f && y<=h*.62f && x>=w*.36f && x<=w*.64f) { if(x<=w*.43f)avatars[idx]=nextAvatar(avatars[idx],-1);else if(x>=w*.57f)avatars[idx]=nextAvatar(avatars[idx],1); }
                 else if(x>=w*.37f && x<=w*.63f && y>=h*.91f && y<=h*.985f) {
                     if(setupSide==1 && mode==1) setupSide=2;
-                    else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
-                    else if(mode==4){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;onlineOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
+                    else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}clearWinEffects();stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
+                    else if(mode==4){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}clearWinEffects();stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;onlineOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
                         if(onlineQuickMatch)startOnlineQuickMatch(playerNames[0],avatars[0]);
                         else if(onlineInvitePending)startOnlineHost(playerNames[0],avatars[0]);
                         else if(onlineLocalSide==1)startOnlineHost(playerNames[0],avatars[0]);
