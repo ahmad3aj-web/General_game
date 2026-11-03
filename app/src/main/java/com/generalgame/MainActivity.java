@@ -28,6 +28,7 @@ import android.text.InputType;
 import java.util.Random;
 import java.util.Date;
 import java.util.Locale;
+import java.util.HashMap;
 import java.text.SimpleDateFormat;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -56,7 +57,7 @@ public class MainActivity extends Activity {
 
     private class GameView extends View {
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private Bitmap spriteSheet;
+        private final HashMap<String,Bitmap> art = new HashMap<>();
         private SoundPool gameSoundPool;
         private MediaPlayer backgroundMusic;
         private boolean soundEnabled, musicEnabled, vibrationEnabled;
@@ -112,9 +113,24 @@ public class MainActivity extends Activity {
         private boolean onlineInvitePending=false;
         private boolean onlineWaitingForPeer=false;
 
+        private void loadGameArt() {
+            String[] names={"character_01.png","character_02.png","character_03.png","character_04.png","character_05.png","character_06.png","character_07.png","character_08.png","character_09.png","character_10.png","character_11.png","character_12.png","character_13.png","character_14.png","character_15.png","character_16.png","character_17.png","character_18.png","tank_01.png","cannon_01.png","fighter_01.png","fighter_02.png","fighter_03.png","ammo_round_left_gold.png","ammo_round_right_gold.png","ammo_round_left_white.png","ammo_round_right_white.png","dice_single.png","dice_three.png","dice_four.png","dice_five.png","dice_six.png"};
+            for(String name:names) {
+                String folder=name.startsWith("character_")?"characters":(name.startsWith("tank_")||name.startsWith("cannon_")||name.startsWith("fighter_"))?"vehicles":name.startsWith("dice_")?"dice":"ammo";
+                try { art.put(name,BitmapFactory.decodeStream(getAssets().open(folder+"/"+name))); } catch(Exception ignored) {}
+            }
+            String[] scenes={"coastal_village.jpg","desert_ruins.jpg","airfield.jpg","mountain_valley.jpg"};
+            for(String name:scenes)try{art.put(name,BitmapFactory.decodeStream(getAssets().open("backgrounds/"+name)));}catch(Exception ignored){}
+        }
+        private void drawArt(Canvas c,String name,float l,float t,float r,float b,boolean flip) {
+            Bitmap bitmap=art.get(name);if(bitmap==null)return;RectF dst=new RectF(l,t,r,b);
+            p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.WHITE);p.setAlpha(255);p.setFilterBitmap(true);
+            if(flip){c.save();c.scale(-1f,1f,(l+r)*.5f,(t+b)*.5f);c.drawBitmap(bitmap,null,dst,p);c.restore();}else c.drawBitmap(bitmap,null,dst,p);
+        }
+
         GameView() {
             super(MainActivity.this);
-            try { spriteSheet=BitmapFactory.decodeStream(getAssets().open("1793691666432.jpg")); } catch(Exception ignored) { spriteSheet=null; }
+            loadGameArt();
             setLayerType(View.LAYER_TYPE_SOFTWARE,null);
             android.content.SharedPreferences prefs=getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE);
             soundEnabled=prefs.getBoolean("sound",true);
@@ -248,22 +264,15 @@ public class MainActivity extends Activity {
 
 
         private void drawDiceFace(Canvas c,float cx,float cy,float size,int value) {
-            float half=size*.50f;
-            RectF face=new RectF(cx-half,cy-half,cx+half,cy+half);
-            p.setShader(new LinearGradient(face.left,face.top,face.right,face.bottom,Color.rgb(255,255,250),Color.rgb(205,215,222),Shader.TileMode.CLAMP));
-            p.setStyle(Paint.Style.FILL);p.setColor(Color.WHITE);c.drawRoundRect(face,size*.13f,size*.13f,p);p.setShader(null);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.003f));p.setColor(Color.rgb(70,83,94));c.drawRoundRect(face,size*.13f,size*.13f,p);p.setStyle(Paint.Style.FILL);
-            float d=size*.105f,a=size*.25f;
-            float[][] dots={{},{ {0,0} },{ {-a,-a},{a,a} },{ {-a,-a},{0,0},{a,a} },{ {-a,-a},{a,-a},{-a,a},{a,a} },{ {-a,-a},{a,-a},{0,0},{-a,a},{a,a} },{ {-a,-a},{a,-a},{-a,0},{a,0},{-a,a},{a,a} }};
-            for(float[] dot:dots[value>=1&&value<=6?value:1]){p.setColor(Color.rgb(30,42,53));c.drawCircle(cx+dot[0],cy+dot[1],d,p);}
+            String file=value==3?"dice_three.png":value==4?"dice_four.png":value==5?"dice_five.png":value==6?"dice_six.png":"dice_single.png";
+            drawArt(c,file,cx-size*.5f,cy-size*.5f,cx+size*.5f,cy+size*.5f,false);
         }
 
         private void drawBattlefield(Canvas c) {
-            int scene=Math.floorMod(matchEpoch,4);
-            int[][] crops={{16,354,365,531},{375,354,724,531},{733,354,1082,531},{15,545,366,698}};
-            int[] q=crops[scene];
-            drawSprite(c,q[0],q[1],q[2],q[3],0,0,w,h,false);
-            p.setColor(Color.argb(28,18,25,24));p.setStyle(Paint.Style.FILL);c.drawRect(0,0,w,h,p);
+            String[] scenes={"coastal_village.jpg","desert_ruins.jpg","airfield.jpg","mountain_valley.jpg"};
+            Bitmap image=art.get(scenes[Math.floorMod(matchEpoch,scenes.length)]);
+            if(image!=null){p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);c.drawBitmap(image,null,new RectF(0,0,w,h),p);}else c.drawColor(Color.rgb(115,145,105));
+            p.setColor(Color.argb(24,18,25,24));p.setStyle(Paint.Style.FILL);c.drawRect(0,0,w,h,p);
         }
 
         private void txt(Canvas c,String s,float x,float y,float size,int color,boolean bold) {
@@ -629,8 +638,10 @@ public class MainActivity extends Activity {
             int gray=(int)(Color.red(color)*.299f+Color.green(color)*.587f+Color.blue(color)*.114f);
             return Color.rgb(gray,gray,gray);
         }
-        private void drawAvatar(Canvas c,int index,float cx,float cy,float radius,boolean selected) {
-            drawAvatar(c,index,cx,cy,radius,selected,false);
+        private void drawAvatar(Canvas c,int index,float cx,float cy,float radius,boolean selected) { drawAvatar(c,index,cx,cy,radius,selected,false); }
+        private void drawAvatar(Canvas c,int index,float cx,float cy,float radius,boolean selected,boolean monochrome) {
+            float rr=radius*1.18f;drawArt(c,"character_"+String.format(Locale.US,"%02d",Math.floorMod(index,18)+1)+".png",cx-rr,cy-rr*1.03f,cx+rr,cy+rr*1.03f,false);
+            if(selected){p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.005f));p.setColor(gold);c.drawRoundRect(new RectF(cx-rr,cy-rr*1.03f,cx+rr,cy+rr*1.03f),radius*.22f,radius*.22f,p);p.setStyle(Paint.Style.FILL);}
         }
 
         private void drawGeneralAvatar(Canvas c,float cx,float cy,float radius,boolean selected,boolean monochrome) {
@@ -1123,114 +1134,12 @@ public class MainActivity extends Activity {
             return Color.rgb(Math.min(255,(int)(Color.red(color)*factor)),Math.min(255,(int)(Color.green(color)*factor)),Math.min(255,(int)(Color.blue(color)*factor)));
         }
         private void drawBullet(Canvas c,float cx,float cy,float bw,float bh,int color,boolean filled,boolean pointsRight) {
-            if(spriteSheet!=null) {
-                int left=pointsRight?1112:1268, right=pointsRight?1264:1425;
-                int top=filled?397:454, bottom=filled?449:505;
-                drawSprite(c,left,top,right,bottom,cx-bw*.52f,cy-bh*.55f,cx+bw*.52f,cy+bh*.55f,false);
-                return;
-            }
-            int body=filled?color:Color.rgb(247,248,239);
-            int outline=Color.rgb(48,57,46);
-            p.setStyle(Paint.Style.FILL);
-            p.setColor(body);
-            RectF shell=new RectF(cx-bw*.42f,cy-bh*.34f,cx+bw*.25f,cy+bh*.34f);
-            c.drawRoundRect(shell,bh*.12f,bh*.12f,p);
-            Path tip=new Path();
-            if(pointsRight){tip.moveTo(cx+bw*.25f,cy-bh*.34f);tip.quadTo(cx+bw*.66f,cy,cx+bw*.25f,cy+bh*.34f);}
-            else{tip.moveTo(cx-bw*.42f,cy-bh*.34f);tip.quadTo(cx-bw*.83f,cy,cx-bw*.42f,cy+bh*.34f);}
-            tip.close();c.drawPath(tip,p);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1f,bh*.075f));p.setColor(outline);
-            c.drawRoundRect(shell,bh*.12f,bh*.12f,p);c.drawPath(tip,p);
-            p.setStyle(Paint.Style.FILL);p.setColor(filled?shade(color,.62f):Color.rgb(135,143,127));
-            float baseX=pointsRight?cx-bw*.39f:cx+bw*.22f;
-            c.drawRect(baseX-bw*.035f,cy-bh*.39f,baseX+bw*.035f,cy+bh*.39f,p);
+            String file=filled?(pointsRight?"ammo_round_right_gold.png":"ammo_round_left_gold.png"):(pointsRight?"ammo_round_right_white.png":"ammo_round_left_white.png");
+            drawArt(c,file,cx-bw*.52f,cy-bh*.55f,cx+bw*.52f,cy+bh*.55f,false);
         }
         private void drawWeapon(Canvas c,int lane,float cx,float cy,int color,boolean faceRight) {
-            if(spriteSheet!=null) {
-                int[][] weapons={{8,258,196,349},{376,254,568,347},{219,258,365,347}};
-                int[] q=weapons[lane];float ww=w*.105f,hh=h*.105f;
-                drawSprite(c,q[0],q[1],q[2],q[3],cx-ww*.5f,cy-hh*.5f,cx+ww*.5f,cy+hh*.5f,!faceRight);
-                return;
-            }
-            // Vector artwork: hand-inked outlines, soft highlights and a fixed team flag.
-            int ink=Color.rgb(42,48,43), highlight=shade(color,1.28f), shadow=shade(color,.58f);
-            float sx=w*.00098f, sy=h*.00088f;
-            c.save(); c.translate(cx-w*.049f,cy-h*.0335f); c.scale(sx,sy);
-            if(!faceRight) { c.translate(100,0); c.scale(-1,1); }
-            p.setShader(null);p.setStyle(Paint.Style.FILL);
-            p.setColor(Color.argb(65,25,35,20));c.drawOval(new RectF(7,66,96,76),p);
-            if(lane==0) {
-                // Tank tracks and individual road wheels.
-                p.setColor(ink);c.drawRoundRect(new RectF(7,39,94,68),13,13,p);
-                p.setColor(Color.rgb(116,126,105));c.drawRoundRect(new RectF(11,43,90,64),10,10,p);
-                for(int i=0;i<5;i++){float wx=20+i*15;p.setColor(ink);c.drawCircle(wx,54,8,p);p.setColor(Color.rgb(205,207,183));c.drawCircle(wx,54,5.3f,p);p.setColor(Color.rgb(116,126,105));c.drawCircle(wx,54,2,p);}
-                // Lower hull.
-                p.setColor(ink);c.drawRoundRect(new RectF(9,31,92,55),8,8,p);
-                p.setShader(new LinearGradient(0,31,0,55,highlight,color,Shader.TileMode.CLAMP));
-                c.drawRoundRect(new RectF(12,33,89,52),7,7,p);p.setShader(null);
-                p.setColor(Color.rgb(225,220,190));c.drawRoundRect(new RectF(19,36,34,47),3,3,p);
-                p.setColor(shadow);c.drawRoundRect(new RectF(58,36,76,47),3,3,p);
-                // Turret and barrel.
-                p.setColor(ink);c.drawRoundRect(new RectF(34,19,73,43),12,12,p);
-                p.setShader(new LinearGradient(0,19,0,43,highlight,color,Shader.TileMode.CLAMP));
-                c.drawRoundRect(new RectF(36,20,71,40),10,10,p);p.setShader(null);
-                p.setColor(ink);c.drawRoundRect(new RectF(58,25,99,32),3,3,p);
-                p.setColor(Color.rgb(174,181,157));c.drawRoundRect(new RectF(62,26,96,28),2,2,p);
-                p.setColor(Color.rgb(223,225,204));c.drawRoundRect(new RectF(36,15,55,21),6,6,p);
-                p.setColor(ink);c.drawCircle(46,17,5,p);p.setColor(Color.rgb(218,220,199));c.drawCircle(46,16,3,p);
-                // Small rivets.
-                p.setColor(Color.rgb(236,232,207));for(int i=0;i<4;i++)c.drawCircle(18+i*8,34,1.1f,p);
-            } else if(lane==1) {
-                // Cartoon aircraft: fuselage, wings, tail and cockpit.
-                Path wing=new Path();wing.moveTo(42,35);wing.lineTo(5,55);wing.lineTo(31,52);wing.lineTo(45,45);wing.lineTo(60,53);wing.lineTo(96,57);wing.lineTo(62,35);wing.close();
-                p.setColor(ink);c.drawPath(wing,p);p.setColor(color);c.drawPath(wing,p);
-                p.setColor(highlight);Path wingLight=new Path();wingLight.moveTo(43,37);wingLight.lineTo(14,51);wingLight.lineTo(39,47);wingLight.close();c.drawPath(wingLight,p);
-                Path body=new Path();body.moveTo(5,37);body.quadTo(35,28,72,31);body.quadTo(91,34,99,39);body.quadTo(75,45,35,44);body.lineTo(5,40);body.close();
-                p.setColor(ink);c.drawPath(body,p);p.setColor(color);Path inner=new Path();inner.moveTo(8,37);inner.quadTo(40,30,73,33);inner.quadTo(88,36,94,39);inner.quadTo(62,42,35,42);inner.lineTo(8,39);inner.close();c.drawPath(inner,p);
-                p.setColor(highlight);c.drawLine(19,36,73,34,p);
-                p.setColor(ink);c.drawOval(new RectF(42,31,57,40),p);p.setColor(Color.rgb(157,211,224));c.drawOval(new RectF(44,32,55,38),p);
-                p.setColor(Color.rgb(238,235,205));c.drawCircle(14,38,1.4f,p);c.drawCircle(83,38,1.4f,p);
-            } else {
-                // Field cannon on two wheels with a shield and long barrel.
-                p.setColor(ink);c.drawCircle(25,58,13,p);c.drawCircle(76,58,13,p);
-                p.setColor(Color.rgb(164,171,145));c.drawCircle(25,58,8,p);c.drawCircle(76,58,8,p);
-                p.setColor(ink);c.drawCircle(25,58,3,p);c.drawCircle(76,58,3,p);
-                p.setColor(ink);c.drawRoundRect(new RectF(16,38,86,52),5,5,p);
-                p.setShader(new LinearGradient(0,38,0,52,highlight,color,Shader.TileMode.CLAMP));c.drawRoundRect(new RectF(18,39,84,49),4,4,p);p.setShader(null);
-                Path shield=new Path();shield.moveTo(33,30);shield.quadTo(50,23,69,30);shield.lineTo(66,49);shield.quadTo(50,56,36,48);shield.close();
-                p.setColor(ink);c.drawPath(shield,p);p.setColor(color);c.drawPath(shield,p);
-                p.setColor(ink);c.drawRoundRect(new RectF(48,18,99,25),3,3,p);p.setColor(Color.rgb(187,192,168));c.drawRoundRect(new RectF(52,19,96,21),2,2,p);
-                p.setColor(highlight);c.drawLine(38,33,62,30,p);
-            }
-            // Fine mechanical details that enrich the existing silhouettes without changing their colors.
-            p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeCap(Paint.Cap.ROUND);
-            if(lane==0) {
-                p.setColor(Color.argb(175,235,232,205));p.setStrokeWidth(1.25f);
-                c.drawLine(15,47,86,47,p);c.drawLine(15,61,86,61,p);
-                p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(224,218,184));
-                for(int i=0;i<5;i++)c.drawCircle(20+i*15,54,1.35f,p);
-                p.setColor(shade(color,.72f));c.drawRoundRect(new RectF(39,22,67,25),2,2,p);
-                p.setColor(Color.rgb(226,220,190));c.drawCircle(84,35,1.5f,p);
-            } else if(lane==1) {
-                p.setStrokeWidth(1.7f);p.setColor(ink);
-                c.drawLine(28,45,15,60,p);c.drawLine(15,60,34,56,p);
-                c.drawLine(70,43,84,55,p);c.drawLine(84,55,69,51,p);
-                p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(238,235,205));
-                c.drawCircle(24,38,1.8f,p);c.drawCircle(31,36,1.8f,p);c.drawCircle(38,35,1.8f,p);
-                p.setColor(Color.argb(170,255,255,255));c.drawOval(new RectF(47,33,53,35),p);
-            } else {
-                p.setStrokeWidth(1.5f);p.setColor(ink);
-                c.drawLine(21,58,25,58,p);c.drawLine(76,58,80,58,p);
-                c.drawLine(25,71,76,71,p);c.drawLine(50,50,50,68,p);
-                p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(224,218,184));
-                c.drawCircle(25,58,2.1f,p);c.drawCircle(76,58,2.1f,p);
-                p.setColor(Color.argb(150,255,255,255));c.drawRoundRect(new RectF(57,19,89,20.5f),1,1,p);
-            }
-            p.setStyle(Paint.Style.FILL);p.setStrokeCap(Paint.Cap.BUTT);
-            // Clean comic ink outline; no national flags or symbols.
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2.2f);p.setColor(ink);
-            if(lane==0)c.drawRoundRect(new RectF(7,39,94,68),13,13,p);
-            p.setStyle(Paint.Style.FILL);p.setShader(null);c.restore();
+            String file=lane==0?"tank_01.png":lane==1?"fighter_01.png":"cannon_01.png";float ww=w*.105f,hh=h*.105f;
+            drawArt(c,file,cx-ww*.5f,cy-hh*.5f,cx+ww*.5f,cy+hh*.5f,!faceRight);
         }
 
         @Override protected void onDraw(Canvas c) {
