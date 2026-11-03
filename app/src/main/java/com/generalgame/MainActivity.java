@@ -107,6 +107,21 @@ public class MainActivity extends Activity {
         private boolean openingToss = false;
         private boolean choosing = false;
         private String message = "اختر طريقة اللعب";
+        private String battleDialogueText = "";
+        private int battleDialogueSpeaker = 1;
+        private long battleDialogueStartedAt = 0;
+        private final String[][] dialogueOpening = {
+            {"استعد، لن أترك لك الميدان!","سنرى من يقود هذه المعركة."},
+            {"لنبدأ المواجهة، أنا جاهز!","خطتي جاهزة، هل أنت مستعد؟"}
+        };
+        private final String[][] dialogueTurn = {
+            {"دورك الآن، ورّني مهارتك!","لا تتسرع، فكر قبل أن تطلق."},
+            {"جاء دوري، استعد للمواجهة!","لن أضيّع هذه الفرصة."}
+        };
+        private final String[][] dialogueHit = {
+            {"أصبت سلاحاً! وما زال لدي المزيد.","هذه ضربة قوية، لكنني مستمر!"},
+            {"خسرت سلاحاً، لكن المعركة لم تنتهِ!","سأردّ عليك في الجولة القادمة."}
+        };
         private float w, h;
         private float touchDownX, touchDownY;
         private boolean touchDown = false;
@@ -372,6 +387,37 @@ public class MainActivity extends Activity {
             txt(c,"انقر للاستمرار",w*.5f,h*.88f,h*.038f,Color.WHITE,true);
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.003f));p.setColor(Color.argb(220,245,190,65));
             c.drawRoundRect(new RectF(w*.34f,h*.82f,w*.66f,h*.92f),h*.025f,h*.025f,p);p.setStyle(Paint.Style.FILL);
+        }
+
+        private void setBattleDialogue(int speaker, int situation) {
+            String[][] lines = situation==0 ? dialogueOpening : situation==1 ? dialogueTurn : dialogueHit;
+            int side = speaker==2 ? 1 : 0;
+            battleDialogueSpeaker = speaker;
+            battleDialogueText = lines[side][random.nextInt(lines[side].length)];
+            battleDialogueStartedAt = System.currentTimeMillis();
+            invalidate();
+        }
+
+        private void drawBattleDialogue(Canvas c) {
+            if(stage<2 || winner!=0 || bonusAttempt || battleDialogueText.isEmpty()) return;
+            float left=w*.305f, right=w*.695f, top=h*.155f, bottom=h*.255f;
+            box(c,left,top,right,bottom,Color.argb(232,13,24,21));
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0025f));
+            p.setColor(battleDialogueSpeaker==1?blue:red);
+            c.drawRoundRect(new RectF(left,top,right,bottom),h*.018f,h*.018f,p);
+            p.setStyle(Paint.Style.FILL);
+            String speaker = battleDialogueSpeaker==1 ? rankedPlayerName(playerNames[0]) : (mode==2?"جنيرال":rankedPlayerName(playerNames[1]));
+            txt(c,speaker,w*.5f,top+h*.027f,h*.019f,battleDialogueSpeaker==1?Color.rgb(112,178,255):Color.rgb(255,145,128),true);
+            p.setTextAlign(Paint.Align.RIGHT);p.setTextSize(h*.026f);p.setFakeBoldText(true);
+            float available=right-left-h*.035f;
+            while(p.measureText(battleDialogueText)>available && p.getTextSize()>h*.018f)p.setTextSize(p.getTextSize()*.94f);
+            int total=battleDialogueText.codePointCount(0,battleDialogueText.length());
+            int count=(int)Math.min(total,Math.max(1,(System.currentTimeMillis()-battleDialogueStartedAt)/42));
+            int end=battleDialogueText.offsetByCodePoints(0,count);
+            p.setColor(Color.WHITE);
+            c.drawText(battleDialogueText.substring(0,end),right-h*.018f,bottom-h*.025f,p);
+            p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(false);p.setStyle(Paint.Style.FILL);
+            if(count<total)postInvalidateDelayed(35);
         }
 
         private void drawBattlefield(Canvas c) {
@@ -1131,6 +1177,7 @@ public class MainActivity extends Activity {
                 if(openingRoll1==openingRoll2){ startOpeningToss(); return; }
                 player=openingRoll1>openingRoll2?1:2;
                 openingToss=false; stage=2;
+                setBattleDialogue(player,0);
                 message=player==1?(mode==2?"أنت تبدأ — دورك":"اللاعب الأول يبدأ"):(mode==2?"جنيرال يبدأ":"اللاعب الثاني يبدأ");
                 invalidate();
                 if(mode==2 && player==2)computerTurn();
@@ -1152,9 +1199,11 @@ public class MainActivity extends Activity {
             die=0; choosing=false;
             if(mode==2) {
                 player=1;
+                setBattleDialogue(1,1);
                 message="دورك — اضغط النرد";
             } else {
                 player=player==1?2:1;
+                setBattleDialogue(player,1);
                 if(mode==3 && lanSession!=null){lanTurnId++;lanSession.beginTurn(lanTurnId,player);}
                 else if(mode==4 && onlineSession!=null){onlineTurnId++;onlineSession.beginTurn(onlineTurnId,player);}
                 else message="دور اللاعب "+player+" — اضغط النرد";
@@ -1235,8 +1284,8 @@ public class MainActivity extends Activity {
                     if(target>=15){
                         // The blue weapon is on the right and the red weapon is on the left.
                         // Explosions must appear on the opposing weapon that was destroyed.
-                        if(side==1){dead2[lane]=true;blueWinEffect[lane]=true;spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
-                        else {dead1[lane]=true;redWinEffect[lane]=true;spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                        if(side==1){dead2[lane]=true;blueWinEffect[lane]=true;setBattleDialogue(1,2);spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                        else {dead1[lane]=true;redWinEffect[lane]=true;setBattleDialogue(2,2);spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
                     }
                     finishCheck();
                     if(bonusShot && bonusAttempt && winner==1)finishMatch();
@@ -1390,6 +1439,7 @@ public class MainActivity extends Activity {
             // اللاعب الأول على اليمين: اسمه إلى يسار صورته. اللاعب الثاني على اليسار: اسمه إلى يمين صورته.
             namePlate(c,rankedPlayerName(playerNames[0]),w*.785f,h*.115f,blue);
             namePlate(c,mode==2?"جنيرال":rankedPlayerName(playerNames[1]),w*.215f,h*.115f,red);
+            drawBattleDialogue(c);
             if(openingToss){
                 float ds=h*.075f;
                 // اللاعب الأول (الأزرق) على اليمين، والثاني (الأحمر) على اليسار.
