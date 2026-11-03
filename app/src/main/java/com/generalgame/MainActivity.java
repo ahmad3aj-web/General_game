@@ -760,8 +760,8 @@ public class MainActivity extends Activity {
             Bitmap bitmap=art.get(generalImageName());
             if(bitmap==null){drawArt(c,"character_06.png",cx-radius,cy-radius,cx+radius,cy+radius,false);return;}
             // احتواء صورة الجنيرال داخل مساحة ثابتة مع الحفاظ على أبعادها كاملة.
-            float maxW=Math.min(w*.135f,radius*(radius>=h*.10f?1.58f:1.10f));
-            float maxH=radius*(radius>=h*.10f?2.05f:2.00f);
+            float maxW=Math.min(w*(radius>=h*.10f?.19f:.16f),radius*(radius>=h*.10f?1.95f:2.25f));
+            float maxH=radius*(radius>=h*.10f?2.35f:2.55f);
             float aspect=(float)bitmap.getWidth()/Math.max(1,bitmap.getHeight());
             float imageW=maxW,imageH=imageW/aspect;
             if(imageH>maxH){imageH=maxH;imageW=imageH*aspect;}
@@ -1382,7 +1382,9 @@ public class MainActivity extends Activity {
                         diceCx-buttonHalf,h*.80f,diceCx+buttonHalf,h*.93f,player==1?blue:red);
             } else {
                 int diceColor=winner!=0?dark:(player==1?blue:red);
-                if((mode==3 || mode==4) && winner==0 && !choosing && die==0) {\n                    txt(c,"بانتظار دورك",diceCx,diceCy+h*.012f,h*.027f,Color.WHITE,true);\n                } else drawDiceFace(c,diceCx,diceCy,diceSize*.88f,die>0?die:1);
+                if((mode==3 || mode==4) && winner==0 && !choosing && die==0) {
+                    txt(c,"بانتظار دورك",diceCx,diceCy+h*.012f,h*.027f,Color.WHITE,true);
+                } else drawDiceFace(c,diceCx,diceCy,diceSize*.88f,die>0?die:1);
             }
             if(choosing) { txt(c,"اختر السلاح",w*.5f,h*.965f,h*.026f,dark,true);txt(c,"عدد الطلقات المطلوبة: "+die,w*.5f,h*.925f,h*.022f,Color.WHITE,true); }
         }
