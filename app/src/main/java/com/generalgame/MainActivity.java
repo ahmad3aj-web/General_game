@@ -1187,8 +1187,7 @@ public class MainActivity extends Activity {
                 }
                 txt(c,"الفائز: "+winnerName,w*.5f,h*.60f,h*.05f,dark,true);
                 if(mode==2 && winner==1)txt(c,"النقاط المكتسبة: "+matchPoints,w*.5f,h*.65f,h*.029f,Color.rgb(35,125,72),true);
-                btn(c,"إعادة المحاولة",w*.25f,h*.70f,w*.48f,h*.79f,blue);
-                btn(c,"العودة إلى الرئيسية",w*.52f,h*.70f,w*.75f,h*.79f,dark);
+                btn(c,"العودة إلى الرئيسية",w*.36f,h*.70f,w*.64f,h*.79f,dark);
                 return;
             }
             txt(c,message,w*.5f,h*.145f,h*.036f,dark,true);
@@ -1327,7 +1326,7 @@ public class MainActivity extends Activity {
             }
             if(winner!=0 && !bonusAttempt) {
                 if(y>=h*.70f&&y<=h*.80f) {
-                    if(x>=w*.52f&&x<=w*.75f) { matchEpoch++; timerlessCloseLan(); timerlessCloseOnline(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; battleIntro=false; progressScreen=false; explosionAt=0; message="اختر طريقة اللعب"; }
+                    if(x>=w*.36f&&x<=w*.64f) { matchEpoch++; timerlessCloseLan(); timerlessCloseOnline(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; battleIntro=false; progressScreen=false; explosionAt=0; message="اختر طريقة اللعب"; }
                 }
                 invalidate();return true;
             }
