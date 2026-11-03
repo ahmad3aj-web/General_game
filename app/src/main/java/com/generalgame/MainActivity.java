@@ -416,38 +416,52 @@ public class MainActivity extends Activity {
             c.drawRoundRect(new RectF(left,top,right,bottom),radius,radius,p);
             Path tail=new Path();
             float mid=top+h*.019f;
-            if(isBlue) {
-                tail.moveTo(right-h*.035f,top+h*.008f);
-                tail.lineTo(right+h*.012f,mid);
-                tail.lineTo(right-h*.035f,bottom-h*.008f);
-            } else {
-                tail.moveTo(left+h*.035f,top+h*.008f);
-                tail.lineTo(left-h*.012f,mid);
-                tail.lineTo(left+h*.035f,bottom-h*.008f);
-            }
+            if(isBlue){tail.moveTo(right-h*.035f,top+h*.008f);tail.lineTo(right+h*.012f,mid);tail.lineTo(right-h*.035f,bottom-h*.008f);}
+            else {tail.moveTo(left+h*.035f,top+h*.008f);tail.lineTo(left-h*.012f,mid);tail.lineTo(left+h*.035f,bottom-h*.008f);}
             tail.close();c.drawPath(tail,p);
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0022f));p.setColor(color);
             c.drawRoundRect(new RectF(left,top,right,bottom),radius,radius,p);
             p.setStyle(Paint.Style.FILL);
             int total=text.codePointCount(0,text.length());
             int count=(int)Math.min(total,Math.max(1,(System.currentTimeMillis()-battleDialogueStartedAt)/48));
-            int end=text.offsetByCodePoints(0,count);
+            int finish=text.offsetByCodePoints(0,count);
+            String visible=text.substring(0,finish);
             p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.020f);p.setFakeBoldText(true);
-            while(p.measureText(text.substring(0,end))>right-left-h*.018f && p.getTextSize()>h*.014f)
-                p.setTextSize(p.getTextSize()*.94f);
+            while(p.measureText(visible)>right-left-h*.018f && p.getTextSize()>h*.014f)p.setTextSize(p.getTextSize()*.94f);
             p.setColor(isBlue?Color.rgb(130,185,255):Color.rgb(255,150,135));
-            c.drawText(text.substring(0,end),(left+right)*.5f,top+h*.026f,p);
+            c.drawText(visible,(left+right)*.5f,top+h*.026f,p);
             p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(false);p.setStyle(Paint.Style.FILL);
             if(count<total)postInvalidateDelayed(35);
         }
 
         private void drawBattleDialogue(Canvas c) {
             if(stage<2 || winner!=0 || bonusAttempt || battleDialogueText.isEmpty()
-                    || System.currentTimeMillis()-battleDialogueStartedAt>5200) return;
-            // الفقاعتان في المساحة العلوية، بعيداً عن مسارات الطلقات.
-            drawDialogueBubble(c,battleDialogueText,battleDialogueSpeaker,h*.145f);
-            drawDialogueBubble(c,battleDialogueReplyText,battleDialogueReplySpeaker,h*.190f);
+                    || System.currentTimeMillis()-battleDialogueStartedAt>5200)return;
+            drawDialogueBubble(c,battleDialogueText,battleDialogueSpeaker,h*.105f);
+            drawDialogueBubble(c,battleDialogueReplyText,battleDialogueReplySpeaker,h*.150f);
             postInvalidateDelayed(90);
+        }
+
+        private void drawBattleDialogue(Canvas c) {
+            if(stage<2 || winner!=0 || bonusAttempt || battleDialogueText.isEmpty()) return;
+            float left=w*.285f, right=w*.715f, top=h*.185f, bottom=h*.275f;
+            box(c,left,top,right,bottom,Color.argb(232,13,24,21));
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0025f));
+            p.setColor(battleDialogueSpeaker==1?blue:red);
+            c.drawRoundRect(new RectF(left,top,right,bottom),h*.018f,h*.018f,p);
+            p.setStyle(Paint.Style.FILL);
+            String speaker = battleDialogueSpeaker==1 ? rankedPlayerName(playerNames[0]) : (mode==2?"جنيرال":rankedPlayerName(playerNames[1]));
+            txt(c,speaker,w*.5f,top+h*.027f,h*.019f,battleDialogueSpeaker==1?Color.rgb(112,178,255):Color.rgb(255,145,128),true);
+            p.setTextAlign(Paint.Align.RIGHT);p.setTextSize(h*.026f);p.setFakeBoldText(true);
+            float available=right-left-h*.035f;
+            while(p.measureText(battleDialogueText)>available && p.getTextSize()>h*.018f)p.setTextSize(p.getTextSize()*.94f);
+            int total=battleDialogueText.codePointCount(0,battleDialogueText.length());
+            int count=(int)Math.min(total,Math.max(1,(System.currentTimeMillis()-battleDialogueStartedAt)/42));
+            int end=battleDialogueText.offsetByCodePoints(0,count);
+            p.setColor(Color.WHITE);
+            c.drawText(battleDialogueText.substring(0,end),right-h*.018f,bottom-h*.025f,p);
+            p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(false);p.setStyle(Paint.Style.FILL);
+            if(count<total)postInvalidateDelayed(35);
         }
 
         private void drawBattlefield(Canvas c) {
@@ -1463,4 +1477,201 @@ public class MainActivity extends Activity {
             drawBattlefield(c);
             // Draw utility controls AFTER the battlefield so the background cannot cover them.
             iconButton(c,w*.025f,h*.765f,w*.095f,h*.835f,dark,"⚙");
-            iconButton(c,w*.025f,h*.855f,w*.095f,h*.925f,Color.rgb(135,48,43),"↪");
+            iconButton(c,w*.025f,h*.855f,w*.095f,h*.925f,Color.rgb(135,48,43),"↪");            float trackL=w*.18f, trackR=w*.82f, trackW=trackR-trackL;
+            float[] rows={h*.29f,h*.49f,h*.69f};
+            drawAvatar(c,avatars[0],w*.90f,h*.115f,h*.070f,false);
+            if(mode==2) drawGeneralAvatar(c,w*.10f,h*.115f,h*.070f,false,false); else drawAvatar(c,avatars[1],w*.10f,h*.115f,h*.070f,false);
+            // اللاعب الأول على اليمين: اسمه إلى يسار صورته. اللاعب الثاني على اليسار: اسمه إلى يمين صورته.
+            namePlate(c,rankedPlayerName(playerNames[0]),w*.785f,h*.115f,blue);
+            namePlate(c,mode==2?"جنيرال":rankedPlayerName(playerNames[1]),w*.215f,h*.115f,red);
+            int blueDestroyed=0,redDestroyed=0;
+            for(int i=0;i<3;i++){if(dead2[i])blueDestroyed++;if(dead1[i])redDestroyed++;}
+            txt(c,"أسلحة مدمرة: "+blueDestroyed,w*.785f,h*.158f,h*.021f,Color.WHITE,true);
+            txt(c,"أسلحة مدمرة: "+redDestroyed,w*.215f,h*.158f,h*.021f,Color.WHITE,true);
+            if(openingToss){
+                float ds=h*.075f;
+                // اللاعب الأول (الأزرق) على اليمين، والثاني (الأحمر) على اليسار.
+                box(c,w*.81f-ds/2,h*.145f,w*.81f+ds/2,h*.145f+ds,blue);
+                txt(c,String.valueOf(openingRoll1),w*.81f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
+                box(c,w*.19f-ds/2,h*.145f,w*.19f+ds/2,h*.145f+ds,red);
+                txt(c,String.valueOf(openingRoll2),w*.19f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
+            }
+            for(int lane=0;lane<3;lane++) {
+                float y=rows[lane], gap=h*.038f;
+                // ستة صفوف واضحة: صفّان متقابلان لكل نوع سلاح.
+                // اللاعب الأزرق يميناً يطلق يساراً، والخصم الأحمر يساراً يطلق يميناً.
+                float bulletW=trackW/17f, bulletH=h*.048f;
+                float leftStart=trackL+bulletW*.65f, rightStart=trackR-bulletW*.65f;
+                for(int i=0;i<15;i++) {
+                    float bx=rightStart-i*(trackW*.92f/14f);
+                    float rx=leftStart+i*(trackW*.92f/14f);
+                    boolean leftDead=dead1[lane], rightDead=dead2[lane];
+                    drawBullet(c,bx,y-gap,bulletW,bulletH,leftDead?Color.GRAY:blue,!leftDead && i<pos1[lane],false);
+                    drawBullet(c,rx,y+gap,bulletW,bulletH,rightDead?Color.GRAY:red,!rightDead && i<pos2[lane],true);
+                }
+                // Draw the GIF behind the weapon so the weapon remains unobstructed.
+                if(blueWinEffect[lane]) drawWinEffect(c,w*.925f,y-h*.025f);
+                if(redWinEffect[lane]) drawWinEffect(c,w*.075f,y-h*.025f);
+                drawWeapon(c,lane,w*.925f,y,blue,false);
+                drawWeapon(c,lane,w*.075f,y,red,true);
+                if(dead1[lane]) drawFire(c,w*.925f,y);
+                if(dead2[lane]) drawFire(c,w*.075f,y);
+                if(choosing && winner==0) {
+                    float ownX=player==1?w*.925f:w*.075f;
+                    if(canMove(player,lane)) {
+                        p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(4); p.setColor(gold);
+                        c.drawCircle(ownX,y,h*.055f,p); p.setStyle(Paint.Style.FILL);
+                    }
+                }
+            }
+            drawMuzzleFlash(c);
+            drawExplosion(c);
+            drawBattleDialogue(c);
+            float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
+            boolean localRollTurn=(mode==1 || (mode==2 && player==1)
+                    || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected())
+                    || (mode==4 && player==onlineLocalSide && onlineSession!=null && onlineSession.isConnected()));
+            if(localRollTurn && !choosing && die==0) {
+                float buttonHalf=w*.115f;
+                btn(c,(mode==3 || mode==4)?("أطلق ("+lanCountdown+")"):"أطلق",
+                        diceCx-buttonHalf,h*.80f,diceCx+buttonHalf,h*.93f,player==1?blue:red);
+            } else {
+                int diceColor=winner!=0?dark:(player==1?blue:red);
+                if((mode==3 || mode==4) && winner==0 && !choosing && die==0) {
+                    txt(c,"بانتظار دورك",diceCx,diceCy+h*.012f,h*.027f,Color.WHITE,true);
+                } else if(die>0) drawDiceFace(c,diceCx,diceCy,diceSize*.88f,die);
+            }
+            if(choosing) { txt(c,"اختر السلاح",w*.5f,h*.965f,h*.026f,dark,true);txt(c,"عدد الطلقات المطلوبة: "+die,w*.5f,h*.925f,h*.022f,Color.WHITE,true); }
+        }
+
+        @Override public boolean onTouchEvent(MotionEvent e) {
+            if(e.getAction()==MotionEvent.ACTION_DOWN) {
+                touchDown=true;touchDownX=e.getX();touchDownY=e.getY();invalidate();return true;
+            }
+            if(e.getAction()==MotionEvent.ACTION_CANCEL){touchDown=false;invalidate();return true;}
+            if(e.getAction()!=MotionEvent.ACTION_UP)return true;
+            if(!touchDown)return true;
+            float x=e.getX(),y=e.getY();
+            if(Math.hypot(x-touchDownX,y-touchDownY)>h*.10f){touchDown=false;return true;}
+            touchDown=false;invalidate();
+            if(titleScreen){titleScreen=false;invalidate();return true;}
+            if(battleIntro){if(x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f){battleIntro=false;setup=true;setupSide=(mode==1?2:1);}invalidate();return true;}
+            float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
+            boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
+            if(y>=h*.765f && y<=h*.925f && x>=w*.025f && x<=w*.095f) {
+                if(y<=h*.835f)showSettingsDialog(); else showExitConfirmation();
+                invalidate();return true;
+            }
+            if(mode==0) {
+                if(historyScreen || progressScreen || helpScreen) { if((x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f)||(x>=w*.38f&&x<=w*.62f&&y>=h*.91f&&y<=h*.995f)){historyScreen=false;progressScreen=false;helpScreen=false;} }
+                else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
+                else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
+                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.075f&&x<=w*.285f){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.3975f&&x<=w*.6025f){mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.7175f&&x<=w*.9225f)showOnlineModeDialog();
+                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.075f&&x<=w*.285f)historyScreen=true;
+                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.3975f&&x<=w*.6025f)progressScreen=true;
+                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.7175f&&x<=w*.9225f)helpScreen=true;
+                invalidate();return true;
+            }
+            if(setup) {
+                if(x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f){
+                    if(setupSide==2 && mode==1)setupSide=1;
+                    else {setup=false;mode=0;message="اختر طريقة اللعب";}
+                    invalidate();return true;
+                }
+                int idx=setupSide-1;
+                if(mode==2 && x>=w*.585f && x<=w*.945f && y>=h*.64f && y<=h*.755f) { showNameDialog(); return true; }
+                if(mode==2 && x>=w*.105f && x<=w*.425f && y>=h*.615f && y<=h*.90f) { difficulty=Math.max(0,Math.min(3,(int)((y/h-.615f)/.058f))); }
+                else if(mode==2 && y>=h*.28f && y<=h*.59f && x>=w*.60f && x<=w*.93f) { if(x<=w*.68f)avatars[0]=nextAvatar(avatars[0],-1);else if(x>=w*.85f)avatars[0]=nextAvatar(avatars[0],1); }
+                else if(mode!=2 && x>=w*.27f && x<=w*.73f && y>=h*.62f && y<=h*.75f) { showNameDialog(); return true; }
+                else if(mode!=2 && y>=h*.30f && y<=h*.62f && x>=w*.36f && x<=w*.64f) { if(x<=w*.43f)avatars[idx]=nextAvatar(avatars[idx],-1);else if(x>=w*.57f)avatars[idx]=nextAvatar(avatars[idx],1); }
+                else if(x>=w*.37f && x<=w*.63f && y>=h*.91f && y<=h*.985f) {
+                    if(setupSide==1 && mode==1) setupSide=2;
+                    else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}clearWinEffects();stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
+                    else if(mode==4){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}clearWinEffects();stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;onlineOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
+                        if(onlineQuickMatch)startOnlineQuickMatch(playerNames[0],avatars[0]);
+                        else if(onlineInvitePending)startOnlineHost(playerNames[0],avatars[0]);
+                        else if(onlineLocalSide==1)startOnlineHost(playerNames[0],avatars[0]);
+                        else startOnlineJoin(onlineJoinCode,playerNames[1],avatars[1]);}
+                    else { setup=false;resetMatch(); }
+                }
+                invalidate();return true;
+            }
+            if(mode==4 && onlineWaitingForPeer) {
+                if(x>=w*.31f && x<=w*.69f && y>=h*.81f && y<=h*.92f) {
+                    timerlessCloseOnline();
+                    onlineWaitingForPeer=false; onlineQuickMatch=false; onlineInvitePending=false;
+                    mode=0; setup=false; message="اختر طريقة اللعب";
+                }
+                invalidate();return true;
+            }
+            if(openingToss)return true;
+            if((mode==3 && (lanSession==null || !lanSession.isConnected()))
+                    || (mode==4 && (onlineSession==null || !onlineSession.isConnected()))) {
+                if(x>=w*.31f && x<=w*.69f && y>=h*.81f && y<=h*.92f) {
+                    if(mode==3){timerlessCloseLan();lanHostPending=false;lanJoinAddress=null;}
+                    else timerlessCloseOnline();
+                    mode=0;setup=false;message="اختر طريقة اللعب";
+                }
+                invalidate();return true;
+            }
+            if(winner!=0 && !bonusAttempt) {
+                if(y>=h*.70f&&y<=h*.80f) {
+                    if(x>=w*.36f&&x<=w*.64f) { matchEpoch++; timerlessCloseLan(); timerlessCloseOnline(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; battleIntro=false; progressScreen=false; explosionAt=0; message="اختر طريقة اللعب"; }
+                }
+                invalidate();return true;
+            }
+            boolean localRollTurn=(mode==1 || (mode==2 && player==1)
+                    || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected())
+                    || (mode==4 && player==onlineLocalSide && onlineSession!=null && onlineSession.isConnected()));
+            boolean launchTapped=localRollTurn && !choosing && die==0
+                    && y>=h*.80f && y<=h*.94f && Math.abs(x-diceCx)<=w*.115f;
+            if(!choosing && !diceTapped && !launchTapped)return true;
+            if(stage<2 && diceTapped) {
+                // قرعة البداية أصبحت تلقائية وتُعرض بجانب كل لاعب.
+                return true;
+            } else if(!choosing && (diceTapped || launchTapped)) {
+                if(mode==2&&player==2){computerTurn();}
+                else if(mode==3){if(lanSession!=null)lanSession.rollNow(false);}
+                else if(mode==4){if(onlineSession!=null)onlineSession.rollNow(false);}
+                else {
+                    die=random.nextInt(6)+1;choosing=true;
+                    if(!anyMove(player)){
+                        message="لا توجد حركة متاحة — نتيجة النرد: "+die+" — تم تجاوز الدور";
+                        choosing=false;invalidate();
+                        final int epoch=matchEpoch;
+                        postDelayed(new Runnable(){ @Override public void run(){
+                            if(epoch!=matchEpoch || (winner!=0 && !bonusAttempt))return;
+                            if(bonusAttempt){finishMatch();return;}
+                            if(mode==2){
+                                die=0;player=2;message="دور جنيرال";invalidate();
+                                postDelayed(new Runnable(){@Override public void run(){
+                                    if(epoch==matchEpoch && mode==2 && winner==0 && player==2)computerTurn();
+                                }},500);
+                            } else afterTurn();
+                            invalidate();
+                        }},1200);
+                    }
+                    else message=(mode==2?"أنت":"اللاعب "+player)+" رمى "+die+" — اختر سلاحاً";
+                }
+            } else {
+                float ownX=player==1?w*.925f:w*.075f;                int lane=-1;
+                float[] weaponRows={h*.30f,h*.49f,h*.68f};
+                // اختيار السلاح بالضغط على رسمه نفسه، وليس على زر يحمل اسمه.
+                if(Math.abs(x-ownX)<w*.052f) {
+                    for(int i=0;i<3;i++) if(Math.abs(y-weaponRows[i])<h*.052f) lane=i;
+                }
+                if(lane>=0) {
+                    if(!canMove(player,lane))message="هذه الحركة غير ممكنة — اختر سلاحاً آخر";
+                    else {
+                        if(mode==3 && lanSession!=null){if(lanSession.sendMove(lane))animateMove(player,lane,die);}
+                        else if(mode==4 && onlineSession!=null){if(onlineSession.sendMove(lane))animateMove(player,lane,die);}
+                        else animateMove(player,lane,die);
+                    }
+                }
+            }
+            invalidate();return true;
+        }
+    }
+}
