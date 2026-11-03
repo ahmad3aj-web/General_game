@@ -920,23 +920,36 @@ public class MainActivity extends Activity {
             android.content.SharedPreferences prefs=getSharedPreferences("GENERAL_PROGRESS",MODE_PRIVATE);
             int points=prefs.getInt("points",0),wins=prefs.getInt("wins",0);
             int perfect=prefs.getInt("perfectWins",0),last=prefs.getInt("lastEarned",0);
-            int rank=rankIndex(points),next=rank<rankNames.length-1?rank+1:rank;
-            txt(c,"لوحة التقدم",w*.5f,h*.16f,h*.055f,dark,true);
-            box(c,w*.12f,h*.22f,w*.88f,h*.48f,Color.rgb(244,248,235));
-            txt(c,"رتبتك العسكرية",w*.5f,h*.285f,h*.03f,dark,true);
-            txt(c,rankNames[rank],w*.5f,h*.385f,h*.075f,Color.rgb(155,105,28),true);
-            txt(c,"مجموع النقاط: "+points,w*.5f,h*.445f,h*.031f,dark,true);
+            int rank=rankIndex(points),previous=rank-1,next=rank<rankNames.length-1?rank+1:rank;
+            txt(c,"لوحة التقدم العسكري",w*.5f,h*.16f,h*.055f,dark,true);
+            float gap=w*.018f,cardW=(w*.76f-gap*2)/3f,left=w*.12f,top=h*.235f,cardH=h*.245f;
+            float[] centers={left+cardW*.5f,left+cardW+gap+cardW*.5f,left+2*(cardW+gap)+cardW*.5f};
+            int[] indices={previous,rank,next};
+            String[] labels={"الرتبة السابقة","رتبتك الحالية","الرتبة التالية"};
+            for(int i=0;i<3;i++) {
+                boolean current=i==1;
+                float l=left+i*(cardW+gap),r=l+cardW;
+                box(c,l,top,r,top+cardH,current?Color.rgb(225,236,215):Color.rgb(244,248,235));
+                txt(c,labels[i],centers[i],top+h*.055f,h*.022f,current?Color.rgb(155,105,28):dark,true);
+                if(indices[i]>=0 && indices[i]<rankNames.length) {
+                    txt(c,rankNames[indices[i]],centers[i],top+h*.135f,current?h*.050f:h*.038f,current?Color.rgb(155,105,28):dark,true);
+                    txt(c,rankThresholds[indices[i]]+" نقطة",centers[i],top+h*.195f,h*.021f,dark,false);
+                } else {
+                    txt(c,current?"—":"لم تبدأ بعد",centers[i],top+h*.135f,h*.029f,dark,true);
+                    txt(c,"",centers[i],top+h*.195f,h*.021f,dark,false);
+                }
+            }
+            txt(c,"رصيدك: "+points+" نقطة",w*.5f,h*.535f,h*.032f,dark,true);
             if(next>rank) {
-                float left=w*.20f,right=w*.80f,top=h*.545f;
-                box(c,left,top,right,top+h*.025f,Color.rgb(220,226,211));
+                float l=w*.20f,r=w*.80f,y=h*.585f;
+                box(c,l,y,r,y+h*.025f,Color.rgb(220,226,211));
                 float ratio=(float)(points-rankThresholds[rank])/(rankThresholds[next]-rankThresholds[rank]);
-                box(c,left,top,left+(right-left)*Math.max(0f,Math.min(1f,ratio)),top+h*.025f,Color.rgb(52,135,83));
-                txt(c,"باقي "+Math.max(0,rankThresholds[next]-points)+" نقطة للترقية إلى "+rankNames[next],w*.5f,h*.615f,h*.026f,dark,false);
-            } else txt(c,"وصلت إلى أعلى رتبة عسكرية!",w*.5f,h*.615f,h*.029f,Color.rgb(155,105,28),true);
-            box(c,w*.12f,h*.68f,w*.88f,h*.85f,Color.rgb(244,248,235));
-            txt(c,"الانتصارات ضد جنيرال: "+wins,w*.5f,h*.735f,h*.031f,dark,true);
-            txt(c,"انتصارات بتدمير الأسلحة الثلاثة: "+perfect,w*.5f,h*.785f,h*.027f,dark,true);
-            txt(c,"نقاط آخر مباراة: "+last,w*.5f,h*.83f,h*.027f,dark,false);
+                box(c,l,y,l+(r-l)*Math.max(0f,Math.min(1f,ratio)),y+h*.025f,Color.rgb(52,135,83));
+                txt(c,"باقي "+Math.max(0,rankThresholds[next]-points)+" نقطة للترقية",w*.5f,h*.65f,h*.025f,dark,false);
+            } else txt(c,"وصلت إلى أعلى رتبة عسكرية!",w*.5f,h*.65f,h*.028f,Color.rgb(155,105,28),true);
+            box(c,w*.12f,h*.70f,w*.88f,h*.87f,Color.rgb(244,248,235));
+            txt(c,"الانتصارات: "+wins+"     انتصارات كاملة: "+perfect,w*.5f,h*.765f,h*.026f,dark,true);
+            txt(c,"نقاط آخر مباراة: "+last,w*.5f,h*.825f,h*.025f,dark,false);
             btn(c,"عودة",w*.41f,h*.93f,w*.59f,h*.99f,dark);
         }
 
@@ -1413,12 +1426,12 @@ public class MainActivity extends Activity {
                 if(historyScreen || progressScreen || helpScreen) { if((x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f)||(x>=w*.38f&&x<=w*.62f&&y>=h*.91f&&y<=h*.995f)){historyScreen=false;progressScreen=false;helpScreen=false;} }
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
-                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.03f&&x<=w*.33f){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.35f&&x<=w*.65f){mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.67f&&x<=w*.97f)showOnlineModeDialog();
-                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.03f&&x<=w*.33f)historyScreen=true;
-                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.35f&&x<=w*.65f)progressScreen=true;
-                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.67f&&x<=w*.97f)helpScreen=true;
+                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.075f&&x<=w*.285f){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.3975f&&x<=w*.6025f){mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.7175f&&x<=w*.9225f)showOnlineModeDialog();
+                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.075f&&x<=w*.285f)historyScreen=true;
+                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.3975f&&x<=w*.6025f)progressScreen=true;
+                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.7175f&&x<=w*.9225f)helpScreen=true;
                 invalidate();return true;
             }
             if(setup) {
