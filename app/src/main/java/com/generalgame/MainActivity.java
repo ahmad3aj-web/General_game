@@ -442,27 +442,6 @@ public class MainActivity extends Activity {
             postInvalidateDelayed(90);
         }
 
-        private void drawBattleDialogue(Canvas c) {
-            if(stage<2 || winner!=0 || bonusAttempt || battleDialogueText.isEmpty()) return;
-            float left=w*.285f, right=w*.715f, top=h*.185f, bottom=h*.275f;
-            box(c,left,top,right,bottom,Color.argb(232,13,24,21));
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0025f));
-            p.setColor(battleDialogueSpeaker==1?blue:red);
-            c.drawRoundRect(new RectF(left,top,right,bottom),h*.018f,h*.018f,p);
-            p.setStyle(Paint.Style.FILL);
-            String speaker = battleDialogueSpeaker==1 ? rankedPlayerName(playerNames[0]) : (mode==2?"جنيرال":rankedPlayerName(playerNames[1]));
-            txt(c,speaker,w*.5f,top+h*.027f,h*.019f,battleDialogueSpeaker==1?Color.rgb(112,178,255):Color.rgb(255,145,128),true);
-            p.setTextAlign(Paint.Align.RIGHT);p.setTextSize(h*.026f);p.setFakeBoldText(true);
-            float available=right-left-h*.035f;
-            while(p.measureText(battleDialogueText)>available && p.getTextSize()>h*.018f)p.setTextSize(p.getTextSize()*.94f);
-            int total=battleDialogueText.codePointCount(0,battleDialogueText.length());
-            int count=(int)Math.min(total,Math.max(1,(System.currentTimeMillis()-battleDialogueStartedAt)/42));
-            int end=battleDialogueText.offsetByCodePoints(0,count);
-            p.setColor(Color.WHITE);
-            c.drawText(battleDialogueText.substring(0,end),right-h*.018f,bottom-h*.025f,p);
-            p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(false);p.setStyle(Paint.Style.FILL);
-            if(count<total)postInvalidateDelayed(35);
-        }
 
         private void drawBattlefield(Canvas c) {
             Bitmap image=art.get("1793716501127.jpg");
