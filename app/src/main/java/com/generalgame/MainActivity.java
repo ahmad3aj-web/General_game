@@ -111,16 +111,16 @@ public class MainActivity extends Activity {
         private int battleDialogueSpeaker = 1;
         private long battleDialogueStartedAt = 0;
         private final String[][] dialogueOpening = {
-            {"استعد، لن أترك لك الميدان!","سنرى من يقود هذه المعركة."},
-            {"لنبدأ المواجهة، أنا جاهز!","خطتي جاهزة، هل أنت مستعد؟"}
+            {"استعد، لن أترك لك الميدان!","سنرى من يقود هذه المعركة.","بدأت المواجهة، فكن على قدر التحدي.","خطتي جاهزة ولن أتراجع.","اليوم سيُحسم الميدان للأقوى.","لا مجال للأخطاء من اللحظة الأولى.","أعددت لك مفاجآت في هذه الحرب.","دع الأفعال تتحدث بدل التهديدات.","لن أتنازل عن النصر بسهولة.","الميدان مفتوح، فلنبدأ."},
+            {"لنبدأ المواجهة، أنا جاهز!","خطتي جاهزة، هل أنت مستعد؟","سأثبت أنني القائد هنا.","راقب تحركاتي جيداً.","لن تكون معركة سهلة عليك.","أنا هنا من أجل الفوز.","استعد لأقوى جولة.","لن أسمح لك بالسيطرة.","حان وقت اختبار الخطط.","فلنترك الحكم لنتيجة المعركة."}
         };
         private final String[][] dialogueTurn = {
-            {"دورك الآن، ورّني مهارتك!","لا تتسرع، فكر قبل أن تطلق."},
-            {"جاء دوري، استعد للمواجهة!","لن أضيّع هذه الفرصة."}
+            {"دورك الآن، ورّني مهارتك!","لا تتسرع، فكر قبل أن تطلق.","أحسنت، لكن لا تفرح مبكراً.","كل حركة تصنع فرقاً.","اختر سلاحك بعناية.","الميدان لا يرحم المتردد.","هل هذه أفضل خططك؟","ما زالت أمامي فرص كثيرة.","لن أضيّع هذه الجولة.","راقب ما سأفعله الآن."},
+            {"جاء دوري، استعد للمواجهة!","لن أضيّع هذه الفرصة.","حان وقت الرد.","خطوتي القادمة ستكون حاسمة.","لن أترك لك زمام المبادرة.","استعد، أنا قادم.","سأستغل هذه الفرصة جيداً.","كل جولة تقرّبني من النصر.","لا تظن أن الأمر انتهى.","دعنا نرى قوة دفاعك."}
         };
         private final String[][] dialogueHit = {
-            {"أصبت سلاحاً! وما زال لدي المزيد.","هذه ضربة قوية، لكنني مستمر!"},
-            {"خسرت سلاحاً، لكن المعركة لم تنتهِ!","سأردّ عليك في الجولة القادمة."}
+            {"أصبت سلاحاً! وما زال لدي المزيد.","هذه ضربة قوية، لكنني مستمر!","سلاحك خرج من المعركة!","ضربة في مكانها تماماً.","بدأت كفة المعركة تميل.","هذا تقدم مهم لفريقي.","لن أسمح لك باستعادة المبادرة.","هدف جديد تحقق.","ما زلت أملك القوة للتقدم.","هذه ليست آخر ضرباتي."},
+            {"خسرت سلاحاً، لكن المعركة لم تنتهِ!","سأردّ عليك في الجولة القادمة.","ضربتك أصابت، لكنني صامد.","لن تكسر عزيمتي بخسارة واحدة.","ما زال لدي سلاحان.","سأغيّر خطتي وأعود أقوى.","هذه الجولة لك، وليس الحرب.","لن أستسلم مهما حدث.","سأقاتل حتى آخر سلاح.","انتظر ردي في الميدان."}
         };
         private float w, h;
         private float touchDownX, touchDownY;
@@ -400,7 +400,7 @@ public class MainActivity extends Activity {
 
         private void drawBattleDialogue(Canvas c) {
             if(stage<2 || winner!=0 || bonusAttempt || battleDialogueText.isEmpty()) return;
-            float left=w*.305f, right=w*.695f, top=h*.155f, bottom=h*.255f;
+            float left=w*.285f, right=w*.715f, top=h*.185f, bottom=h*.275f;
             box(c,left,top,right,bottom,Color.argb(232,13,24,21));
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0025f));
             p.setColor(battleDialogueSpeaker==1?blue:red);
@@ -1410,10 +1410,16 @@ public class MainActivity extends Activity {
                     txt(c,winnerName,w*.34f,h*.47f,h*.034f,blue,true);
                     txt(c,loserName,w*.66f,h*.47f,h*.034f,dark,true);
                 }
-                txt(c,"نتيجة الحرب",w*.5f,h*.555f,h*.027f,dark,true);
-                txt(c,blueWins+"  -  "+redWins,w*.5f,h*.605f,h*.060f,Color.rgb(155,105,28),true);
-                txt(c,"الفائز: "+winnerName,w*.5f,h*.665f,h*.040f,winner==1?blue:red,true);
-                if(mode==2 && winner==1)txt(c,"النقاط المكتسبة: "+matchPoints,w*.5f,h*.705f,h*.025f,Color.rgb(35,125,72),true);
+                txt(c,"الأسلحة التي دمّرها كل لاعب",w*.5f,h*.555f,h*.027f,dark,true);
+                if(mode==2) {
+                    txt(c,"جنيرال: "+redWins+" أسلحة",w*.34f,h*.615f,h*.032f,red,true);
+                    txt(c,playerNames[0]+": "+blueWins+" أسلحة",w*.66f,h*.615f,h*.032f,blue,true);
+                } else {
+                    txt(c,playerNames[1]+": "+redWins+" أسلحة",w*.34f,h*.615f,h*.032f,red,true);
+                    txt(c,playerNames[0]+": "+blueWins+" أسلحة",w*.66f,h*.615f,h*.032f,blue,true);
+                }
+                txt(c,"الفائز: "+winnerName,w*.5f,h*.685f,h*.040f,winner==1?blue:red,true);
+                if(mode==2 && winner==1)txt(c,"النقاط المكتسبة: "+matchPoints,w*.5f,h*.715f,h*.025f,Color.rgb(35,125,72),true);
                 btn(c,"العودة إلى الرئيسية",w*.36f,h*.73f,w*.64f,h*.80f,dark);
                 return;
             }
@@ -1439,7 +1445,10 @@ public class MainActivity extends Activity {
             // اللاعب الأول على اليمين: اسمه إلى يسار صورته. اللاعب الثاني على اليسار: اسمه إلى يمين صورته.
             namePlate(c,rankedPlayerName(playerNames[0]),w*.785f,h*.115f,blue);
             namePlate(c,mode==2?"جنيرال":rankedPlayerName(playerNames[1]),w*.215f,h*.115f,red);
-            drawBattleDialogue(c);
+            int blueDestroyed=0,redDestroyed=0;
+            for(int i=0;i<3;i++){if(dead2[i])blueDestroyed++;if(dead1[i])redDestroyed++;}
+            txt(c,"أسلحة مدمرة: "+blueDestroyed,w*.785f,h*.158f,h*.021f,Color.WHITE,true);
+            txt(c,"أسلحة مدمرة: "+redDestroyed,w*.215f,h*.158f,h*.021f,Color.WHITE,true);
             if(openingToss){
                 float ds=h*.075f;
                 // اللاعب الأول (الأزرق) على اليمين، والثاني (الأحمر) على اليسار.
@@ -1478,6 +1487,7 @@ public class MainActivity extends Activity {
             }
             drawMuzzleFlash(c);
             drawExplosion(c);
+            drawBattleDialogue(c);
             float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
             boolean localRollTurn=(mode==1 || (mode==2 && player==1)
                     || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected())
