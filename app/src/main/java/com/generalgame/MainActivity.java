@@ -389,7 +389,7 @@ public class MainActivity extends Activity {
             c.drawRoundRect(new RectF(l,t,r,b),16,16,p);
         }
         private void namePlate(Canvas c,String name,float cx,float cy,int color) {
-            float width=Math.min(w*.27f,Math.max(w*.14f,p.measureText(name)*1.12f));
+            float width=Math.min(w*.16f,Math.max(w*.12f,p.measureText(name)*1.12f));
             float top=cy-h*.030f,bottom=cy+h*.012f;
             box(c,cx-width*.5f,top,cx+width*.5f,bottom,Color.argb(235,15,23,21));
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0028f));p.setColor(color);
