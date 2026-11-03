@@ -421,12 +421,12 @@ public class MainActivity extends Activity {
                 .setMessage("يجب أن يكون الجهازان على شبكة Wi-Fi نفسها. اختر إنشاء مباراة أو الانضمام.")
                 .setPositiveButton("إنشاء مباراة", (d,which)->{
                     mode=3; lanLocalSide=1; setup=true; setupSide=1;
-                    playerNames[0]="اللاعب الأزرق"; playerNames[1]="اللاعب الأحمر";
+                    playerNames[0]=savedPlayerName(0); playerNames[1]=savedPlayerName(1);
                     showLanHostAddress();
                 })
                 .setNegativeButton("انضمام لمباراة", (d,which)->{
                     mode=3; lanLocalSide=2; setup=true; setupSide=2;
-                    playerNames[0]="اللاعب الأزرق"; playerNames[1]="أنت";
+                    playerNames[0]="اللاعب الأزرق"; playerNames[1]=savedPlayerName(1);
                     showLanJoinDialog();
                 })
                 .setNeutralButton("إلغاء",null).show();
@@ -437,7 +437,7 @@ public class MainActivity extends Activity {
                 .setTitle("اللعب عبر الإنترنت")
                 .setItems(choices,(dialog,which)->{
                     mode=4; setup=true; setupSide=1; onlineJoinCode=null;
-                    playerNames[0]="أنت"; avatars[0]=0;
+                    playerNames[0]=savedPlayerName(0); avatars[0]=0;
                     if(which==0) {
                         onlineLocalSide=1; onlineQuickMatch=true; onlineInvitePending=false;
                     } else if(which==1) {
@@ -461,7 +461,7 @@ public class MainActivity extends Activity {
             onlineJoinCode=code.toUpperCase(Locale.ROOT);
             onlineLocalSide=2; onlineQuickMatch=false; onlineInvitePending=false;
             mode=4; setup=true; setupSide=2;
-            playerNames[1]="أنت"; avatars[1]=1;
+            playerNames[1]=savedPlayerName(1); avatars[1]=1;
             message="وصلتك دعوة للعب عبر الإنترنت";
             invalidate();
         }
@@ -726,7 +726,7 @@ public class MainActivity extends Activity {
                 .setView(input)
                 .setPositiveButton("حفظ", (dialog,which)->{
                     String value=input.getText().toString().trim();
-                    if(!value.isEmpty()) playerNames[setupSide-1]=value;
+                    if(!value.isEmpty()) { playerNames[setupSide-1]=value; savePlayerName(setupSide-1,value); }
                     invalidate();
                 })
                 .setNegativeButton("إلغاء",null)
@@ -1395,7 +1395,7 @@ public class MainActivity extends Activity {
                 if(historyScreen || progressScreen || helpScreen) { if(x>=w*.38f&&x<=w*.62f&&y>=h*.91f&&y<=h*.995f){historyScreen=false;progressScreen=false;helpScreen=false;} }
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
-                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.03f&&x<=w*.33f){mode=1;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.03f&&x<=w*.33f){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
                 else if(y>=h*.275f&&y<=h*.55f&&x>=w*.35f&&x<=w*.65f){mode=2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
                 else if(y>=h*.275f&&y<=h*.55f&&x>=w*.67f&&x<=w*.97f)showOnlineModeDialog();
                 else if(y>=h*.59f&&y<=h*.89f&&x>=w*.03f&&x<=w*.33f)historyScreen=true;
