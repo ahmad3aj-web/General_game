@@ -1002,15 +1002,15 @@ public class MainActivity extends Activity {
             iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
             txt(c,"استعدوا للحرب",w*.5f,h*.25f,h*.055f,Color.rgb(245,190,65),true);
             if(mode==2) {
-                drawGeneralAvatar(c,w*.30f,h*.45f,h*.120f,false,false);
-                drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.230f,true);
-                txt(c,"جنيرال",w*.30f,h*.665f,h*.036f,Color.WHITE,true);
-                txt(c,rankedPlayerName(playerNames[0]),w*.70f,h*.665f,h*.036f,Color.WHITE,true);
+                drawGeneralAvatar(c,w*.30f,h*.45f,h*.060f,false,false);
+                drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.115f,true);
+                txt(c,"جنيرال",w*.30f,h*.61f,h*.036f,Color.WHITE,true);
+                txt(c,rankedPlayerName(playerNames[0]),w*.70f,h*.61f,h*.036f,Color.WHITE,true);
             } else {
-                drawAvatar(c,avatars[1],w*.30f,h*.45f,h*.230f,false);
-                drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.230f,true);
-                txt(c,rankedPlayerName(playerNames[1]),w*.30f,h*.665f,h*.036f,Color.WHITE,true);
-                txt(c,rankedPlayerName(playerNames[0]),w*.70f,h*.665f,h*.036f,Color.WHITE,true);
+                drawAvatar(c,avatars[1],w*.30f,h*.45f,h*.115f,false);
+                drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.115f,true);
+                txt(c,rankedPlayerName(playerNames[1]),w*.30f,h*.61f,h*.036f,Color.WHITE,true);
+                txt(c,rankedPlayerName(playerNames[0]),w*.70f,h*.61f,h*.036f,Color.WHITE,true);
             }
             drawArt(c,"vs_emblem.png",w*.425f,h*.385f,w*.575f,h*.555f,false);
             txt(c,String.valueOf(Math.max(1,introStep)),w*.5f,h*.79f,h*.17f,Color.WHITE,true);
