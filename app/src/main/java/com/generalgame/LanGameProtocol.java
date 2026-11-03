@@ -23,7 +23,7 @@ public final class LanGameProtocol {
     public static JSONObject hello(String playerName, int avatar) throws JSONException {
         JSONObject message = base(HELLO);
         message.put("name", safeName(playerName));
-        message.put("avatar", Math.max(0, Math.min(5, avatar)));
+        message.put("avatar", Math.max(0, Math.min(17, avatar)));
         return message;
     }
 
