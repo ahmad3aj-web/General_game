@@ -795,7 +795,7 @@ public class MainActivity extends Activity {
 
         private void menuButton(Canvas c,String glyph,String label,float l,float t,float r,float b,int color) {
             // تصغير الشكل المرئي للأزرار إلى نحو النصف مع إبقاء مساحة اللمس الأصلية مريحة.
-            float bw=(r-l)*.68f,bh=(b-t)*.68f;
+            float bw=(r-l)*.55f,bh=(b-t)*.55f;
             float left=(l+r-bw)*.5f,top=(t+b-bh)*.5f,right=left+bw,bottom=top+bh;
             String texture=color==blue?"blue_button_01.png":color==red?"red_button_01.png":null;
             if(texture!=null && art.get(texture)!=null)drawArt(c,texture,left,top,right,bottom,false);
