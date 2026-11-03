@@ -1340,25 +1340,32 @@ public class MainActivity extends Activity {
             if(winner!=0 && !bonusAttempt) {
                 box(c,w*.12f,h*.19f,w*.88f,h*.80f,Color.rgb(245,249,239));
                 String winnerName=winner==1?playerNames[0]:(mode==2?"جنيرال":playerNames[1]);
-                float portraitY=h*.39f, portraitR=h*.050f;
+                int blueWins=0,redWins=0;
+                for(int i=0;i<3;i++) {
+                    if(dead2[i] && !dead1[i])blueWins++;
+                    else if(dead1[i] && !dead2[i])redWins++;
+                }
+                float portraitY=h*.35f, portraitR=h*.050f;
                 if(mode==2) {
                     boolean generalWon=winner==2;
                     drawGeneralAvatar(c,w*.34f,portraitY,portraitR,generalWon,!generalWon);
                     drawAvatar(c,avatars[0],w*.66f,portraitY,portraitR,!generalWon,generalWon);
-                    txt(c,"جنيرال",w*.34f,h*.52f,h*.038f,dark,true);
-                    txt(c,playerNames[0],w*.66f,h*.52f,h*.038f,blue,true);
+                    txt(c,"جنيرال",w*.34f,h*.47f,h*.034f,dark,true);
+                    txt(c,playerNames[0],w*.66f,h*.47f,h*.034f,blue,true);
                 } else {
                     String loserName=winner==1?playerNames[1]:playerNames[0];
                     int winnerAvatar=winner==1?avatars[0]:avatars[1];
                     int loserAvatar=winner==1?avatars[1]:avatars[0];
                     drawAvatar(c,winnerAvatar,w*.34f,portraitY,portraitR,true);
                     drawAvatar(c,loserAvatar,w*.66f,portraitY,portraitR,false,true);
-                    txt(c,winnerName,w*.34f,h*.52f,h*.038f,blue,true);
-                    txt(c,loserName,w*.66f,h*.52f,h*.038f,dark,true);
+                    txt(c,winnerName,w*.34f,h*.47f,h*.034f,blue,true);
+                    txt(c,loserName,w*.66f,h*.47f,h*.034f,dark,true);
                 }
-                txt(c,"الفائز: "+winnerName,w*.5f,h*.60f,h*.05f,dark,true);
-                if(mode==2 && winner==1)txt(c,"النقاط المكتسبة: "+matchPoints,w*.5f,h*.65f,h*.029f,Color.rgb(35,125,72),true);
-                btn(c,"العودة إلى الرئيسية",w*.36f,h*.70f,w*.64f,h*.79f,dark);
+                txt(c,"نتيجة الحرب",w*.5f,h*.555f,h*.027f,dark,true);
+                txt(c,blueWins+"  -  "+redWins,w*.5f,h*.605f,h*.060f,Color.rgb(155,105,28),true);
+                txt(c,"الفائز: "+winnerName,w*.5f,h*.665f,h*.040f,winner==1?blue:red,true);
+                if(mode==2 && winner==1)txt(c,"النقاط المكتسبة: "+matchPoints,w*.5f,h*.705f,h*.025f,Color.rgb(35,125,72),true);
+                btn(c,"العودة إلى الرئيسية",w*.36f,h*.73f,w*.64f,h*.80f,dark);
                 return;
             }
             txt(c,message,w*.5f,h*.145f,h*.036f,dark,true);
@@ -1380,8 +1387,9 @@ public class MainActivity extends Activity {
             float[] rows={h*.29f,h*.49f,h*.69f};
             drawAvatar(c,avatars[0],w*.90f,h*.115f,h*.070f,false);
             if(mode==2) drawGeneralAvatar(c,w*.10f,h*.115f,h*.070f,false,false); else drawAvatar(c,avatars[1],w*.10f,h*.115f,h*.070f,false);
-            namePlate(c,mode==2?"جنيرال":rankedPlayerName(playerNames[1]),w*.10f,h*.235f,red);
-            namePlate(c,rankedPlayerName(playerNames[0]),w*.90f,h*.235f,blue);
+            // اللاعب الأول على اليمين: اسمه إلى يسار صورته. اللاعب الثاني على اليسار: اسمه إلى يمين صورته.
+            namePlate(c,rankedPlayerName(playerNames[0]),w*.785f,h*.115f,blue);
+            namePlate(c,mode==2?"جنيرال":rankedPlayerName(playerNames[1]),w*.215f,h*.115f,red);
             if(openingToss){
                 float ds=h*.075f;
                 // اللاعب الأول (الأزرق) على اليمين، والثاني (الأحمر) على اليسار.
@@ -1404,8 +1412,8 @@ public class MainActivity extends Activity {
                     drawBullet(c,rx,y+gap,bulletW,bulletH,rightDead?Color.GRAY:red,!rightDead && i<pos2[lane],true);
                 }
                 // Draw the GIF behind the weapon so the weapon remains unobstructed.
-                if(blueWinEffect[lane]) drawWinEffect(c,w*.925f,y);
-                if(redWinEffect[lane]) drawWinEffect(c,w*.075f,y);
+                if(blueWinEffect[lane]) drawWinEffect(c,w*.925f,y-h*.025f);
+                if(redWinEffect[lane]) drawWinEffect(c,w*.075f,y-h*.025f);
                 drawWeapon(c,lane,w*.925f,y,blue,false);
                 drawWeapon(c,lane,w*.075f,y,red,true);
                 if(dead1[lane]) drawFire(c,w*.925f,y);
