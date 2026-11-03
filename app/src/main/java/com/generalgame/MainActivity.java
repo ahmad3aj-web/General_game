@@ -794,14 +794,22 @@ public class MainActivity extends Activity {
 
 
         private void menuButton(Canvas c,String glyph,String label,float l,float t,float r,float b,int color) {
-            // تصغير الشكل المرئي للأزرار إلى نحو النصف مع إبقاء مساحة اللمس الأصلية مريحة.
-            float bw=(r-l)*.55f,bh=(b-t)*.55f;
-            float left=(l+r-bw)*.5f,top=(t+b-bh)*.5f,right=left+bw,bottom=top+bh;
-            String texture=color==blue?"blue_button_01.png":color==red?"red_button_01.png":null;
-            if(texture!=null && art.get(texture)!=null)drawArt(c,texture,left,top,right,bottom,false);
-            else btn(c,"",left,top,right,bottom,color);
-            txt(c,glyph,(left+right)*.5f,top+(bottom-top)*.43f,(bottom-top)*.43f,Color.WHITE,true);
-            txt(c,label,(left+right)*.5f,top+(bottom-top)*.82f,(bottom-top)*.19f,Color.WHITE,true);
+            // زر أيقونة مربع مستقل، والعنوان تحته مباشرة.
+            float cx=(l+r)*.5f;
+            float side=Math.min(w*.205f,h*.145f);
+            float top=t+(b-t)*.08f;
+            RectF tile=new RectF(cx-side*.5f,top,cx+side*.5f,top+side);
+            p.setShader(new LinearGradient(tile.left,tile.top,tile.right,tile.bottom,
+                    shade(color,1.22f),shade(color,.58f),Shader.TileMode.CLAMP));
+            p.setStyle(Paint.Style.FILL);
+            c.drawRoundRect(tile,side*.13f,side*.13f,p);
+            p.setShader(null);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,side*.025f));
+            p.setColor(Color.argb(225,238,224,190));
+            c.drawRoundRect(tile,side*.13f,side*.13f,p);
+            p.setStyle(Paint.Style.FILL);
+            txt(c,glyph,cx,top+side*.68f,side*.56f,Color.WHITE,true);
+            txt(c,label,cx,top+side+h*.032f,h*.024f,Color.WHITE,true);
         }
         private int rankIndex(int points) {
             int rank=0;
@@ -1256,15 +1264,19 @@ public class MainActivity extends Activity {
                 if(historyScreen){drawHistory(c);return;}if(progressScreen){drawProgress(c);return;}if(helpScreen){drawHelp(c);return;}
                 txt(c,"اختر ساحة المعركة",w*.5f,h*.205f,h*.060f,Color.rgb(248,232,190),true);
                 iconButton(c,w*.035f,h*.065f,w*.125f,h*.165f,dark,"⚙");iconButton(c,w*.875f,h*.065f,w*.965f,h*.165f,Color.rgb(135,48,43),"⏻");
-                menuButton(c,"⚔","لاعبان على نفس الجهاز",w*.075f,h*.29f,w*.475f,h*.465f,blue);
-                menuButton(c,"★","ضد جنيرال الكمبيوتر",w*.525f,h*.29f,w*.925f,h*.465f,red);
-                menuButton(c,"◎","اللعب عبر الإنترنت",w*.20f,h*.50f,w*.80f,h*.665f,Color.rgb(37,105,160));
-                menuButton(c,"▤","سجل المباريات",w*.075f,h*.70f,w*.475f,h*.865f,dark);
-                menuButton(c,"♜","لوحة التقدم",w*.525f,h*.70f,w*.925f,h*.865f,Color.rgb(155,105,28));
-                menuButton(c,"?","شرح اللعبة",w*.30f,h*.875f,w*.70f,h*.945f,Color.rgb(55,91,72));
-                p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(false);
-                p.setTextSize(h*.017f);p.setColor(Color.argb(205,238,232,211));
-                c.drawText("GENERAL  v0.3.5   |   © 2026 أحمد جرادات   |   ahmad3aj@gmail.com",w*.5f,h*.965f,p);
+                float c1=w*.18f,c2=w*.50f,c3=w*.82f;
+                menuButton(c,"⚔","لاعبان على نفس الجهاز",c1-w*.15f,h*.275f,c1+w*.15f,h*.55f,blue);
+                menuButton(c,"★","ضد جنيرال الكمبيوتر",c2-w*.15f,h*.275f,c2+w*.15f,h*.55f,red);
+                menuButton(c,"◎","اللعب عبر الإنترنت",c3-w*.15f,h*.275f,c3+w*.15f,h*.55f,Color.rgb(37,105,160));
+                menuButton(c,"▤","سجل المباريات",c1-w*.15f,h*.59f,c1+w*.15f,h*.88f,dark);
+                menuButton(c,"♜","لوحة التقدم",c2-w*.15f,h*.59f,c2+w*.15f,h*.88f,Color.rgb(155,105,28));
+                menuButton(c,"?","شرح اللعبة",c3-w*.15f,h*.59f,c3+w*.15f,h*.88f,Color.rgb(55,91,72));
+                p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(true);
+                p.setTextSize(h*.020f);p.setColor(Color.WHITE);
+                c.drawText("© 2026 أحمد جرادات",w*.5f,h*.945f,p);
+                p.setTextSize(h*.018f);
+                c.drawText("ahmad3aj@gmail.com",w*.5f,h*.975f,p);
+                p.setFakeBoldText(false);
                 return;
             }
             if(winner!=0 && !bonusAttempt) {
@@ -1383,12 +1395,12 @@ public class MainActivity extends Activity {
                 if(historyScreen || progressScreen || helpScreen) { if(x>=w*.38f&&x<=w*.62f&&y>=h*.91f&&y<=h*.995f){historyScreen=false;progressScreen=false;helpScreen=false;} }
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
-                else if(y>=h*.29f&&y<=h*.465f&&x>=w*.075f&&x<=w*.475f){mode=1;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.29f&&y<=h*.465f&&x>=w*.525f&&x<=w*.925f){mode=2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.50f&&y<=h*.665f&&x>=w*.20f&&x<=w*.80f)showOnlineModeDialog();
-                else if(y>=h*.70f&&y<=h*.865f&&x>=w*.075f&&x<=w*.475f)historyScreen=true;
-                else if(y>=h*.70f&&y<=h*.865f&&x>=w*.525f&&x<=w*.925f)progressScreen=true;
-                else if(y>=h*.875f&&y<=h*.945f&&x>=w*.30f&&x<=w*.70f)helpScreen=true;
+                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.03f&&x<=w*.33f){mode=1;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.35f&&x<=w*.65f){mode=2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.67f&&x<=w*.97f)showOnlineModeDialog();
+                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.03f&&x<=w*.33f)historyScreen=true;
+                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.35f&&x<=w*.65f)progressScreen=true;
+                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.67f&&x<=w*.97f)helpScreen=true;
                 invalidate();return true;
             }
             if(setup) {
