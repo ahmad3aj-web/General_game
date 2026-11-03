@@ -123,7 +123,7 @@ public class MainActivity extends Activity {
                 String folder=name.startsWith("character_")?"characters":(name.startsWith("tank_")||name.startsWith("cannon_")||name.startsWith("fighter_"))?"vehicles":name.startsWith("dice_")?"dice":"ammo";
                 try { art.put(name,BitmapFactory.decodeStream(getAssets().open(folder+"/"+name))); } catch(Exception ignored) {}
             }
-            String[] scenes={"2112.w023.n001.1491B.p1.1491.jpg","2207_w023_n003_2757b_p1_2757.jpg","png.png","war-zone-landscape-with-apocalyptic-destruction.jpg"};
+            String[] scenes={"2112.w023.n001.1491B.p1.1491.jpg","2207_w023_n003_2757b_p1_2757.jpg","png.png","war-zone-landscape-with-apocalyptic-destruction.jpg","Intro.jpg"};
             for(String name:scenes)try{art.put(name,BitmapFactory.decodeStream(getAssets().open("backgrounds/"+name)));}catch(Exception ignored){}
             try { fireMovie=Movie.decodeStream(getAssets().open("vehicles/Flame_GIF_2.gif")); } catch(Exception ignored) {}
         }
@@ -294,6 +294,21 @@ public class MainActivity extends Activity {
             postInvalidateDelayed(45);
         }
 
+        private void drawIntroScreen(Canvas c) {
+            Bitmap image=art.get("Intro.jpg");
+            if(image!=null) {
+                float scale=Math.max(w/image.getWidth(),h/image.getHeight());
+                float dw=image.getWidth()*scale,dh=image.getHeight()*scale;
+                RectF dst=new RectF((w-dw)*.5f,(h-dh)*.5f,(w+dw)*.5f,(h+dh)*.5f);
+                p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);c.drawBitmap(image,null,dst,p);
+            } else c.drawColor(Color.rgb(18,24,25));
+            p.setShader(new LinearGradient(0,h*.68f,0,h,Color.TRANSPARENT,Color.argb(205,5,10,10),Shader.TileMode.CLAMP));
+            c.drawRect(0,h*.68f,w,h,p);p.setShader(null);
+            txt(c,"انقر للاستمرار",w*.5f,h*.88f,h*.038f,Color.WHITE,true);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.003f));p.setColor(Color.argb(220,245,190,65));
+            c.drawRoundRect(new RectF(w*.34f,h*.82f,w*.66f,h*.92f),h*.025f,h*.025f,p);p.setStyle(Paint.Style.FILL);
+        }
+
         private void drawBattlefield(Canvas c) {
             String[] scenes={"2112.w023.n001.1491B.p1.1491.jpg","2207_w023_n003_2757b_p1_2757.jpg","png.png","war-zone-landscape-with-apocalyptic-destruction.jpg"};
             Bitmap image=art.get(scenes[Math.floorMod(matchEpoch,scenes.length)]);
@@ -310,11 +325,14 @@ public class MainActivity extends Activity {
             c.drawRoundRect(new RectF(l,t,r,b),16,16,p);
         }
         private void namePlate(Canvas c,String name,float cx,float cy,int color) {
-            float width=Math.min(w*.18f,Math.max(w*.105f,p.measureText(name)*.95f));
-            box(c,cx-width*.5f,cy-h*.027f,cx+width*.5f,cy+h*.008f,Color.argb(225,20,29,25));
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0025f));p.setColor(color);
-            c.drawRoundRect(new RectF(cx-width*.5f,cy-h*.027f,cx+width*.5f,cy+h*.008f),h*.012f,h*.012f,p);p.setStyle(Paint.Style.FILL);
-            txt(c,name,cx,cy,h*.038f,Color.WHITE,true);
+            float width=Math.min(w*.27f,Math.max(w*.14f,p.measureText(name)*1.12f));
+            float top=cy-h*.030f,bottom=cy+h*.012f;
+            box(c,cx-width*.5f,top,cx+width*.5f,bottom,Color.argb(235,15,23,21));
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0028f));p.setColor(color);
+            c.drawRoundRect(new RectF(cx-width*.5f,top,cx+width*.5f,bottom),h*.014f,h*.014f,p);p.setStyle(Paint.Style.FILL);
+            float size=h*.034f;p.setTextSize(size);p.setFakeBoldText(true);
+            while(p.measureText(name)>width*.88f && size>h*.018f){size*=.94f;p.setTextSize(size);}
+            txt(c,name,cx,cy+h*.003f,size,Color.WHITE,true);
         }
         private void iconButton(Canvas c,float l,float t,float r,float b,int color,String glyph) {
             float radius=Math.min(b-t,r-l)*.22f;
@@ -346,6 +364,11 @@ public class MainActivity extends Activity {
             p.setTextSize(textSize);p.setFakeBoldText(true);
             while(p.measureText(s)>(r-l)*.88f && textSize>h*.020f){textSize*=.94f;p.setTextSize(textSize);}
             txt(c,s,(l+r)/2,(t+b)/2+textSize*.34f+(pressed?h*.002f:0),textSize,Color.WHITE,true);
+        }
+        private int nextAvatar(int current,int direction) {
+            int candidate=current;
+            for(int i=0;i<18;i++){candidate=Math.floorMod(candidate+direction,18);if(candidate!=5)return candidate;}
+            return 0;
         }
         private int[] positions(int side) { return side==1 ? pos1 : pos2; }
         private boolean[] destroyed(int side) { return side==1 ? dead1 : dead2; }
@@ -680,6 +703,7 @@ public class MainActivity extends Activity {
         }
         private void drawAvatar(Canvas c,int index,float cx,float cy,float radius,boolean selected) { drawAvatar(c,index,cx,cy,radius,selected,false); }
         private void drawAvatar(Canvas c,int index,float cx,float cy,float radius,boolean selected,boolean monochrome) {
+            if(index==5)index=6; // Character 06 is reserved exclusively for General.
             float rr=radius*1.18f;drawArt(c,"character_"+String.format(Locale.US,"%02d",Math.floorMod(index,18)+1)+".png",cx-rr,cy-rr*1.03f,cx+rr,cy+rr*1.03f,false);
             if(selected){p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.005f));p.setColor(gold);c.drawRoundRect(new RectF(cx-rr,cy-rr*1.03f,cx+rr,cy+rr*1.03f),radius*.22f,radius*.22f,p);p.setStyle(Paint.Style.FILL);}
         }
@@ -688,35 +712,39 @@ public class MainActivity extends Activity {
             // Use the supplied character art as-is; no glasses, beard, medals or added accessories.
             drawAvatar(c,5,cx,cy,radius,selected,monochrome);
         }
+        private void arrowButton(Canvas c,float cx,float cy,boolean left) {
+            float r=h*.045f;p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(225,25,48,38));c.drawCircle(cx,cy,r,p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.005f));p.setColor(gold);c.drawCircle(cx,cy,r,p);
+            Path a=new Path();float d=r*.34f;
+            if(left){a.moveTo(cx+d*.55f,cy-d);a.lineTo(cx-d*.55f,cy);a.lineTo(cx+d*.55f,cy+d);}else{a.moveTo(cx-d*.55f,cy-d);a.lineTo(cx+d*.55f,cy);a.lineTo(cx-d*.55f,cy+d);}
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.007f));p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeJoin(Paint.Join.ROUND);p.setColor(Color.WHITE);c.drawPath(a,p);p.setStrokeCap(Paint.Cap.BUTT);p.setStrokeJoin(Paint.Join.MITER);p.setStyle(Paint.Style.FILL);
+        }
         private void drawSetup(Canvas c) {
-            txt(c,"إعداد اللاعبين",w*.5f,h*.16f,h*.065f,dark,true);
-            txt(c,setupSide==1?"اللاعب الأول — الأزرق":"اللاعب الثاني — الأحمر",w*.5f,h*.25f,h*.043f,setupSide==1?blue:red,true);
+            txt(c,"إعداد اللاعبين",w*.5f,h*.105f,h*.060f,dark,true);
             int idx=setupSide-1;
-            float portraitY=mode==2?h*.43f:h*.46f;
-            drawAvatar(c,avatars[idx],w*.5f,portraitY,h*.135f,true);
-            p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(34,65,48));
-            Path leftArrow=new Path();leftArrow.moveTo(w*.17f,portraitY);leftArrow.lineTo(w*.235f,portraitY-h*.045f);leftArrow.lineTo(w*.235f,portraitY+h*.045f);leftArrow.close();c.drawPath(leftArrow,p);
-            Path rightArrow=new Path();rightArrow.moveTo(w*.83f,portraitY);rightArrow.lineTo(w*.765f,portraitY-h*.045f);rightArrow.lineTo(w*.765f,portraitY+h*.045f);rightArrow.close();c.drawPath(rightArrow,p);
-            txt(c,"الشخصية "+(avatars[idx]+1)+" من 18",w*.5f,portraitY+h*.17f,h*.027f,dark,true);
-            box(c,w*.27f,h*.62f,w*.73f,h*.70f,Color.rgb(248,250,239));
-            txt(c,playerNames[idx],w*.5f,h*.675f,h*.043f,dark,true);
-            txt(c,"اضغط على الاسم لتعديله",w*.5f,h*.72f,h*.024f,dark,false);
             if(mode==2) {
-                String[] levels={"مبتدئ","متوسط","محترف","أسطوري"};
-                txt(c,"مستوى جنيرال",w*.5f,h*.755f,h*.026f,dark,true);
-                for(int i=0;i<4;i++) {
-                    float left=w*(.16f+i*.18f);
-                    box(c,left,h*.775f,left+w*.16f,h*.825f,difficulty==i?gold:Color.rgb(230,237,218));
-                    txt(c,levels[i],left+w*.08f,h*.807f,h*.022f,dark,difficulty==i);
-                }
+                box(c,w*.055f,h*.19f,w*.47f,h*.86f,Color.argb(225,238,243,230));box(c,w*.53f,h*.19f,w*.945f,h*.86f,Color.argb(225,248,250,239));
+                drawGeneralAvatar(c,w*.265f,h*.36f,h*.115f,true,false);txt(c,"جنيرال",w*.265f,h*.51f,h*.040f,red,true);
+                txt(c,"مستوى الصعوبة",w*.265f,h*.585f,h*.030f,dark,true);
+                String[] levels={"مبتدئ","متوسط","محترف","أسطوري"};String[] symbols={"Ⅰ","Ⅱ","Ⅲ","★"};
+                for(int i=0;i<4;i++){float top=h*(.615f+i*.058f),bottom=top+h*.050f;box(c,w*.105f,top,w*.425f,bottom,difficulty==i?Color.rgb(180,132,35):Color.rgb(218,228,211));txt(c,symbols[i],w*.155f,top+h*.035f,h*.032f,difficulty==i?Color.WHITE:dark,true);txt(c,levels[i],w*.29f,top+h*.034f,h*.025f,difficulty==i?Color.WHITE:dark,difficulty==i);}
+                drawAvatar(c,avatars[0],w*.765f,h*.405f,h*.135f,true);arrowButton(c,w*.575f,h*.405f,true);arrowButton(c,w*.955f,h*.405f,false);
+                txt(c,"الشخصية "+(avatars[0]+1)+" من 17",w*.765f,h*.565f,h*.027f,dark,true);
+                box(c,w*.585f,h*.64f,w*.945f,h*.755f,Color.rgb(27,48,39));txt(c,playerNames[0],w*.765f,h*.695f,h*.043f,Color.WHITE,true);txt(c,"اضغط لتعديل الاسم",w*.765f,h*.735f,h*.022f,Color.rgb(221,229,215),false);
+            } else {
+                txt(c,setupSide==1?"اللاعب الأول — الأزرق":"اللاعب الثاني — الأحمر",w*.5f,h*.20f,h*.040f,setupSide==1?blue:red,true);
+                float portraitY=h*.43f;drawAvatar(c,avatars[idx],w*.5f,portraitY,h*.125f,true);arrowButton(c,w*.20f,portraitY,true);arrowButton(c,w*.80f,portraitY,false);
+                txt(c,"الشخصية "+(avatars[idx]+1)+" من 17",w*.5f,portraitY+h*.16f,h*.027f,dark,true);
+                box(c,w*.27f,h*.62f,w*.73f,h*.71f,Color.rgb(248,250,239));txt(c,playerNames[idx],w*.5f,h*.675f,h*.043f,dark,true);txt(c,"اضغط على الاسم لتعديله",w*.5f,h*.745f,h*.024f,dark,false);
             }
-            String startLabel=setupSide==1 && mode==1?"التالي":
-                    (mode==4 && onlineQuickMatch?"ابحث عن لاعب":
-                    (mode==4 && onlineInvitePending?"إنشاء الدعوة":"ابدأ المباراة"));
-            btn(c,startLabel,w*.36f,h*.92f,w*.64f,h*.985f,setupSide==1?blue:red);
+            String startLabel=setupSide==1 && mode==1?"التالي":(mode==4 && onlineQuickMatch?"ابحث عن لاعب":(mode==4 && onlineInvitePending?"إنشاء الدعوة":"ابدأ المباراة"));
+            btn(c,startLabel,w*.37f,h*.91f,w*.63f,h*.985f,setupSide==1?blue:red);
         }
 
 
+        private void menuButton(Canvas c,String glyph,String label,float l,float t,float r,float b,int color) {
+            btn(c,"",l,t,r,b,color);txt(c,glyph,(l+r)*.5f,t+(b-t)*.43f,(b-t)*.43f,Color.WHITE,true);txt(c,label,(l+r)*.5f,t+(b-t)*.82f,(b-t)*.19f,Color.WHITE,true);
+        }
         private int rankIndex(int points) {
             int rank=0;
             for(int i=0;i<rankThresholds.length;i++)if(points>=rankThresholds[i])rank=i;
@@ -787,8 +815,7 @@ public class MainActivity extends Activity {
                 txt(c,playerNames[0],w*.70f,h*.61f,h*.036f,Color.WHITE,true);
             }
             txt(c,"VS",w*.5f,h*.47f,h*.052f,Color.rgb(245,190,65),true);
-            txt(c,introStep>0?String.valueOf(introStep):"FIGHT!",w*.5f,h*.77f,
-                introStep>0?h*.17f:h*.105f,introStep>0?Color.WHITE:Color.rgb(245,190,65),true);
+            txt(c,String.valueOf(Math.max(1,introStep)),w*.5f,h*.77f,h*.17f,Color.WHITE,true);
         }
         private void drawProgress(Canvas c) {
             android.content.SharedPreferences prefs=getSharedPreferences("GENERAL_PROGRESS",MODE_PRIVATE);
@@ -1056,7 +1083,7 @@ public class MainActivity extends Activity {
             muzzleFlashX=side==1?w*.874f:w*.126f;
             muzzleFlashY=new float[]{h*.29f,h*.49f,h*.69f}[lane];
             final int start=positions(side)[lane];
-            final int target=Math.min(15,start+amount);
+            final int target=Math.min(15,start+Math.max(1,Math.min(6,amount)));
             message=(side==1?"الأزرق":"الأحمر")+" يطلق...";
             final Runnable[] step=new Runnable[1];
             step[0]=new Runnable(){ @Override public void run(){
@@ -1147,28 +1174,19 @@ public class MainActivity extends Activity {
         @Override protected void onDraw(Canvas c) {
             super.onDraw(c); w=getWidth(); h=getHeight();
             c.drawColor(Color.rgb(23,34,29));
-            if(titleScreen) {
-                p.setColor(Color.argb(205,9,17,15));c.drawRect(0,0,w,h,p);
-                txt(c,"WAR OF GENERALS",w*.5f,h*.40f,h*.105f,Color.rgb(245,190,65),true);
-                txt(c,"GENERAL  •  جنيرال",w*.5f,h*.51f,h*.045f,Color.WHITE,true);
-                txt(c,"اضغط للمتابعة",w*.5f,h*.78f,h*.035f,Color.WHITE,true);
-                return;
-            }
+            if(titleScreen) { drawIntroScreen(c); return; }
             txt(c,"GENERAL  •  جنيرال",w*.5f,h*.075f,h*.06f,Color.rgb(238,224,190),true);
             if(battleIntro){drawBattleIntro(c);return;}
             if(setup) { drawSetup(c); return; }
             if(mode==0) {
-                if(historyScreen){drawHistory(c);return;}
-                if(progressScreen){drawProgress(c);return;}
-                txt(c,"اختر طريقة اللعب",w*.5f,h*.285f,h*.065f,dark,true);
-                btn(c,"لاعبان على نفس الجهاز",w*.07f,h*.35f,w*.47f,h*.49f,blue);
-                btn(c,"ضد جنيرال الكمبيوتر",w*.53f,h*.35f,w*.93f,h*.49f,red);
-                btn(c,"اللعب عبر الإنترنت",w*.07f,h*.535f,w*.47f,h*.675f,Color.rgb(37,105,160));
-                btn(c,"مواجهة عبر Wi-Fi",w*.53f,h*.535f,w*.93f,h*.675f,Color.rgb(52,125,91));
-                btn(c,"سجل المباريات",w*.16f,h*.735f,w*.48f,h*.835f,dark);
-                btn(c,"لوحة التقدم",w*.52f,h*.735f,w*.84f,h*.835f,Color.rgb(155,105,28));
-                txt(c,"الإنترنت: لعب سريع أو دعوة صديق أو رمز  •  Wi-Fi: الشبكة نفسها",w*.5f,h*.91f,h*.024f,dark,false);
-                return;
+                if(historyScreen){drawHistory(c);return;}if(progressScreen){drawProgress(c);return;}
+                txt(c,"اختر ساحة المعركة",w*.5f,h*.205f,h*.060f,dark,true);
+                iconButton(c,w*.035f,h*.065f,w*.125f,h*.165f,dark,"⚙");iconButton(c,w*.875f,h*.065f,w*.965f,h*.165f,Color.rgb(135,48,43),"⏻");
+                menuButton(c,"⚔","لاعبان على نفس الجهاز",w*.075f,h*.29f,w*.475f,h*.465f,blue);
+                menuButton(c,"★","ضد جنيرال الكمبيوتر",w*.525f,h*.29f,w*.925f,h*.465f,red);
+                menuButton(c,"◎","اللعب عبر الإنترنت",w*.20f,h*.50f,w*.80f,h*.665f,Color.rgb(37,105,160));
+                menuButton(c,"▤","سجل المباريات",w*.075f,h*.70f,w*.475f,h*.865f,dark);
+                menuButton(c,"♜","لوحة التقدم",w*.525f,h*.70f,w*.925f,h*.865f,Color.rgb(155,105,28));return;
             }
             if(winner!=0 && !bonusAttempt) {
                 box(c,w*.12f,h*.19f,w*.88f,h*.80f,Color.rgb(245,249,239));
@@ -1261,7 +1279,7 @@ public class MainActivity extends Activity {
                 int diceColor=winner!=0?dark:(player==1?blue:red);
                 drawDiceFace(c,diceCx,diceCy,diceSize*.88f,die>0?die:1);
             }
-            if(choosing) txt(c,"اختر السلاح",w*.5f,h*.965f,h*.026f,dark,true);
+            if(choosing) { txt(c,"اختر السلاح",w*.5f,h*.965f,h*.026f,dark,true);txt(c,"عدد الطلقات المطلوبة: "+die,w*.5f,h*.925f,h*.022f,Color.WHITE,true); }
         }
 
         @Override public boolean onTouchEvent(MotionEvent e) {
@@ -1284,24 +1302,23 @@ public class MainActivity extends Activity {
             }
             if(mode==0) {
                 if(historyScreen || progressScreen) { if(x>=w*.40f&&x<=w*.60f&&y>=h*.93f&&y<=h*.995f){historyScreen=false;progressScreen=false;} }
-                else if(y>=h*.35f&&y<=h*.49f&&x>=w*.07f&&x<=w*.47f){mode=1;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.35f&&y<=h*.49f&&x>=w*.53f&&x<=w*.93f){mode=2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.535f&&y<=h*.675f&&x>=w*.07f&&x<=w*.47f)showOnlineModeDialog();
-                else if(y>=h*.535f&&y<=h*.675f&&x>=w*.53f&&x<=w*.93f)showLanModeDialog();
-                else if(y>=h*.735f&&y<=h*.835f&&x>=w*.16f&&x<=w*.48f)historyScreen=true;
-                else if(y>=h*.735f&&y<=h*.835f&&x>=w*.52f&&x<=w*.84f)progressScreen=true;
+                else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
+                else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
+                else if(y>=h*.29f&&y<=h*.465f&&x>=w*.075f&&x<=w*.475f){mode=1;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.29f&&y<=h*.465f&&x>=w*.525f&&x<=w*.925f){mode=2;setup=true;setupSide=1;playerNames[0]="أنت";playerNames[1]="اللاعب 2";avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.50f&&y<=h*.665f&&x>=w*.20f&&x<=w*.80f)showOnlineModeDialog();
+                else if(y>=h*.70f&&y<=h*.865f&&x>=w*.075f&&x<=w*.475f)historyScreen=true;
+                else if(y>=h*.70f&&y<=h*.865f&&x>=w*.525f&&x<=w*.925f)progressScreen=true;
                 invalidate();return true;
             }
             if(setup) {
                 int idx=setupSide-1;
-                if(x>=w*.27f && x<=w*.73f && y>=h*.62f && y<=h*.70f) { showNameDialog(); return true; }
-                if(mode==2 && x>=w*.16f && x<=w*.86f && y>=h*.775f && y<=h*.835f) {
-                    int level=Math.round((x/w-.24f)/.18f);
-                    if(level>=0 && level<4) difficulty=level;
-                } else if(x>=w*.12f && x<=w*.88f && y>=h*.32f && y<=h*.62f) {
-                    if(x>=w*.12f && x<=w*.30f) avatars[idx]=Math.floorMod(avatars[idx]-1,18);
-                    else if(x>=w*.70f && x<=w*.88f) avatars[idx]=Math.floorMod(avatars[idx]+1,18);
-                } else if(x>=w*.36f && x<=w*.64f && y>=h*.92f && y<=h*.985f) {
+                if(mode==2 && x>=w*.585f && x<=w*.945f && y>=h*.64f && y<=h*.755f) { showNameDialog(); return true; }
+                if(mode==2 && x>=w*.105f && x<=w*.425f && y>=h*.615f && y<=h*.90f) { difficulty=Math.max(0,Math.min(3,(int)((y/h-.615f)/.058f))); }
+                else if(mode==2 && y>=h*.28f && y<=h*.59f && x>=w*.54f && x<=w*.99f) { if(x<=w*.64f)avatars[0]=nextAvatar(avatars[0],-1);else if(x>=w*.87f)avatars[0]=nextAvatar(avatars[0],1); }
+                else if(mode!=2 && x>=w*.27f && x<=w*.73f && y>=h*.62f && y<=h*.75f) { showNameDialog(); return true; }
+                else if(mode!=2 && y>=h*.30f && y<=h*.62f && x>=w*.12f && x<=w*.88f) { if(x<=w*.30f)avatars[idx]=nextAvatar(avatars[idx],-1);else if(x>=w*.70f)avatars[idx]=nextAvatar(avatars[idx],1); }
+                else if(x>=w*.37f && x<=w*.63f && y>=h*.91f && y<=h*.985f) {
                     if(setupSide==1 && mode==1) setupSide=2;
                     else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
                     else if(mode==4){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;onlineOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
