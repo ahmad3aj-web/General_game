@@ -233,7 +233,7 @@ public final class LanMatchSession implements LanConnection.Listener {
                 listener.onProtocolError("بيانات لاعب غير صالحة"); return;
             }
             listener.onPeerInfo(side, message.optString("name", "لاعب"),
-                    Math.max(0, Math.min(5, message.optInt("avatar", 0))));
+                    Math.max(0, Math.min(17, message.optInt("avatar", 0))));
             return;
         }
         if (LanGameProtocol.REMATCH.equals(type)) {
