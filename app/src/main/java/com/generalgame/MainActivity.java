@@ -939,14 +939,21 @@ public class MainActivity extends Activity {
                     txt(c,"",centers[i],top+h*.195f,h*.021f,dark,false);
                 }
             }
-            txt(c,"رصيدك: "+points+" نقطة",w*.5f,h*.535f,h*.032f,dark,true);
             if(next>rank) {
-                float l=w*.20f,r=w*.80f,y=h*.585f;
-                box(c,l,y,r,y+h*.025f,Color.rgb(220,226,211));
-                float ratio=(float)(points-rankThresholds[rank])/(rankThresholds[next]-rankThresholds[rank]);
-                box(c,l,y,l+(r-l)*Math.max(0f,Math.min(1f,ratio)),y+h*.025f,Color.rgb(52,135,83));
-                txt(c,"باقي "+Math.max(0,rankThresholds[next]-points)+" نقطة للترقية",w*.5f,h*.65f,h*.025f,dark,false);
-            } else txt(c,"وصلت إلى أعلى رتبة عسكرية!",w*.5f,h*.65f,h*.028f,Color.rgb(155,105,28),true);
+                int rankStart=rankThresholds[rank],rankGoal=rankThresholds[next];
+                int remaining=Math.max(0,rankGoal-points);
+                float ratio=(float)(points-rankStart)/(rankGoal-rankStart);
+                ratio=Math.max(0f,Math.min(1f,ratio));
+                txt(c,"تقدمك نحو رتبة "+rankNames[next],w*.5f,h*.535f,h*.029f,dark,true);
+                txt(c,points+" من "+rankGoal+" نقطة",w*.5f,h*.575f,h*.027f,Color.rgb(35,91,58),true);
+                float l=w*.16f,r=w*.84f,y=h*.605f,barH=h*.038f;
+                box(c,l,y,r,y+barH,Color.rgb(215,224,210));
+                if(ratio>0f)box(c,l,y,l+(r-l)*ratio,y+barH,Color.rgb(45,145,82));
+                txt(c,"باقي "+remaining+" نقطة للترقية",w*.5f,h*.685f,h*.027f,Color.rgb(155,105,28),true);
+            } else {
+                txt(c,"مجموع نقاطك: "+points+" نقطة",w*.5f,h*.565f,h*.030f,dark,true);
+                txt(c,"وصلت إلى أعلى رتبة عسكرية!",w*.5f,h*.645f,h*.028f,Color.rgb(155,105,28),true);
+            }
             box(c,w*.12f,h*.70f,w*.88f,h*.87f,Color.rgb(244,248,235));
             txt(c,"الانتصارات: "+wins+"     انتصارات كاملة: "+perfect,w*.5f,h*.765f,h*.026f,dark,true);
             txt(c,"نقاط آخر مباراة: "+last,w*.5f,h*.825f,h*.025f,dark,false);
@@ -1355,10 +1362,11 @@ public class MainActivity extends Activity {
             namePlate(c,rankedPlayerName(playerNames[0]),w*.90f,h*.235f,blue);
             if(openingToss){
                 float ds=h*.075f;
-                box(c,w*.81f-ds/2,h*.145f,w*.81f+ds/2,h*.145f+ds,red);
-                txt(c,String.valueOf(openingRoll2),w*.81f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
-                box(c,w*.19f-ds/2,h*.145f,w*.19f+ds/2,h*.145f+ds,blue);
-                txt(c,String.valueOf(openingRoll1),w*.19f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
+                // اللاعب الأول (الأزرق) على اليمين، والثاني (الأحمر) على اليسار.
+                box(c,w*.81f-ds/2,h*.145f,w*.81f+ds/2,h*.145f+ds,blue);
+                txt(c,String.valueOf(openingRoll1),w*.81f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
+                box(c,w*.19f-ds/2,h*.145f,w*.19f+ds/2,h*.145f+ds,red);
+                txt(c,String.valueOf(openingRoll2),w*.19f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
             }
             for(int lane=0;lane<3;lane++) {
                 float y=rows[lane], gap=h*.038f;
