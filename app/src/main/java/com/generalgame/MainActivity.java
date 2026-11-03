@@ -420,28 +420,31 @@ public class MainActivity extends Activity {
         private void drawDialogueBubble(Canvas c,String text,int speaker,float top,long elapsed) {
             if(text==null || text.isEmpty())return;
             boolean isBlue=speaker==1;
-            float left=w*.145f, right=w*.855f;
+            // Compact centered bubble: half the previous width, positioned at the top.
+            float left=w*.3225f, right=w*.6775f;
             float bottom=top+h*.078f;
             float radius=h*.020f;
             int color=isBlue?blue:red;
             p.setShader(null);p.setStyle(Paint.Style.FILL);
-            p.setColor(Color.argb(245,10,20,23));
+            p.setColor(Color.argb(248,8,17,20));
             c.drawRoundRect(new RectF(left,top,right,bottom),radius,radius,p);
             Path tail=new Path();
             float mid=top+h*.039f;
-            if(isBlue){tail.moveTo(right-h*.060f,top+h*.012f);tail.lineTo(right+h*.016f,mid);tail.lineTo(right-h*.060f,bottom-h*.012f);}
-            else {tail.moveTo(left+h*.060f,top+h*.012f);tail.lineTo(left-h*.016f,mid);tail.lineTo(left+h*.060f,bottom-h*.012f);}
-            tail.close();c.drawPath(tail,p);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.0035f));p.setColor(color);
+            if(isBlue){tail.moveTo(right-h*.052f,top+h*.010f);tail.lineTo(right+h*.030f,mid);tail.lineTo(right-h*.052f,bottom-h*.010f);}
+            else {tail.moveTo(left+h*.052f,top+h*.010f);tail.lineTo(left-h*.030f,mid);tail.lineTo(left+h*.052f,bottom-h*.010f);}
+            tail.close();
+            p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(248,8,17,20));c.drawPath(tail,p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(4,h*.0055f));p.setColor(color);
+            c.drawPath(tail,p);
             c.drawRoundRect(new RectF(left,top,right,bottom),radius,radius,p);
             p.setStyle(Paint.Style.FILL);
             int total=text.codePointCount(0,text.length());
             int count=(int)Math.min(total,Math.max(0,elapsed/68L));
             int finish=text.offsetByCodePoints(0,count);
             String visible=text.substring(0,finish);
-            p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.030f);p.setFakeBoldText(true);
-            while(p.measureText(visible)>right-left-h*.06f && p.getTextSize()>h*.022f)p.setTextSize(p.getTextSize()*.96f);
-            p.setColor(isBlue?Color.rgb(145,198,255):Color.rgb(255,165,150));
+            p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.027f);p.setFakeBoldText(true);
+            while(p.measureText(visible)>right-left-h*.045f && p.getTextSize()>h*.018f)p.setTextSize(p.getTextSize()*.96f);
+            p.setColor(isBlue?Color.rgb(160,207,255):Color.rgb(255,177,162));
             c.drawText(visible,(left+right)*.5f,top+h*.050f,p);
             p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(false);p.setStyle(Paint.Style.FILL);
         }
@@ -453,8 +456,8 @@ public class MainActivity extends Activity {
             long replyStart=firstDuration+500L;
             long totalDuration=replyStart+Math.max(1900L,battleDialogueReplyText.codePointCount(0,battleDialogueReplyText.length())*72L)+1100L;
             if(elapsed>totalDuration)return;
-            drawDialogueBubble(c,battleDialogueText,battleDialogueSpeaker,h*.355f,elapsed);
-            if(elapsed>=replyStart)drawDialogueBubble(c,battleDialogueReplyText,battleDialogueReplySpeaker,h*.455f,elapsed-replyStart);
+            drawDialogueBubble(c,battleDialogueText,battleDialogueSpeaker,h*.018f,elapsed);
+            if(elapsed>=replyStart)drawDialogueBubble(c,battleDialogueReplyText,battleDialogueReplySpeaker,h*.108f,elapsed-replyStart);
             postInvalidateDelayed(70);
         }
 
@@ -1474,22 +1477,22 @@ public class MainActivity extends Activity {
             iconButton(c,w*.025f,h*.765f,w*.095f,h*.835f,dark,"⚙");
             iconButton(c,w*.025f,h*.855f,w*.095f,h*.925f,Color.rgb(135,48,43),"↪");            float trackL=w*.18f, trackR=w*.82f, trackW=trackR-trackL;
             float[] rows={h*.29f,h*.49f,h*.69f};
-            drawAvatar(c,avatars[0],w*.90f,h*.115f,h*.070f,false);
-            if(mode==2) drawGeneralAvatar(c,w*.10f,h*.115f,h*.070f,false,false); else drawAvatar(c,avatars[1],w*.10f,h*.115f,h*.070f,false);
-            // اللاعب الأول على اليمين: اسمه إلى يسار صورته. اللاعب الثاني على اليسار: اسمه إلى يمين صورته.
-            namePlate(c,rankedPlayerName(playerNames[0]),w*.785f,h*.115f,blue);
-            namePlate(c,mode==2?"جنيرال":rankedPlayerName(playerNames[1]),w*.215f,h*.115f,red);
+            // Move portraits to the extreme upper corners and keep names immediately inward.
+            drawAvatar(c,avatars[0],w*.965f,h*.075f,h*.060f,false);
+            if(mode==2) drawGeneralAvatar(c,w*.035f,h*.075f,h*.060f,false,false); else drawAvatar(c,avatars[1],w*.035f,h*.075f,h*.060f,false);
+            namePlate(c,rankedPlayerName(playerNames[0]),w*.835f,h*.075f,blue);
+            namePlate(c,mode==2?"جنيرال":rankedPlayerName(playerNames[1]),w*.165f,h*.075f,red);
             int blueDestroyed=0,redDestroyed=0;
             for(int i=0;i<3;i++){if(dead2[i])blueDestroyed++;if(dead1[i])redDestroyed++;}
-            txt(c,"أسلحة مدمرة: "+blueDestroyed,w*.785f,h*.158f,h*.021f,Color.WHITE,true);
-            txt(c,"أسلحة مدمرة: "+redDestroyed,w*.215f,h*.158f,h*.021f,Color.WHITE,true);
+            txt(c,"أسلحة مدمرة: "+blueDestroyed,w*.835f,h*.125f,h*.019f,Color.WHITE,true);
+            txt(c,"أسلحة مدمرة: "+redDestroyed,w*.165f,h*.125f,h*.019f,Color.WHITE,true);
             if(openingToss){
                 float ds=h*.075f;
                 // اللاعب الأول (الأزرق) على اليمين، والثاني (الأحمر) على اليسار.
-                box(c,w*.81f-ds/2,h*.145f,w*.81f+ds/2,h*.145f+ds,blue);
-                txt(c,String.valueOf(openingRoll1),w*.81f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
-                box(c,w*.19f-ds/2,h*.145f,w*.19f+ds/2,h*.145f+ds,red);
-                txt(c,String.valueOf(openingRoll2),w*.19f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
+                box(c,w*.75f-ds/2,h*.145f,w*.75f+ds/2,h*.145f+ds,blue);
+                txt(c,String.valueOf(openingRoll1),w*.75f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
+                box(c,w*.25f-ds/2,h*.145f,w*.25f+ds/2,h*.145f+ds,red);
+                txt(c,String.valueOf(openingRoll2),w*.25f,h*.145f+ds*.72f,ds*.58f,Color.WHITE,true);
             }
             for(int lane=0;lane<3;lane++) {
                 float y=rows[lane], gap=h*.038f;
