@@ -1218,7 +1218,11 @@ public class MainActivity extends Activity {
                 menuButton(c,"★","ضد جنيرال الكمبيوتر",w*.525f,h*.29f,w*.925f,h*.465f,red);
                 menuButton(c,"◎","اللعب عبر الإنترنت",w*.20f,h*.50f,w*.80f,h*.665f,Color.rgb(37,105,160));
                 menuButton(c,"▤","سجل المباريات",w*.075f,h*.70f,w*.475f,h*.865f,dark);
-                menuButton(c,"♜","لوحة التقدم",w*.525f,h*.70f,w*.925f,h*.865f,Color.rgb(155,105,28));return;
+                menuButton(c,"♜","لوحة التقدم",w*.525f,h*.70f,w*.925f,h*.865f,Color.rgb(155,105,28));
+                p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(false);
+                p.setTextSize(h*.017f);p.setColor(Color.argb(205,238,232,211));
+                c.drawText("GENERAL  v0.3.5   |   © 2026 أحمد جرادات   |   ahmad3aj@gmail.com",w*.5f,h*.965f,p);
+                return;
             }
             if(winner!=0 && !bonusAttempt) {
                 box(c,w*.12f,h*.19f,w*.88f,h*.80f,Color.rgb(245,249,239));
