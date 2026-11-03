@@ -779,6 +779,7 @@ public class MainActivity extends Activity {
         }
         private void drawSetup(Canvas c) {
             txt(c,"إعداد اللاعبين",w*.5f,h*.105f,h*.060f,dark,true);
+            iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
             int idx=setupSide-1;
             if(mode==2) {
                 box(c,w*.055f,h*.19f,w*.47f,h*.86f,Color.argb(225,238,243,230));box(c,w*.53f,h*.19f,w*.945f,h*.86f,Color.argb(225,248,250,239));
@@ -882,6 +883,7 @@ public class MainActivity extends Activity {
         private void drawBattleIntro(Canvas c) {
             p.setColor(Color.argb(224,12,20,18));c.drawRect(0,0,w,h,p);
             box(c,w*.12f,h*.16f,w*.88f,h*.86f,Color.rgb(29,39,35));
+            iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
             txt(c,"استعدوا للحرب",w*.5f,h*.25f,h*.055f,Color.rgb(245,190,65),true);
             if(mode==2) {
                 drawGeneralAvatar(c,w*.30f,h*.45f,h*.060f,false,false);
@@ -1275,7 +1277,7 @@ public class MainActivity extends Activity {
             if(setup) { drawSetup(c); return; }
             if(mode==0) {
                 drawMenuBackdrop(c);
-                if(historyScreen){drawHistory(c);return;}if(progressScreen){drawProgress(c);return;}if(helpScreen){drawHelp(c);return;}
+                if(historyScreen){drawHistory(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}if(progressScreen){drawProgress(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}if(helpScreen){drawHelp(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}
                 txt(c,"اختر ساحة المعركة",w*.5f,h*.205f,h*.060f,Color.rgb(248,232,190),true);
                 iconButton(c,w*.035f,h*.065f,w*.125f,h*.165f,dark,"⚙");iconButton(c,w*.875f,h*.065f,w*.965f,h*.165f,Color.rgb(135,48,43),"⏻");
                 float c1=w*.18f,c2=w*.50f,c3=w*.82f;
@@ -1384,7 +1386,7 @@ public class MainActivity extends Activity {
                 int diceColor=winner!=0?dark:(player==1?blue:red);
                 if((mode==3 || mode==4) && winner==0 && !choosing && die==0) {
                     txt(c,"بانتظار دورك",diceCx,diceCy+h*.012f,h*.027f,Color.WHITE,true);
-                } else drawDiceFace(c,diceCx,diceCy,diceSize*.88f,die>0?die:1);
+                } else if(die>0) drawDiceFace(c,diceCx,diceCy,diceSize*.88f,die);
             }
             if(choosing) { txt(c,"اختر السلاح",w*.5f,h*.965f,h*.026f,dark,true);txt(c,"عدد الطلقات المطلوبة: "+die,w*.5f,h*.925f,h*.022f,Color.WHITE,true); }
         }
@@ -1400,7 +1402,7 @@ public class MainActivity extends Activity {
             if(Math.hypot(x-touchDownX,y-touchDownY)>h*.10f){touchDown=false;return true;}
             touchDown=false;invalidate();
             if(titleScreen){titleScreen=false;invalidate();return true;}
-            if(battleIntro)return true;
+            if(battleIntro){if(x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f){battleIntro=false;setup=true;setupSide=(mode==1?2:1);}invalidate();return true;}
             float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
             boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
             if(y>=h*.765f && y<=h*.925f && x>=w*.025f && x<=w*.095f) {
@@ -1408,7 +1410,7 @@ public class MainActivity extends Activity {
                 invalidate();return true;
             }
             if(mode==0) {
-                if(historyScreen || progressScreen || helpScreen) { if(x>=w*.38f&&x<=w*.62f&&y>=h*.91f&&y<=h*.995f){historyScreen=false;progressScreen=false;helpScreen=false;} }
+                if(historyScreen || progressScreen || helpScreen) { if((x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f)||(x>=w*.38f&&x<=w*.62f&&y>=h*.91f&&y<=h*.995f)){historyScreen=false;progressScreen=false;helpScreen=false;} }
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
                 else if(y>=h*.275f&&y<=h*.55f&&x>=w*.03f&&x<=w*.33f){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
@@ -1420,6 +1422,11 @@ public class MainActivity extends Activity {
                 invalidate();return true;
             }
             if(setup) {
+                if(x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f){
+                    if(setupSide==2 && mode==1)setupSide=1;
+                    else {setup=false;mode=0;message="اختر طريقة اللعب";}
+                    invalidate();return true;
+                }
                 int idx=setupSide-1;
                 if(mode==2 && x>=w*.585f && x<=w*.945f && y>=h*.64f && y<=h*.755f) { showNameDialog(); return true; }
                 if(mode==2 && x>=w*.105f && x<=w*.425f && y>=h*.615f && y<=h*.90f) { difficulty=Math.max(0,Math.min(3,(int)((y/h-.615f)/.058f))); }
@@ -1500,8 +1507,8 @@ public class MainActivity extends Activity {
                 int lane=-1;
                 float[] weaponRows={h*.30f,h*.49f,h*.68f};
                 // اختيار السلاح بالضغط على رسمه نفسه، وليس على زر يحمل اسمه.
-                if(Math.abs(x-ownX)<w*.075f) {
-                    for(int i=0;i<3;i++) if(Math.abs(y-weaponRows[i])<h*.085f) lane=i;
+                if(Math.abs(x-ownX)<w*.052f) {
+                    for(int i=0;i<3;i++) if(Math.abs(y-weaponRows[i])<h*.052f) lane=i;
                 }
                 if(lane>=0) {
                     if(!canMove(player,lane))message="هذه الحركة غير ممكنة — اختر سلاحاً آخر";
