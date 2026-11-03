@@ -87,6 +87,15 @@ public class MainActivity extends Activity {
         private int setupSide = 1;
         private int difficulty = 1; // 0 beginner, 1 medium, 2 professional, 3 legendary
         private final String[] playerNames = {"أنت","اللاعب 2"};
+        private String savedPlayerName(int index) {
+            String fallback=index==0?"أنت":"اللاعب 2";
+            return MainActivity.this.getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE)
+                .getString("player_name_"+(index+1),fallback);
+        }
+        private void savePlayerName(int index,String name) {
+            MainActivity.this.getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE).edit()
+                .putString("player_name_"+(index+1),name).apply();
+        }
         private final int[] avatars = {0,1};
         private final int[] avatarColors = {Color.rgb(35,112,205),Color.rgb(205,69,54),Color.rgb(45,145,105),Color.rgb(142,85,180),Color.rgb(225,145,45),Color.rgb(65,115,155),Color.rgb(176,91,119),Color.rgb(105,137,91),Color.rgb(48,96,133),Color.rgb(166,91,61),Color.rgb(67,119,83),Color.rgb(116,82,145),Color.rgb(185,126,54),Color.rgb(54,124,132),Color.rgb(151,79,104),Color.rgb(112,125,73)};
         private int stage = 0; // opening toss: 0 or 1; 2 means game
