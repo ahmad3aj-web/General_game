@@ -581,7 +581,7 @@ public final class OnlineMatchSession {
                     String name = player.child("name").getValue(String.class);
                     Integer avatar = player.child("avatar").getValue(Integer.class);
                     listener.onPeerInfo(side, name == null ? "لاعب" : name,
-                            avatar == null ? 0 : Math.max(0, Math.min(5, avatar)));
+                            avatar == null ? 0 : Math.max(0, Math.min(17, avatar)));
                 }
                 if (peerFound) {
                     if (quickMatchMode && localSide == 1) {
