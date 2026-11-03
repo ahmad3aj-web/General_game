@@ -246,14 +246,7 @@ public class MainActivity extends Activity {
             }
         }
 
-        private void drawSprite(Canvas c,int sl,int st,int sr,int sb,float dl,float dt,float dr,float db,boolean flip) {
-            if(spriteSheet==null)return;
-            Rect src=new Rect(sl,st,sr,sb);
-            RectF dst=new RectF(dl,dt,dr,db);
-            p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.WHITE);p.setAlpha(255);p.setFilterBitmap(true);
-            if(flip){c.save();c.scale(-1f,1f,(dl+dr)*.5f,(dt+db)*.5f);c.drawBitmap(spriteSheet,src,dst,p);c.restore();}
-            else c.drawBitmap(spriteSheet,src,dst,p);
-        }
+
         private void drawDiceFace(Canvas c,float cx,float cy,float size,int value) {
             float half=size*.50f;
             RectF face=new RectF(cx-half,cy-half,cx+half,cy+half);
@@ -639,97 +632,7 @@ public class MainActivity extends Activity {
         private void drawAvatar(Canvas c,int index,float cx,float cy,float radius,boolean selected) {
             drawAvatar(c,index,cx,cy,radius,selected,false);
         }
-        private void drawAvatar(Canvas c,int index,float cx,float cy,float radius,boolean selected,boolean monochrome) {
-            if(spriteSheet!=null) {
-                int[][] faces={{18,8,132,130},{142,8,258,130},{264,8,380,130},{386,8,502,130},{500,8,622,130},{839,8,956,130},{963,8,1080,130},{1079,8,1197,130},{1197,8,1315,130},{1317,8,1447,130},{18,136,138,257},{142,136,263,257},{264,136,384,257},{389,136,510,257},{960,136,1087,257},{1088,136,1212,257},{1212,136,1335,257},{1332,136,1452,257}};
-                int[] q=faces[Math.floorMod(index,faces.length)];float rr=radius*1.18f;
-                drawSprite(c,q[0],q[1],q[2],q[3],cx-rr,cy-rr*1.03f,cx+rr,cy+rr*1.03f,false);
-                if(selected){p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.005f));p.setColor(gold);c.drawRoundRect(new RectF(cx-rr,cy-rr*1.03f,cx+rr,cy+rr*1.03f),radius*.22f,radius*.22f,p);p.setStyle(Paint.Style.FILL);}
-                return;
-            }
-            int teamColor=avatarColors[index%avatarColors.length];
-            if(monochrome)teamColor=grayColor(teamColor);
-            int ink=monochrome?Color.rgb(75,75,75):Color.rgb(43,48,49);
-            int[] skinTones={Color.rgb(255,218,178),Color.rgb(225,177,137),Color.rgb(190,137,101),Color.rgb(145,99,72)};
-            int skin=monochrome?grayColor(skinTones[index%skinTones.length]):skinTones[index%skinTones.length];
-            int hair=monochrome?Color.rgb(90,90,90):new int[]{Color.rgb(54,39,31),Color.rgb(35,34,34),Color.rgb(105,63,35),Color.rgb(47,43,65),Color.rgb(76,48,35),Color.rgb(35,54,65),Color.rgb(72,43,35),Color.rgb(38,35,31),Color.rgb(157,103,43),Color.rgb(89,52,42),Color.rgb(40,55,48),Color.rgb(119,77,58),Color.rgb(34,39,54),Color.rgb(174,125,75),Color.rgb(62,42,36),Color.rgb(53,61,69)}[index%16];
-            c.save();
-            p.setShader(null);p.setStyle(Paint.Style.FILL);
-            p.setColor(Color.argb(55,20,30,20));c.drawOval(new RectF(cx-radius*.72f,cy+radius*.68f,cx+radius*.72f,cy+radius*.91f),p);
-            p.setColor(selected?gold:ink);c.drawCircle(cx,cy,radius+(selected?h*.009f:h*.004f),p);
-            p.setColor(teamColor);c.drawCircle(cx,cy,radius*.94f,p);
-            p.setColor(Color.argb(48,255,255,255));c.drawCircle(cx-radius*.30f,cy-radius*.32f,radius*.52f,p);
-            // Shoulders and uniform.
-            p.setColor(ink);c.drawOval(new RectF(cx-radius*.61f,cy+radius*.38f,cx+radius*.61f,cy+radius*.99f),p);
-            p.setColor(shade(teamColor,.78f));c.drawOval(new RectF(cx-radius*.55f,cy+radius*.43f,cx+radius*.55f,cy+radius*.94f),p);
-            p.setColor(shade(teamColor,1.24f));c.drawRoundRect(new RectF(cx-radius*.10f,cy+radius*.47f,cx+radius*.10f,cy+radius*.78f),radius*.06f,radius*.06f,p);
-            // Neck, ears and face.
-            p.setColor(ink);c.drawRoundRect(new RectF(cx-radius*.19f,cy+radius*.20f,cx+radius*.19f,cy+radius*.58f),radius*.10f,radius*.10f,p);
-            p.setColor(skin);c.drawRoundRect(new RectF(cx-radius*.16f,cy+radius*.19f,cx+radius*.16f,cy+radius*.53f),radius*.09f,radius*.09f,p);
-            p.setColor(ink);c.drawCircle(cx-radius*.39f,cy-radius*.02f,radius*.13f,p);c.drawCircle(cx+radius*.39f,cy-radius*.02f,radius*.13f,p);
-            p.setColor(skin);c.drawCircle(cx-radius*.39f,cy-radius*.02f,radius*.085f,p);c.drawCircle(cx+radius*.39f,cy-radius*.02f,radius*.085f,p);
-            p.setColor(ink);c.drawOval(new RectF(cx-radius*.36f,cy-radius*.48f,cx+radius*.36f,cy+radius*.37f),p);
-            p.setColor(skin);c.drawOval(new RectF(cx-radius*.33f,cy-radius*.43f,cx+radius*.33f,cy+radius*.35f),p);
-            // Hair silhouette: first four masculine cuts, next four feminine styles.
-            boolean female=(index%2)==1;
-            p.setColor(ink);
-            if(female){
-                c.drawOval(new RectF(cx-radius*.39f,cy-radius*.57f,cx-radius*.20f,cy+radius*.48f),p);
-                c.drawOval(new RectF(cx+radius*.20f,cy-radius*.57f,cx+radius*.39f,cy+radius*.48f),p);
-            }
-            Path hairShape=new Path();hairShape.moveTo(cx-radius*.35f,cy-radius*.12f);
-            hairShape.quadTo(cx-radius*.52f,cy-radius*.59f,cx-radius*.12f,cy-radius*.57f);
-            hairShape.quadTo(cx+radius*.18f,cy-radius*.68f,cx+radius*.36f,cy-radius*.35f);
-            hairShape.lineTo(cx+radius*.31f,cy-radius*.20f);
-            hairShape.quadTo(cx,cy-radius*.34f,cx-radius*.35f,cy-radius*.12f);hairShape.close();
-            c.drawPath(hairShape,p);
-            p.setColor(hair);
-            Path hairFill=new Path();hairFill.moveTo(cx-radius*.32f,cy-radius*.15f);
-            hairFill.quadTo(cx-radius*.43f,cy-radius*.53f,cx-radius*.10f,cy-radius*.53f);
-            hairFill.quadTo(cx+radius*.17f,cy-radius*.62f,cx+radius*.32f,cy-radius*.34f);
-            hairFill.lineTo(cx+radius*.28f,cy-radius*.22f);
-            hairFill.quadTo(cx,cy-radius*.31f,cx-radius*.32f,cy-radius*.15f);hairFill.close();c.drawPath(hairFill,p);
-            if(index%3==1 && !female){p.setColor(ink);c.drawRoundRect(new RectF(cx-radius*.34f,cy-radius*.28f,cx+radius*.34f,cy-radius*.12f),radius*.08f,radius*.08f,p);p.setColor(hair);c.drawRoundRect(new RectF(cx-radius*.30f,cy-radius*.27f,cx+radius*.30f,cy-radius*.16f),radius*.06f,radius*.06f,p);}
-            // Eyebrows, eyes, nose and friendly expression.
-            p.setColor(ink);p.setStrokeWidth(Math.max(2,radius*.045f));p.setStrokeCap(Paint.Cap.ROUND);
-            c.drawLine(cx-radius*.23f,cy-radius*.12f,cx-radius*.10f,cy-radius*.14f,p);
-            c.drawLine(cx+radius*.10f,cy-radius*.14f,cx+radius*.23f,cy-radius*.12f,p);
-            p.setColor(Color.WHITE);c.drawCircle(cx-radius*.17f,cy-radius*.04f,radius*.075f,p);c.drawCircle(cx+radius*.17f,cy-radius*.04f,radius*.075f,p);
-            p.setColor(ink);c.drawCircle(cx-radius*.16f,cy-radius*.035f,radius*.038f,p);c.drawCircle(cx+radius*.16f,cy-radius*.035f,radius*.038f,p);
-            p.setColor(shade(skin,.82f));c.drawOval(new RectF(cx-radius*.035f,cy+radius*.01f,cx+radius*.035f,cy+radius*.16f),p);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,radius*.035f));p.setColor(ink);
-            c.drawArc(new RectF(cx-radius*.15f,cy+radius*.11f,cx+radius*.15f,cy+radius*.29f),15,150,false,p);
-            p.setStyle(Paint.Style.FILL);p.setStrokeCap(Paint.Cap.BUTT);
-            // Portrait depth, hair highlights and individual hairstyle accents.
-            p.setStyle(Paint.Style.FILL);
-            p.setColor(Color.argb(monochrome?20:34,80,45,25));
-            c.drawOval(new RectF(cx+radius*.13f,cy-radius*.20f,cx+radius*.29f,cy+radius*.22f),p);
-            p.setColor(Color.argb(75,255,245,220));
-            c.drawOval(new RectF(cx-radius*.25f,cy-radius*.34f,cx-radius*.12f,cy-radius*.20f),p);
-            p.setColor(hair);
-            if(female) {
-                p.setColor(hair);
-                if(index==4){c.drawOval(new RectF(cx-radius*.39f,cy-radius*.61f,cx+radius*.39f,cy-radius*.29f),p);}
-                else if(index==5){c.drawOval(new RectF(cx-radius*.42f,cy-radius*.60f,cx+radius*.42f,cy-radius*.18f),p);c.drawOval(new RectF(cx-radius*.39f,cy+radius*.18f,cx-radius*.20f,cy+radius*.53f),p);c.drawOval(new RectF(cx+radius*.20f,cy+radius*.18f,cx+radius*.39f,cy+radius*.53f),p);}
-                else if(index==6){c.drawRoundRect(new RectF(cx-radius*.40f,cy-radius*.58f,cx+radius*.40f,cy-radius*.22f),radius*.18f,radius*.18f,p);}
-                else {c.drawOval(new RectF(cx-radius*.40f,cy-radius*.58f,cx+radius*.40f,cy-radius*.24f),p);c.drawCircle(cx,cy-radius*.55f,radius*.12f,p);}
-            } else if(index%3==0) {
-                c.drawOval(new RectF(cx-radius*.36f,cy-radius*.56f,cx-radius*.16f,cy-radius*.28f),p);
-                c.drawOval(new RectF(cx+radius*.16f,cy-radius*.57f,cx+radius*.36f,cy-radius*.27f),p);
-            } else if(index%3==2) {
-                c.drawRoundRect(new RectF(cx-radius*.37f,cy-radius*.48f,cx+radius*.37f,cy-radius*.35f),radius*.07f,radius*.07f,p);
-            }
-            // Neckline and jacket seams.
-            p.setColor(ink);p.setStrokeWidth(Math.max(1.5f,radius*.025f));p.setStyle(Paint.Style.STROKE);
-            c.drawLine(cx-radius*.30f,cy+radius*.54f,cx-radius*.13f,cy+radius*.78f,p);
-            c.drawLine(cx+radius*.30f,cy+radius*.54f,cx+radius*.13f,cy+radius*.78f,p);
-            p.setStyle(Paint.Style.FILL);
-            p.setColor(Color.argb(100,255,255,255));
-            c.drawCircle(cx-radius*.46f,cy+radius*.52f,radius*.035f,p);
-            // Small uniform badge.
-            p.setColor(Color.argb(210,245,225,160));c.drawCircle(cx+radius*.34f,cy+radius*.60f,radius*.075f,p);
-            c.restore();
-        }
+
         private void drawGeneralAvatar(Canvas c,float cx,float cy,float radius,boolean selected,boolean monochrome) {
             // General has a unique veteran commander portrait; rank details evolve with difficulty.
             int level=Math.max(0,Math.min(3,difficulty));
