@@ -1154,8 +1154,6 @@ public class MainActivity extends Activity {
                 txt(c,"اضغط للمتابعة",w*.5f,h*.78f,h*.035f,Color.WHITE,true);
                 return;
             }
-            iconButton(c,w*.025f,h*.765f,w*.095f,h*.835f,dark,"⚙");
-            iconButton(c,w*.025f,h*.855f,w*.095f,h*.925f,Color.rgb(135,48,43),"↪");
             txt(c,"GENERAL  •  جنيرال",w*.5f,h*.075f,h*.06f,Color.rgb(238,224,190),true);
             if(battleIntro){drawBattleIntro(c);return;}
             if(setup) { drawSetup(c); return; }
@@ -1208,6 +1206,9 @@ public class MainActivity extends Activity {
                 return;
             }
             drawBattlefield(c);
+            // Draw utility controls AFTER the battlefield so the background cannot cover them.
+            iconButton(c,w*.025f,h*.765f,w*.095f,h*.835f,dark,"⚙");
+            iconButton(c,w*.025f,h*.855f,w*.095f,h*.925f,Color.rgb(135,48,43),"↪");
             float trackL=w*.18f, trackR=w*.82f, trackW=trackR-trackL;
             float[] rows={h*.29f,h*.49f,h*.69f};
             drawAvatar(c,avatars[0],w*.90f,h*.115f,h*.070f,false);
