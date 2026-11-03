@@ -18,6 +18,7 @@ import android.graphics.Rect;
 import android.graphics.Path;
 import android.graphics.LinearGradient;
 import android.graphics.Shader;
+import android.graphics.Movie;
 import android.view.MotionEvent;
 import android.view.View;
 import android.media.AudioAttributes;
@@ -58,6 +59,9 @@ public class MainActivity extends Activity {
     private class GameView extends View {
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final HashMap<String,Bitmap> art = new HashMap<>();
+        private Movie fireMovie;
+        private long fireStartedAt = System.currentTimeMillis();
+        private boolean titleScreen = true;
         private SoundPool gameSoundPool;
         private MediaPlayer backgroundMusic;
         private boolean soundEnabled, musicEnabled, vibrationEnabled;
@@ -121,6 +125,7 @@ public class MainActivity extends Activity {
             }
             String[] scenes={"coastal_village.jpg","desert_ruins.jpg","airfield.jpg","mountain_valley.jpg"};
             for(String name:scenes)try{art.put(name,BitmapFactory.decodeStream(getAssets().open("backgrounds/"+name)));}catch(Exception ignored){}
+            try { fireMovie=Movie.decodeStream(getAssets().open("vehicles/Flame_GIF_2.gif")); } catch(Exception ignored) {}
         }
         private void drawArt(Canvas c,String name,float l,float t,float r,float b,boolean flip) {
             Bitmap bitmap=art.get(name);if(bitmap==null)return;RectF dst=new RectF(l,t,r,b);
@@ -264,8 +269,29 @@ public class MainActivity extends Activity {
 
 
         private void drawDiceFace(Canvas c,float cx,float cy,float size,int value) {
-            String file=value==3?"dice_three.png":value==4?"dice_four.png":value==5?"dice_five.png":value==6?"dice_six.png":"dice_single.png";
-            drawArt(c,file,cx-size*.5f,cy-size*.5f,cx+size*.5f,cy+size*.5f,false);
+            String file=value==3?"dice_three.png":value==4?"dice_four.png":value==5?"dice_five.png":value==6?"dice_six_detail.png":null;
+            if(file!=null && art.get(file)!=null) {
+                drawArt(c,file,cx-size*.5f,cy-size*.5f,cx+size*.5f,cy+size*.5f,false);
+                return;
+            }
+            // Fallback for the missing one- and two-pip artwork: draw a complete die face.
+            p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(248,248,238));
+            c.drawRoundRect(new RectF(cx-size*.5f,cy-size*.5f,cx+size*.5f,cy+size*.5f),size*.16f,size*.16f,p);
+            p.setColor(Color.rgb(45,55,48));p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,size*.035f));
+            c.drawRoundRect(new RectF(cx-size*.48f,cy-size*.48f,cx+size*.48f,cy+size*.48f),size*.15f,size*.15f,p);p.setStyle(Paint.Style.FILL);
+            float d=size*.13f;
+            c.drawCircle(cx,cy,d,p);
+            if(value==2){c.drawCircle(cx-size*.23f,cy-size*.23f,d,p);c.drawCircle(cx+size*.23f,cy+size*.23f,d,p);}
+        }
+
+        private void drawFire(Canvas c,float cx,float cy) {
+            if(fireMovie==null)return;
+            int duration=Math.max(1,fireMovie.duration());
+            fireMovie.setTime((int)((System.currentTimeMillis()-fireStartedAt)%duration));
+            float fw=w*.105f,fh=h*.115f;
+            c.save();c.translate(cx-fw*.5f,cy-fh*.5f);c.scale(fw/fireMovie.width(),fh/fireMovie.height());
+            fireMovie.draw(c,0,0);c.restore();
+            postInvalidateDelayed(45);
         }
 
         private void drawBattlefield(Canvas c) {
@@ -282,6 +308,13 @@ public class MainActivity extends Activity {
         private void box(Canvas c,float l,float t,float r,float b,int color) {
             p.setColor(color); p.setStyle(Paint.Style.FILL);
             c.drawRoundRect(new RectF(l,t,r,b),16,16,p);
+        }
+        private void iconButton(Canvas c,float l,float t,float r,float b,int color,String glyph) {
+            float radius=Math.min(b-t,r-l)*.22f;
+            p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(90,0,0,0));
+            c.drawRoundRect(new RectF(l,t+h*.004f,r,b+h*.004f),radius,radius,p);
+            p.setColor(color);c.drawRoundRect(new RectF(l,t,r,b),radius,radius,p);
+            txt(c,glyph,(l+r)*.5f,(t+b)*.5f+h*.018f,(b-t)*.52f,Color.WHITE,true);
         }
         private void btn(Canvas c,String s,float l,float t,float r,float b,int color) {
             float radius=Math.min(h*.025f,(b-t)*.24f);
@@ -645,45 +678,8 @@ public class MainActivity extends Activity {
         }
 
         private void drawGeneralAvatar(Canvas c,float cx,float cy,float radius,boolean selected,boolean monochrome) {
-            // General has a unique veteran commander portrait; rank details evolve with difficulty.
-            int level=Math.max(0,Math.min(3,difficulty));
-            int ink=monochrome?Color.DKGRAY:Color.rgb(39,43,39);
-            int goldTone=monochrome?Color.GRAY:Color.rgb(224,180,72);
-            int uniform=monochrome?Color.GRAY:new int[]{Color.rgb(91,119,91),Color.rgb(73,105,79),Color.rgb(58,83,68),Color.rgb(48,65,57)}[level];
+            // Use the supplied character art as-is; no glasses, beard, medals or added accessories.
             drawAvatar(c,5,cx,cy,radius,selected,monochrome);
-            c.save();
-            p.setShader(null);p.setStyle(Paint.Style.FILL);
-            // Distinct commander beard and strong moustache.
-            p.setColor(ink);
-            if(level>=1) {
-                Path beard=new Path();beard.moveTo(cx-radius*.24f,cy+radius*.19f);
-                beard.quadTo(cx,cy+radius*.43f,cx+radius*.24f,cy+radius*.19f);
-                beard.quadTo(cx+radius*.17f,cy+radius*.48f,cx,cy+radius*.48f);
-                beard.quadTo(cx-radius*.17f,cy+radius*.48f,cx-radius*.24f,cy+radius*.19f);
-                c.drawPath(beard,p);
-                c.drawOval(new RectF(cx-radius*.23f,cy+radius*.12f,cx+radius*.23f,cy+radius*.27f),p);
-            }
-            // Commander's peaked cap, with progressively richer insignia.
-            p.setColor(ink);c.drawRoundRect(new RectF(cx-radius*.43f,cy-radius*.57f,cx+radius*.43f,cy-radius*.31f),radius*.10f,radius*.10f,p);
-            p.setColor(uniform);c.drawRoundRect(new RectF(cx-radius*.39f,cy-radius*.54f,cx+radius*.39f,cy-radius*.34f),radius*.08f,radius*.08f,p);
-            p.setColor(ink);c.drawOval(new RectF(cx-radius*.48f,cy-radius*.37f,cx+radius*.48f,cy-radius*.27f),p);
-            p.setColor(goldTone);c.drawCircle(cx,cy-radius*.43f,radius*(level==3?.105f:.075f),p);
-            p.setColor(Color.rgb(255,235,170));c.drawCircle(cx,cy-radius*.43f,radius*.035f,p);
-            // Rank bars and decorations.
-            p.setColor(goldTone);
-            for(int i=0;i<=level;i++) c.drawRoundRect(new RectF(cx-radius*.32f+i*radius*.13f,cy+radius*.56f,cx-radius*.25f+i*radius*.13f,cy+radius*.66f),radius*.02f,radius*.02f,p);
-            if(level>=2) {
-                p.setColor(goldTone);
-                Path medal=new Path();medal.moveTo(cx+radius*.34f,cy+radius*.48f);medal.lineTo(cx+radius*.43f,cy+radius*.61f);medal.lineTo(cx+radius*.34f,cy+radius*.73f);medal.lineTo(cx+radius*.25f,cy+radius*.61f);medal.close();c.drawPath(medal,p);
-                p.setColor(Color.rgb(255,235,170));c.drawCircle(cx+radius*.34f,cy+radius*.61f,radius*.045f,p);
-            }
-            if(level==3) {
-                p.setColor(Color.argb(monochrome?80:180,235,205,120));
-                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1.5f,radius*.045f));
-                c.drawArc(new RectF(cx-radius*.52f,cy-radius*.68f,cx+radius*.52f,cy+radius*.02f),205,130,false,p);
-                p.setStyle(Paint.Style.FILL);
-            }
-            c.restore();
         }
         private void drawSetup(Canvas c) {
             txt(c,"إعداد اللاعبين",w*.5f,h*.16f,h*.065f,dark,true);
@@ -1145,9 +1141,16 @@ public class MainActivity extends Activity {
         @Override protected void onDraw(Canvas c) {
             super.onDraw(c); w=getWidth(); h=getHeight();
             drawBattlefield(c);
+            if(titleScreen) {
+                p.setColor(Color.argb(205,9,17,15));c.drawRect(0,0,w,h,p);
+                txt(c,"WAR OF GENERALS",w*.5f,h*.40f,h*.105f,Color.rgb(245,190,65),true);
+                txt(c,"GENERAL  •  جنيرال",w*.5f,h*.51f,h*.045f,Color.WHITE,true);
+                txt(c,"اضغط للمتابعة",w*.5f,h*.78f,h*.035f,Color.WHITE,true);
+                return;
+            }
             txt(c,"GENERAL  •  جنيرال",w*.5f,h*.075f,h*.06f,dark,true);
-            btn(c,"الإعدادات",w*.015f,h*.025f,w*.17f,h*.105f,dark);
-            btn(c,"خروج",w*.83f,h*.025f,w*.985f,h*.105f,Color.rgb(135,48,43));
+            iconButton(c,w*.025f,h*.025f,w*.095f,h*.115f,dark,"⚙");
+            iconButton(c,w*.905f,h*.025f,w*.975f,h*.115f,Color.rgb(135,48,43),"↪");
             if(battleIntro){drawBattleIntro(c);return;}
             if(setup) { drawSetup(c); return; }
             if(mode==0) {
@@ -1203,8 +1206,8 @@ public class MainActivity extends Activity {
             float[] rows={h*.29f,h*.49f,h*.69f};
             txt(c,mode==2?"جنيرال":playerNames[1],w*.08f,h*.19f,h*.035f,red,true);
             txt(c,playerNames[0],w*.92f,h*.19f,h*.035f,blue,true);
-            drawAvatar(c,avatars[0],w*.92f,h*.105f,h*.035f,false);
-            if(mode==2) drawGeneralAvatar(c,w*.08f,h*.105f,h*.035f,false,false); else drawAvatar(c,avatars[1],w*.08f,h*.105f,h*.035f,false);
+            drawAvatar(c,avatars[0],w*.90f,h*.115f,h*.070f,false);
+            if(mode==2) drawGeneralAvatar(c,w*.10f,h*.115f,h*.070f,false,false); else drawAvatar(c,avatars[1],w*.10f,h*.115f,h*.070f,false);
             if(openingToss){
                 float ds=h*.075f;
                 box(c,w*.81f-ds/2,h*.145f,w*.81f+ds/2,h*.145f+ds,red);
@@ -1227,8 +1230,8 @@ public class MainActivity extends Activity {
                 }
                 drawWeapon(c,lane,w*.925f,y,blue,false);
                 drawWeapon(c,lane,w*.075f,y,red,true);
-                if(dead1[lane]) txt(c,"×",w*.925f,y-gap,h*.07f,Color.RED,true);
-                if(dead2[lane]) txt(c,"×",w*.075f,y+gap,h*.07f,Color.RED,true);
+                if(dead1[lane]) drawFire(c,w*.925f,y);
+                if(dead2[lane]) drawFire(c,w*.075f,y);
                 if(choosing && winner==0) {
                     float ownX=player==1?w*.925f:w*.075f;
                     if(canMove(player,lane)) {
@@ -1252,10 +1255,6 @@ public class MainActivity extends Activity {
                 drawDiceFace(c,diceCx,diceCy,diceSize*.88f,die>0?die:1);
             }
             if(choosing) txt(c,"اختر السلاح",w*.5f,h*.965f,h*.026f,dark,true);
-            if(winner!=0) {
-                box(c,w*.76f,h*.82f,w*.96f,h*.93f,dark);
-                txt(c,"إعادة",w*.86f,h*.89f,h*.035f,Color.WHITE,true);
-            }
         }
 
         @Override public boolean onTouchEvent(MotionEvent e) {
@@ -1268,12 +1267,13 @@ public class MainActivity extends Activity {
             float x=e.getX(),y=e.getY();
             if(Math.hypot(x-touchDownX,y-touchDownY)>h*.10f){touchDown=false;return true;}
             touchDown=false;invalidate();
+            if(titleScreen){titleScreen=false;invalidate();return true;}
             if(battleIntro)return true;
             float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
             boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
-            if(y>=h*.025f && y<=h*.11f) {
-                if(x>=w*.015f && x<=w*.19f)showSettingsDialog();
-                else if(x>=w*.81f && x<=w*.985f)showExitConfirmation();
+            if(y>=h*.025f && y<=h*.115f) {
+                if(x>=w*.025f && x<=w*.095f)showSettingsDialog();
+                else if(x>=w*.905f && x<=w*.975f)showExitConfirmation();
                 invalidate();return true;
             }
             if(mode==0) {
@@ -1327,8 +1327,7 @@ public class MainActivity extends Activity {
             }
             if(winner!=0 && !bonusAttempt) {
                 if(y>=h*.70f&&y<=h*.80f) {
-                    if(x>=w*.25f&&x<=w*.48f) resetMatch();
-                    else if(x>=w*.52f&&x<=w*.75f) { matchEpoch++; timerlessCloseLan(); timerlessCloseOnline(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; battleIntro=false; progressScreen=false; explosionAt=0; message="اختر طريقة اللعب"; }
+                    if(x>=w*.52f&&x<=w*.75f) { matchEpoch++; timerlessCloseLan(); timerlessCloseOnline(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; battleIntro=false; progressScreen=false; explosionAt=0; message="اختر طريقة اللعب"; }
                 }
                 invalidate();return true;
             }
