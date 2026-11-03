@@ -156,7 +156,7 @@ public class MainActivity extends Activity {
             }
             String[] generals={"1_Khabeer_Nashi.png","2_Qaid_Zou_Khabra.png","3_General_Mukhadram.png","4_Qaid_Faiq_Alkhabra.png"};
             for(String name:generals)try{art.put(name,BitmapFactory.decodeStream(getAssets().open("characters/"+name)));}catch(Exception ignored){}
-            String[] uiButtons={"blue_button_01.png","blue_button_02.png","red_button_01.png","red_button_02.png"};
+            String[] uiButtons={"blue_button_01.png","blue_button_02.png","red_button_01.png","red_button_02.png","vs_emblem.png"};
             for(String name:uiButtons)try{art.put(name,BitmapFactory.decodeStream(getAssets().open("ui/"+name)));}catch(Exception ignored){}
             String[] scenes={"2112.w023.n001.1491B.p1.1491.jpg","2207_w023_n003_2757b_p1_2757.jpg","png.png","war-zone-landscape-with-apocalyptic-destruction.jpg","1793716501127.jpg","Intro.jpg"};
             for(String name:scenes)try{art.put(name,BitmapFactory.decodeStream(getAssets().open("backgrounds/"+name)));}catch(Exception ignored){}
@@ -358,6 +358,16 @@ public class MainActivity extends Activity {
             c.scale(fw/Math.max(1,winMovie.width()),fh/Math.max(1,winMovie.height()));
             winMovie.draw(c,0,0);
             c.restore();
+            postInvalidateDelayed(45);
+        }
+        private void drawWinnerGif(Canvas c,float cx,float cy) {
+            if(winMovie==null)return;
+            int duration=Math.max(1,winMovie.duration());
+            winMovie.setTime((int)((System.currentTimeMillis()-fireStartedAt)%duration));
+            float fw=w*.19f,fh=h*.23f;
+            c.save();c.translate(cx-fw*.5f,cy-fh*.5f);
+            c.scale(fw/Math.max(1,winMovie.width()),fh/Math.max(1,winMovie.height()));
+            winMovie.draw(c,0,0);c.restore();
             postInvalidateDelayed(45);
         }
         private void clearWinEffects() {
@@ -992,18 +1002,18 @@ public class MainActivity extends Activity {
             iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
             txt(c,"استعدوا للحرب",w*.5f,h*.25f,h*.055f,Color.rgb(245,190,65),true);
             if(mode==2) {
-                drawGeneralAvatar(c,w*.30f,h*.45f,h*.060f,false,false);
-                drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.115f,true);
-                txt(c,"جنيرال",w*.30f,h*.61f,h*.036f,Color.WHITE,true);
-                txt(c,rankedPlayerName(playerNames[0]),w*.70f,h*.61f,h*.036f,Color.WHITE,true);
+                drawGeneralAvatar(c,w*.30f,h*.45f,h*.120f,false,false);
+                drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.230f,true);
+                txt(c,"جنيرال",w*.30f,h*.665f,h*.036f,Color.WHITE,true);
+                txt(c,rankedPlayerName(playerNames[0]),w*.70f,h*.665f,h*.036f,Color.WHITE,true);
             } else {
-                drawAvatar(c,avatars[1],w*.30f,h*.45f,h*.115f,false);
-                drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.115f,true);
-                txt(c,rankedPlayerName(playerNames[1]),w*.30f,h*.61f,h*.036f,Color.WHITE,true);
-                txt(c,rankedPlayerName(playerNames[0]),w*.70f,h*.61f,h*.036f,Color.WHITE,true);
+                drawAvatar(c,avatars[1],w*.30f,h*.45f,h*.230f,false);
+                drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.230f,true);
+                txt(c,rankedPlayerName(playerNames[1]),w*.30f,h*.665f,h*.036f,Color.WHITE,true);
+                txt(c,rankedPlayerName(playerNames[0]),w*.70f,h*.665f,h*.036f,Color.WHITE,true);
             }
-            txt(c,"VS",w*.5f,h*.47f,h*.052f,Color.rgb(245,190,65),true);
-            txt(c,String.valueOf(Math.max(1,introStep)),w*.5f,h*.77f,h*.17f,Color.WHITE,true);
+            drawArt(c,"vs_emblem.png",w*.425f,h*.385f,w*.575f,h*.555f,false);
+            txt(c,String.valueOf(Math.max(1,introStep)),w*.5f,h*.79f,h*.17f,Color.WHITE,true);
         }
         private void drawHelp(Canvas c) {
             box(c,w*.055f,h*.105f,w*.945f,h*.895f,Color.rgb(244,248,235));
@@ -1432,21 +1442,24 @@ public class MainActivity extends Activity {
                     if(dead2[i] && !dead1[i])blueWins++;
                     else if(dead1[i] && !dead2[i])redWins++;
                 }
-                float portraitY=h*.35f, portraitR=h*.050f;
+                float portraitY=h*.35f, portraitR=h*.100f;
                 if(mode==2) {
                     boolean generalWon=winner==2;
-                    drawGeneralAvatar(c,w*.34f,portraitY,portraitR,generalWon,!generalWon);
-                    drawAvatar(c,avatars[0],w*.66f,portraitY,portraitR,!generalWon,generalWon);
-                    txt(c,"جنيرال",w*.34f,h*.47f,h*.034f,dark,true);
-                    txt(c,playerNames[0],w*.66f,h*.47f,h*.034f,blue,true);
+                    float generalX=w*.34f,playerX=w*.66f;
+                    drawWinnerGif(c,generalWon?generalX:playerX,portraitY-h*.045f);
+                    drawGeneralAvatar(c,generalX,portraitY,portraitR,generalWon,!generalWon);
+                    drawAvatar(c,avatars[0],playerX,portraitY,portraitR,!generalWon,generalWon);
+                    txt(c,"جنيرال",generalX,h*.505f,h*.034f,dark,true);
+                    txt(c,playerNames[0],playerX,h*.505f,h*.034f,blue,true);
                 } else {
                     String loserName=winner==1?playerNames[1]:playerNames[0];
                     int winnerAvatar=winner==1?avatars[0]:avatars[1];
                     int loserAvatar=winner==1?avatars[1]:avatars[0];
+                    drawWinnerGif(c,w*.34f,portraitY-h*.045f);
                     drawAvatar(c,winnerAvatar,w*.34f,portraitY,portraitR,true);
                     drawAvatar(c,loserAvatar,w*.66f,portraitY,portraitR,false,true);
-                    txt(c,winnerName,w*.34f,h*.47f,h*.034f,blue,true);
-                    txt(c,loserName,w*.66f,h*.47f,h*.034f,dark,true);
+                    txt(c,winnerName,w*.34f,h*.505f,h*.034f,blue,true);
+                    txt(c,loserName,w*.66f,h*.505f,h*.034f,dark,true);
                 }
                 txt(c,"الأسلحة التي دمّرها كل لاعب",w*.5f,h*.555f,h*.027f,dark,true);
                 if(mode==2) {
