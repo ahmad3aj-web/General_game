@@ -254,9 +254,20 @@ public class MainActivity extends Activity {
             if(flip){c.save();c.scale(-1f,1f,(dl+dr)*.5f,(dt+db)*.5f);c.drawBitmap(spriteSheet,src,dst,p);c.restore();}
             else c.drawBitmap(spriteSheet,src,dst,p);
         }
+        private void drawDiceFace(Canvas c,float cx,float cy,float size,int value) {
+            float half=size*.50f;
+            RectF face=new RectF(cx-half,cy-half,cx+half,cy+half);
+            p.setShader(new LinearGradient(face.left,face.top,face.right,face.bottom,Color.rgb(255,255,250),Color.rgb(205,215,222),Shader.TileMode.CLAMP));
+            p.setStyle(Paint.Style.FILL);p.setColor(Color.WHITE);c.drawRoundRect(face,size*.13f,size*.13f,p);p.setShader(null);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.003f));p.setColor(Color.rgb(70,83,94));c.drawRoundRect(face,size*.13f,size*.13f,p);p.setStyle(Paint.Style.FILL);
+            float d=size*.105f,a=size*.25f;
+            float[][] dots={{},{ {0,0} },{ {-a,-a},{a,a} },{ {-a,-a},{0,0},{a,a} },{ {-a,-a},{a,-a},{-a,a},{a,a} },{ {-a,-a},{a,-a},{0,0},{-a,a},{a,a} },{ {-a,-a},{a,-a},{-a,0},{a,0},{-a,a},{a,a} }};
+            for(float[] dot:dots[value>=1&&value<=6?value:1]){p.setColor(Color.rgb(30,42,53));c.drawCircle(cx+dot[0],cy+dot[1],d,p);}
+        }
+
         private void drawBattlefield(Canvas c) {
             int scene=Math.floorMod(matchEpoch,4);
-            int[][] crops={{24,365,354,482},{383,365,713,482},{744,365,1072,482},{25,526,354,650}};
+            int[][] crops={{16,354,365,531},{375,354,724,531},{733,354,1082,531},{15,545,366,698}};
             int[] q=crops[scene];
             drawSprite(c,q[0],q[1],q[2],q[3],0,0,w,h,false);
             p.setColor(Color.argb(28,18,25,24));p.setStyle(Paint.Style.FILL);c.drawRect(0,0,w,h,p);
@@ -285,10 +296,7 @@ public class MainActivity extends Activity {
                     pressed?shade(color,.88f):shade(color,1.12f),
                     pressed?shade(color,.72f):shade(color,.88f),Shader.TileMode.CLAMP));
             c.drawRoundRect(face,radius*.82f,radius*.82f,p);p.setShader(null);
-            if(spriteSheet!=null && (Color.blue(color)>Color.red(color)*1.15f || Color.red(color)>Color.blue(color)*1.15f)) {
-                boolean isBlue=Color.blue(color)>Color.red(color);
-                drawSprite(c,isBlue?378:731,644,isBlue?461:814,699,face.left,face.top,face.right,face.bottom,false);
-            }
+            // Avoid overlaying unrelated image fragments on button faces.
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1.5f,h*.0022f));
             p.setColor(Color.argb(165,255,255,255));
             c.drawRoundRect(face,radius*.82f,radius*.82f,p);p.setStyle(Paint.Style.FILL);
@@ -633,7 +641,7 @@ public class MainActivity extends Activity {
         }
         private void drawAvatar(Canvas c,int index,float cx,float cy,float radius,boolean selected,boolean monochrome) {
             if(spriteSheet!=null) {
-                int[][] faces={{22,8,130,127},{145,8,253,127},{267,8,375,127},{389,8,497,127},{503,8,619,127},{842,8,953,127},{966,8,1077,127},{1082,8,1194,127},{1200,8,1312,127},{1320,8,1443,127},{22,138,136,254},{146,138,261,254},{267,138,381,254},{392,138,506,254},{963,138,1083,254},{1092,138,1208,254}};
+                int[][] faces={{18,8,132,130},{142,8,258,130},{264,8,380,130},{386,8,502,130},{500,8,622,130},{839,8,956,130},{963,8,1080,130},{1079,8,1197,130},{1197,8,1315,130},{1317,8,1447,130},{18,136,138,257},{142,136,263,257},{264,136,384,257},{389,136,510,257},{960,136,1087,257},{1088,136,1212,257},{1212,136,1335,257},{1332,136,1452,257}};
                 int[] q=faces[Math.floorMod(index,faces.length)];float rr=radius*1.18f;
                 drawSprite(c,q[0],q[1],q[2],q[3],cx-rr,cy-rr*1.03f,cx+rr,cy+rr*1.03f,false);
                 if(selected){p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.005f));p.setColor(gold);c.drawRoundRect(new RectF(cx-rr,cy-rr*1.03f,cx+rr,cy+rr*1.03f),radius*.22f,radius*.22f,p);p.setStyle(Paint.Style.FILL);}
@@ -767,23 +775,23 @@ public class MainActivity extends Activity {
             txt(c,"إعداد اللاعبين",w*.5f,h*.16f,h*.065f,dark,true);
             txt(c,setupSide==1?"اللاعب الأول — الأزرق":"اللاعب الثاني — الأحمر",w*.5f,h*.25f,h*.043f,setupSide==1?blue:red,true);
             int idx=setupSide-1;
-            drawAvatar(c,avatars[idx],w*.5f,h*.40f,h*.075f,true);
-            box(c,w*.27f,h*.50f,w*.73f,h*.59f,Color.rgb(248,250,239));
-            txt(c,playerNames[idx],w*.5f,h*.56f,h*.043f,dark,true);
-            txt(c,"اضغط على الاسم لتعديله",w*.5f,h*.65f,h*.028f,dark,false);
+            float portraitY=mode==2?h*.43f:h*.46f;
+            drawAvatar(c,avatars[idx],w*.5f,portraitY,h*.135f,true);
+            p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(34,65,48));
+            Path leftArrow=new Path();leftArrow.moveTo(w*.17f,portraitY);leftArrow.lineTo(w*.235f,portraitY-h*.045f);leftArrow.lineTo(w*.235f,portraitY+h*.045f);leftArrow.close();c.drawPath(leftArrow,p);
+            Path rightArrow=new Path();rightArrow.moveTo(w*.83f,portraitY);rightArrow.lineTo(w*.765f,portraitY-h*.045f);rightArrow.lineTo(w*.765f,portraitY+h*.045f);rightArrow.close();c.drawPath(rightArrow,p);
+            txt(c,"الشخصية "+(avatars[idx]+1)+" من 18",w*.5f,portraitY+h*.17f,h*.027f,dark,true);
+            box(c,w*.27f,h*.62f,w*.73f,h*.70f,Color.rgb(248,250,239));
+            txt(c,playerNames[idx],w*.5f,h*.675f,h*.043f,dark,true);
+            txt(c,"اضغط على الاسم لتعديله",w*.5f,h*.72f,h*.024f,dark,false);
             if(mode==2) {
                 String[] levels={"مبتدئ","متوسط","محترف","أسطوري"};
-                txt(c,"مستوى جنيرال",w*.5f,h*.675f,h*.031f,dark,true);
+                txt(c,"مستوى جنيرال",w*.5f,h*.755f,h*.026f,dark,true);
                 for(int i=0;i<4;i++) {
                     float left=w*(.16f+i*.18f);
-                    box(c,left,h*.695f,left+w*.16f,h*.755f,difficulty==i?gold:Color.rgb(230,237,218));
-                    txt(c,levels[i],left+w*.08f,h*.733f,h*.025f,dark,difficulty==i);
+                    box(c,left,h*.775f,left+w*.16f,h*.825f,difficulty==i?gold:Color.rgb(230,237,218));
+                    txt(c,levels[i],left+w*.08f,h*.807f,h*.022f,dark,difficulty==i);
                 }
-                txt(c,"اختر الشخصية — 16 بطلاً وبطلة",w*.5f,h*.785f,h*.026f,dark,true);
-                for(int i=0;i<16;i++) drawAvatar(c,i,w*(.29f+(i%4)*.14f),h*(.81f+(i/4)*.026f),h*.017f,avatars[idx]==i);
-            } else {
-                txt(c,"اختر الشخصية — 16 بطلاً وبطلة",w*.5f,h*.735f,h*.027f,dark,true);
-                for(int i=0;i<16;i++) drawAvatar(c,i,w*(.29f+(i%4)*.14f),h*(.765f+(i/4)*.036f),h*.021f,avatars[idx]==i);
             }
             String startLabel=setupSide==1 && mode==1?"التالي":
                     (mode==4 && onlineQuickMatch?"ابحث عن لاعب":
@@ -1213,7 +1221,9 @@ public class MainActivity extends Activity {
         }
         private void drawBullet(Canvas c,float cx,float cy,float bw,float bh,int color,boolean filled,boolean pointsRight) {
             if(spriteSheet!=null) {
-                drawSprite(c,1115,filled?399:451,1265,filled?447:495,cx-bw*.52f,cy-bh*.55f,cx+bw*.52f,cy+bh*.55f,!pointsRight);
+                int left=pointsRight?1112:1268, right=pointsRight?1264:1425;
+                int top=filled?397:454, bottom=filled?449:505;
+                drawSprite(c,left,top,right,bottom,cx-bw*.52f,cy-bh*.55f,cx+bw*.52f,cy+bh*.55f,false);
                 return;
             }
             int body=filled?color:Color.rgb(247,248,239);
@@ -1427,13 +1437,7 @@ public class MainActivity extends Activity {
                         diceCx-buttonHalf,h*.80f,diceCx+buttonHalf,h*.93f,player==1?blue:red);
             } else {
                 int diceColor=winner!=0?dark:(player==1?blue:red);
-                if(spriteSheet!=null) {
-                    drawSprite(c,870,600,960,705,diceCx-diceSize*.62f,diceCy-diceSize*.62f,diceCx+diceSize*.62f,diceCy+diceSize*.62f,false);
-                    if(die>0)txt(c,String.valueOf(die),diceCx,diceCy+h*.018f,diceSize*.30f,Color.rgb(25,35,48),true);
-                } else {
-                    box(c,diceCx-diceSize/2,diceCy-diceSize/2,diceCx+diceSize/2,diceCy+diceSize/2,diceColor);
-                    txt(c,die==0?"النرد":String.valueOf(die),diceCx,diceCy+h*.018f,diceSize*.48f,Color.WHITE,true);
-                }
+                drawDiceFace(c,diceCx,diceCy,diceSize*.88f,die>0?die:1);
             }
             if(choosing) txt(c,"اختر السلاح",w*.5f,h*.965f,h*.026f,dark,true);
             if(winner!=0) {
@@ -1472,19 +1476,13 @@ public class MainActivity extends Activity {
             }
             if(setup) {
                 int idx=setupSide-1;
-                if(x>=w*.27f && x<=w*.73f && y>=h*.50f && y<=h*.60f) { showNameDialog(); return true; }
-                if(mode==2 && x>=w*.16f && x<=w*.86f && y>=h*.695f && y<=h*.76f) {
+                if(x>=w*.27f && x<=w*.73f && y>=h*.62f && y<=h*.70f) { showNameDialog(); return true; }
+                if(mode==2 && x>=w*.16f && x<=w*.86f && y>=h*.775f && y<=h*.835f) {
                     int level=Math.round((x/w-.24f)/.18f);
                     if(level>=0 && level<4) difficulty=level;
-                } else if(x>=w*.26f && x<=w*.74f
-                        && ((mode==2 && y>=h*.795f && y<=h*.905f)
-                        || (mode!=2 && y>=h*.74f && y<=h*.90f))) {
-                    float firstRow=mode==2?.81f:.765f;
-                    float rowStep=mode==2?.026f:.036f;
-                    int row=Math.round((y/h-firstRow)/rowStep);
-                    int col=Math.round((x/w-.29f)/.14f);
-                    int choice=row*4+col;
-                    if(row>=0 && row<4 && col>=0 && col<4 && choice<avatarColors.length) avatars[idx]=choice;
+                } else if(x>=w*.12f && x<=w*.88f && y>=h*.32f && y<=h*.62f) {
+                    if(x>=w*.12f && x<=w*.30f) avatars[idx]=Math.floorMod(avatars[idx]-1,18);
+                    else if(x>=w*.70f && x<=w*.88f) avatars[idx]=Math.floorMod(avatars[idx]+1,18);
                 } else if(x>=w*.36f && x<=w*.64f && y>=h*.92f && y<=h*.985f) {
                     if(setupSide==1 && mode==1) setupSide=2;
                     else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
