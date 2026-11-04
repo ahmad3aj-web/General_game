@@ -75,7 +75,10 @@ public class MainActivity extends Activity {
         private boolean titleScreen = true;
         private SoundPool gameSoundPool;
         private MediaPlayer backgroundMusic;
-        private boolean soundEnabled, musicEnabled, vibrationEnabled;
+        private boolean soundEnabled, musicEnabled, vibrationEnabled, screenShakeEnabled;
+        private long screenShakeStartedAt=0;
+        private int helpScrollY=0;
+        private int helpContentHeight=0;
         private final int[] gameSoundIds = new int[4];
         private final boolean[] gameSoundLoaded = new boolean[4];
         private final Random random = new Random();
@@ -253,6 +256,7 @@ public class MainActivity extends Activity {
             soundEnabled=prefs.getBoolean("sound",true);
             musicEnabled=prefs.getBoolean("music",true);
             vibrationEnabled=prefs.getBoolean("vibration",true);
+            screenShakeEnabled=prefs.getBoolean("screen_shake",true);
             AudioAttributes attributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_GAME)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -332,16 +336,17 @@ public class MainActivity extends Activity {
         }
         void resumeMusic(){if(musicEnabled)updateBackgroundMusic();}
         private void showSettingsDialog() {
-            final String[] labels={"المؤثرات الصوتية","الموسيقى","الاهتزاز عند الانفجار"};
-            final boolean[] values={soundEnabled,musicEnabled,vibrationEnabled};
+            final String[] labels={"المؤثرات الصوتية","الموسيقى","اهتزاز الهاتف عند تدمير السلاح","اهتزاز الشاشة عند تدمير السلاح"};
+            final boolean[] values={soundEnabled,musicEnabled,vibrationEnabled,screenShakeEnabled};
             new AlertDialog.Builder(MainActivity.this).setTitle("إعدادات اللعبة")
                 .setMultiChoiceItems(labels,values,(dialog,which,checked)->{
                     if(which==0)soundEnabled=checked;
                     else if(which==1){musicEnabled=checked;updateBackgroundMusic();}
-                    else vibrationEnabled=checked;
+                    else if(which==2)vibrationEnabled=checked;
+                    else screenShakeEnabled=checked;
                     getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE).edit()
                         .putBoolean("sound",soundEnabled).putBoolean("music",musicEnabled)
-                        .putBoolean("vibration",vibrationEnabled).apply();
+                        .putBoolean("vibration",vibrationEnabled).putBoolean("screen_shake",screenShakeEnabled).apply();
                 }).setPositiveButton("تم",null).show();
         }
         private void showExitConfirmation() {
@@ -1419,20 +1424,75 @@ public class MainActivity extends Activity {
             drawArt(c,"vs_emblem.png",w*.425f,h*.385f,w*.575f,h*.555f,false);
             txt(c,String.valueOf(Math.max(1,introStep)),w*.5f,h*.79f,h*.17f,Color.WHITE,true);
         }
+        private float drawHelpLine(Canvas c,String text,float y,int color,float size,boolean bold) {
+            p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);
+            p.setTextSize(size);p.setFakeBoldText(bold);
+            while(p.measureText(text)>w*.82f && p.getTextSize()>h*.014f)p.setTextSize(p.getTextSize()*.94f);
+            p.setColor(color);c.drawText(text,w*.5f,y,p);
+            p.setFakeBoldText(false);
+            return y+h*.043f;
+        }
+        private float drawHelpHeading(Canvas c,String text,float y) {
+            y+=h*.012f;
+            txt(c,text,w*.5f,y,h*.027f,Color.rgb(155,105,28),true);
+            return y+h*.052f;
+        }
         private void drawHelp(Canvas c) {
             box(c,w*.055f,h*.105f,w*.945f,h*.895f,Color.rgb(244,248,235));
-            txt(c,"شرح لعبة GENERAL",w*.5f,h*.19f,h*.052f,dark,true);
-            txt(c,"هدف اللعبة",w*.5f,h*.275f,h*.031f,Color.rgb(155,105,28),true);
-            txt(c,"دمّر أسلحة الخصم الثلاثة: الدبابة والطائرة والمدفع.",w*.5f,h*.325f,h*.026f,dark,true);
-            txt(c,"طريقة اللعب",w*.5f,h*.405f,h*.031f,Color.rgb(155,105,28),true);
-            txt(c,"1) تبدأ المباراة بقرعة النرد لتحديد اللاعب الأول.",w*.5f,h*.455f,h*.024f,dark,false);
-            txt(c,"2) في دورك اضغط «أطلق» لتحصل على رقم من 1 إلى 6.",w*.5f,h*.505f,h*.024f,dark,false);
-            txt(c,"3) اختر دبابة أو طائرة أو مدفعاً متاحاً لتحريكه.",w*.5f,h*.555f,h*.024f,dark,false);
-            txt(c,"4) لكل سلاح مسار مستقل من 15 خطوة باتجاه سلاح الخصم المقابل.",w*.5f,h*.605f,h*.024f,dark,false);
-            txt(c,"5) عندما يصل السلاح إلى نهاية المسار يدمّر السلاح المقابل.",w*.5f,h*.655f,h*.024f,dark,false);
-            txt(c,"6) بعد تدمير أحد سلاحي المسار لا يمكن مواصلة اللعب فيه.",w*.5f,h*.705f,h*.024f,dark,false);
-            txt(c,"الفوز",w*.5f,h*.775f,h*.031f,Color.rgb(155,105,28),true);
-            txt(c,"تُحسم المواجهات الثلاث؛ والفائز من يحسم مسارين على الأقل.",w*.5f,h*.825f,h*.023f,dark,true);
+            txt(c,"دليل لعبة جنيرال",w*.5f,h*.15f,h*.045f,dark,true);
+            c.save();
+            c.clipRect(w*.075f,h*.185f,w*.925f,h*.875f);
+            c.translate(0,-helpScrollY);
+            float y=h*.225f;
+            y=drawHelpHeading(c,"نبذة وهدف اللعبة",y);
+            y=drawHelpLine(c,"جنيرال لعبة استراتيجية حربية للأندرويد.",y,dark,h*.022f,true);
+            y=drawHelpLine(c,"هدفك تدمير أسلحة الخصم: الدبابة والطائرة والمدفع.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"كل سلاح يواجه السلاح المقابل له في مسار مستقل.",y,dark,h*.021f,false);
+            y=drawHelpHeading(c,"بداية المباراة وطريقة الدور",y);
+            y=drawHelpLine(c,"تبدأ المباراة بقرعة النرد لتحديد من يبدأ أولاً.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"اضغط «أطلق» لتحصل على رقم من 1 إلى 6.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"اختر سلاحاً متاحاً: دبابة أو طائرة أو مدفع.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"يتحرك السلاح بعدد خطوات النرد باتجاه خصمه.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"يتكوّن كل مسار من 15 خطوة، وعند نهايته يُدمّر السلاح المقابل.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"إذا دُمّر أحد سلاحي المسار تتوقف المواجهة في ذلك المسار.",y,dark,h*.021f,false);
+            y=drawHelpHeading(c,"الفوز وأوضاع اللعب",y);
+            y=drawHelpLine(c,"بعد حسم المسارات الثلاثة، يفوز من يحسم مسارين على الأقل.",y,dark,h*.021f,true);
+            y=drawHelpLine(c,"يمكن اللعب بلاعبين على الجهاز نفسه، أو ضد جنيرال الكمبيوتر.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"اختر مستوى جنيرال: مبتدئ، متوسط، محترف أو أسطوري.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"تتوفر أيضاً خيارات اللعب عبر Wi-Fi والإنترنت.",y,dark,h*.021f,false);
+            y=drawHelpHeading(c,"البطاقات الأربع",y);
+            y=drawHelpLine(c,"قبل مباراة جنيرال اختر حتى 3 أنواع مختلفة من البطاقات.",y,dark,h*.021f,true);
+            y=drawHelpLine(c,"إصلاح السلاح: يعيد السلاح المدمّر للعمل ويعيده إلى بداية مساره،",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"أو يزيل التعطيل السيبراني عن سلاحك.",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"مضاعفة النرد: تضاعف نتيجة النرد بعد رميه، ثم تختار السلاح.",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"الحرب السيبرانية: تعطل سلاح جنيرال لدورين كاملين.",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"درع الحماية: يحمي سلاحاً واحداً من الهجمات العادية لدورين.",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"الهجوم السيبراني يستطيع اختراق الدرع.",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"البطاقات متاحة في اللعب ضد جنيرال فقط، وبطاقة واحدة في الدور.",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"البطاقة المستخدمة تُستهلك؛ وغير المستخدمة تعود بعد المباراة الطبيعية.",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"عند الاستسلام تُفقد كل البطاقات التي دخلت بها المباراة.",y,dark,h*.020f,false);
+            y=drawHelpHeading(c,"المهمات والمكافآت",y);
+            y=drawHelpLine(c,"تظهر 3 مهمات يومية و5 مهمات أسبوعية، ضد جنيرال فقط.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"تتجدد اليومية منتصف الليل، والأسبوعية فجر يوم الجمعة بتوقيت الأردن.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"اليومية: سهلة = بطاقة، متوسطة = بطاقتان، صعبة = 3 بطاقات.",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"الأسبوعية: متوسطة = 3 بطاقات، صعبة = 5، صعبة جداً = 7.",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"نوع البطاقات المكافأة عشوائي، وقد تتشابه أو تختلف.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"تُضاف المكافآت للمخزن تلقائياً، وتظهر بعد انتهاء المباراة.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"الدخول اليومي يمنح بطاقة عشوائية واحدة مرة كل يوم.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"الفوز ضد جنيرال يمنح 1/2/3/4 بطاقات حسب الصعوبة،",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"والفوز المثالي بتدمير أسلحته الثلاثة يمنح بطاقة إضافية.",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"الترقية إلى رتبة عسكرية جديدة تمنح بطاقات إضافية.",y,dark,h*.021f,false);
+            y=drawHelpHeading(c,"الإعدادات وحفظ البيانات",y);
+            y=drawHelpLine(c,"يمكنك التحكم بالمؤثرات الصوتية والموسيقى واهتزاز الهاتف",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"واهتزاز الشاشة عند تدمير أي سلاح من الإعدادات.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"المهمات ومخزن البطاقات محفوظان محلياً على الجهاز.",y,dark,h*.021f,false);
+            y=drawHelpHeading(c,"معلومات المطور وحقوق الموسيقى",y);
+            y=drawHelpLine(c,"لبناء APK: افتح Actions ثم Build GENERAL Android APK،",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"وشغّل Run workflow، ثم نزّل GENERAL-debug-APK بعد نجاح البناء.",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"الموسيقى Dramatic2 من تأليف PeriTune بموجب رخصة CC BY.",y,dark,h*.020f,false);
+            helpContentHeight=(int)(y+h*.04f);
+            c.restore();
+            txt(c,"اسحب للأعلى والأسفل لقراءة الدليل كاملاً",w*.5f,h*.888f,h*.016f,Color.rgb(85,105,88),false);
             btn(c,"العودة إلى الرئيسية",w*.38f,h*.91f,w*.62f,h*.985f,dark);
         }
 
@@ -1841,8 +1901,25 @@ public class MainActivity extends Activity {
         }
         private void spawnExplosion(float x,float y) {
             vibrateForExplosion();
+            if(screenShakeEnabled) {
+                screenShakeStartedAt=System.currentTimeMillis();
+                postInvalidateDelayed(16);
+            }
             explosionX=x; explosionY=y; explosionAt=System.currentTimeMillis();
             invalidate();
+        }
+        private void applyScreenShake(Canvas c) {
+            if(!screenShakeEnabled || screenShakeStartedAt<=0)return;
+            long elapsed=System.currentTimeMillis()-screenShakeStartedAt;
+            final long duration=360L;
+            if(elapsed>=duration) { screenShakeStartedAt=0; return; }
+            float fade=1f-(float)elapsed/duration;
+            float strength=h*.010f*fade;
+            float phase=elapsed/24f;
+            float dx=(float)Math.sin(phase*2.7f)*strength;
+            float dy=(float)Math.cos(phase*3.2f)*strength*.62f;
+            c.translate(dx,dy);
+            postInvalidateDelayed(16);
         }
         private void drawMuzzleFlash(Canvas c) {
             if(muzzleFlashAt==0)return;
@@ -2005,6 +2082,8 @@ public class MainActivity extends Activity {
                 btn(c,"إلغاء الاتصال والعودة",w*.31f,h*.81f,w*.69f,h*.92f,dark);
                 return;
             }
+            c.save();
+            applyScreenShake(c);
             drawBattlefield(c);
             // Draw utility controls AFTER the battlefield so the background cannot cover them.
             iconButton(c,w*.025f,h*.765f,w*.095f,h*.835f,dark,"⚙");
@@ -2078,6 +2157,7 @@ public class MainActivity extends Activity {
             }
             if(choosing) { txt(c,"اختر السلاح",w*.5f,h*.965f,h*.026f,dark,true);txt(c,"عدد الطلقات المطلوبة: "+die,w*.5f,h*.925f,h*.022f,Color.WHITE,true); }
             drawCardUseNotice(c);
+            c.restore();
         }
 
         @Override public boolean onTouchEvent(MotionEvent e) {
@@ -2088,6 +2168,12 @@ public class MainActivity extends Activity {
             if(e.getAction()!=MotionEvent.ACTION_UP)return true;
             if(!touchDown)return true;
             float x=e.getX(),y=e.getY();
+            if(mode==0 && helpScreen && touchDownY>h*.18f && touchDownY<h*.88f
+                    && Math.abs(y-touchDownY)>h*.025f) {
+                int maxScroll=Math.max(0,helpContentHeight-(int)(h*.875f));
+                helpScrollY=Math.max(0,Math.min(maxScroll,helpScrollY+(int)(touchDownY-y)));
+                touchDown=false;invalidate();return true;
+            }
             if(Math.hypot(x-touchDownX,y-touchDownY)>h*.10f){touchDown=false;return true;}
             touchDown=false;invalidate();
             if(titleScreen){titleScreen=false;invalidate();return true;}
@@ -2115,7 +2201,7 @@ public class MainActivity extends Activity {
                 else if(y>=h*.245f&&y<=h*.505f&&x>=w*.7175f&&x<=w*.9225f)showOnlineModeDialog();
                 else if(y>=h*.515f&&y<=h*.775f&&x>=w*.075f&&x<=w*.285f)historyScreen=true;
                 else if(y>=h*.515f&&y<=h*.775f&&x>=w*.3975f&&x<=w*.6025f)progressScreen=true;
-                else if(y>=h*.515f&&y<=h*.775f&&x>=w*.7175f&&x<=w*.9225f)helpScreen=true;
+                else if(y>=h*.515f&&y<=h*.775f&&x>=w*.7175f&&x<=w*.9225f){helpScreen=true;helpScrollY=0;}
                 else if(y>=h*.795f&&y<=h*.94f&&x>=w*.20f&&x<=w*.42f)missionsScreen=true;
                 else if(y>=h*.795f&&y<=h*.94f&&x>=w*.58f&&x<=w*.80f)inventoryScreen=true;
                 invalidate();return true;
