@@ -179,16 +179,14 @@ public class MainActivity extends Activity {
             for(String name:scenes)try{art.put(name,BitmapFactory.decodeStream(getAssets().open("backgrounds/"+name)));}catch(Exception ignored){}
             try { fireMovie=Movie.decodeStream(getAssets().open("vehicles/Flame_GIF_2.gif")); } catch(Exception ignored) {}
             try { winMovie=Movie.decodeStream(getAssets().open("vehicles/Win.gif")); } catch(Exception ignored) {}
-            repairCardImage=loadCardImage("ui/card_repair.jpg");
-            cyberCardImage=loadCardImage("ui/card_cyber.jpg");
-            shieldCardImage=loadCardImage("ui/card_shield.png");
+            repairCardImage=loadCardImage("ui/card_repair.png");
+            cyberCardImage=loadCardImage("ui/card_cyber.png");
+            shieldCardImage=loadCardImage("ui/card_shield_transparent.png");
         }
-        // Remove the light checkerboard background from the newly supplied card artwork.
+        // Card images are preprocessed into real RGBA PNG files by the build workflow.
         private Bitmap loadCardImage(String assetPath) {
-            try {
-                Bitmap decoded=BitmapFactory.decodeStream(getAssets().open(assetPath));
-                return decoded==null?null:removeCheckerBackground(decoded);
-            } catch(Exception ignored) { return null; }
+            try { return BitmapFactory.decodeStream(getAssets().open(assetPath)); }
+            catch(Exception ignored) { return null; }
         }
         private boolean isCheckerBackground(int color) {
             int r=Color.red(color),g=Color.green(color),b=Color.blue(color);
@@ -1131,10 +1129,18 @@ public class MainActivity extends Activity {
                 box(c,w*.055f,h*.19f,w*.47f,h*.86f,Color.argb(225,238,243,230));box(c,w*.53f,h*.19f,w*.945f,h*.86f,Color.argb(225,248,250,239));
                 drawGeneralAvatar(c,w*.265f,h*.36f,h*.115f,true,false);
                 String[] generalLevels={"خبير ناشئ","قائد ذو خبرة","جنرال مخضرم","قائد فائق الخبرة"};
-                txt(c,"المستوى الحالي: "+generalLevels[Math.max(0,Math.min(3,difficulty))],w*.265f,h*.565f,h*.024f,dark,true);
-                txt(c,"مستوى الصعوبة",w*.265f,h*.595f,h*.030f,dark,true);
+                txt(c,"المستوى الحالي: "+generalLevels[Math.max(0,Math.min(3,difficulty))],w*.265f,h*.555f,h*.023f,dark,true);
+                txt(c,"اختر مستوى الصعوبة",w*.265f,h*.592f,h*.027f,dark,true);
                 String[] levels={"مبتدئ","متوسط","محترف","أسطوري"};String[] symbols={"Ⅰ","Ⅱ","Ⅲ","★"};
-                for(int i=0;i<4;i++){float top=h*(.615f+i*.058f),bottom=top+h*.050f;box(c,w*.105f,top,w*.425f,bottom,difficulty==i?Color.rgb(180,132,35):Color.rgb(218,228,211));txt(c,symbols[i],w*.155f,top+h*.035f,h*.032f,difficulty==i?Color.WHITE:dark,true);txt(c,levels[i],w*.29f,top+h*.034f,h*.025f,difficulty==i?Color.WHITE:dark,difficulty==i);}
+                for(int i=0;i<4;i++){
+                    float top=h*(.615f+i*.069f),bottom=top+h*.064f;
+                    int fill=difficulty==i?Color.rgb(180,132,35):Color.rgb(218,228,211);
+                    box(c,w*.085f,top,w*.445f,bottom,fill);
+                    p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0025f));p.setColor(difficulty==i?gold:Color.rgb(150,165,145));
+                    c.drawRoundRect(new RectF(w*.085f,top,w*.445f,bottom),h*.012f,h*.012f,p);p.setStyle(Paint.Style.FILL);
+                    txt(c,symbols[i],w*.145f,top+h*.043f,h*.034f,difficulty==i?Color.WHITE:dark,true);
+                    txt(c,levels[i],w*.285f,top+h*.043f,h*.030f,difficulty==i?Color.WHITE:dark,difficulty==i);
+                }
                 drawAvatar(c,avatars[0],w*.765f,h*.405f,h*.135f,true);arrowButton(c,w*.64f,h*.405f,true);arrowButton(c,w*.89f,h*.405f,false);
                 txt(c,"الشخصية "+(avatars[0]+1)+" من 17",w*.765f,h*.565f,h*.027f,dark,true);
                 box(c,w*.585f,h*.615f,w*.945f,h*.685f,Color.rgb(27,48,39));txt(c,playerNames[0],w*.765f,h*.655f,h*.034f,Color.WHITE,true);txt(c,"اضغط لتعديل الاسم",w*.765f,h*.678f,h*.018f,Color.rgb(221,229,215),false);
@@ -1926,22 +1932,28 @@ public class MainActivity extends Activity {
                     invalidate();return true;
                 }
                 int idx=setupSide-1;
+                if(mode==2 && x>=w*.075f && x<=w*.455f && y>=h*.615f && y<=h*.895f) {
+                    for(int level=0;level<4;level++) {
+                        float top=h*(.615f+level*.069f),bottom=top+h*.064f;
+                        if(y>=top-h*.006f && y<=bottom+h*.006f) {
+                            difficulty=level;
+                            message="تم اختيار مستوى "+new String[]{"مبتدئ","متوسط","محترف","أسطوري"}[level];
+                            invalidate();return true;
+                        }
+                    }
+                }
+                if(mode==2 && x>=w*.585f && x<=w*.945f && y>=h*.615f && y<=h*.70f) { showNameDialog(); return true; }
                 if(mode==2 && y>=h*.745f && y<=h*.865f) {
-                    boolean hitCard=false;
                     for(int type=0;type<CardInventory.CARD_TYPES;type++) {
                         float left=w*(.592f+type*.087f), right=left+w*.078f;
                         if(x>=left && x<=right) {
-                            hitCard=true;
                             boolean changed=cardInventory.toggleSelection(type);
                             if(!changed) message=cardInventory.getCount(type)<=0?"لا توجد نسخ من هذه البطاقة في المخزن":"تعذر اختيار البطاقة — أعد فتح إعداد المباراة";
                             else message=cardInventory.isSelected(type)?"تم اختيار البطاقة":"تم إلغاء اختيار البطاقة";
-                            break;
+                            invalidate();return true;
                         }
                     }
-                    if(hitCard) { invalidate(); return true; }
                 }
-                else if(mode==2 && x>=w*.585f && x<=w*.945f && y>=h*.615f && y<=h*.70f) { showNameDialog(); return true; }
-                else if(mode==2 && x>=w*.105f && x<=w*.425f && y>=h*.615f && y<=h*.90f) { difficulty=Math.max(0,Math.min(3,(int)((y/h-.615f)/.058f))); }
                 else if(mode==2 && y>=h*.28f && y<=h*.59f && x>=w*.60f && x<=w*.93f) { if(x<=w*.68f)avatars[0]=nextAvatar(avatars[0],-1);else if(x>=w*.85f)avatars[0]=nextAvatar(avatars[0],1); }
                 else if(mode!=2 && x>=w*.27f && x<=w*.73f && y>=h*.62f && y<=h*.75f) { showNameDialog(); return true; }
                 else if(mode!=2 && y>=h*.30f && y<=h*.62f && x>=w*.36f && x<=w*.64f) { if(x<=w*.43f)avatars[idx]=nextAvatar(avatars[idx],-1);else if(x>=w*.57f)avatars[idx]=nextAvatar(avatars[idx],1); }
