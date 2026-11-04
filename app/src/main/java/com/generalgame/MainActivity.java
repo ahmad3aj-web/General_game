@@ -193,7 +193,10 @@ public class MainActivity extends Activity {
         private boolean isCheckerBackground(int color) {
             int r=Color.red(color),g=Color.green(color),b=Color.blue(color);
             int max=Math.max(r,Math.max(g,b)),min=Math.min(r,Math.min(g,b));
-            return Color.alpha(color)==0 || (min>=185 && max-min<=32);
+            // The supplied artwork contains both white and light-grey checkerboard
+            // squares. Treat neutral edge-connected shades as background, not only
+            // near-white pixels, so the flood fill can cross the whole pattern.
+            return Color.alpha(color)==0 || (min>=135 && max-min<=48);
         }
         private void enqueueBackground(int index,int[] pixels,boolean[] queued,int[] queue,int[] tail) {
             if(index<0 || index>=pixels.length || queued[index] || !isCheckerBackground(pixels[index]))return;
