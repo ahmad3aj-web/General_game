@@ -158,14 +158,30 @@ public final class MissionManager {
     }
 
     public synchronized void beginTrackedMatch() {
-        prefs.edit().putBoolean("match_active",true).putInt("match_destroyed",0).commit();
+        prefs.edit().putBoolean("match_active",true).putInt("match_destroyed",0).putInt("general_destroyed_mask",0).putInt("player_lost_mask",0).commit();
     }
 
     /** Called immediately when a General weapon is first destroyed. */
-    public synchronized void recordGeneralWeaponDestroyed() {
-        if(!prefs.getBoolean("match_active",false))return;
-        prefs.edit().putInt("match_destroyed",prefs.getInt("match_destroyed",0)+1).commit();
+    public synchronized void recordGeneralWeaponDestroyed(int lane) {
+        if(!prefs.getBoolean("match_active",false) || lane<0 || lane>2)return;
+        int mask=prefs.getInt("general_destroyed_mask",0),bit=1<<lane;
+        if((mask&bit)!=0)return;
+        prefs.edit().putInt("general_destroyed_mask",mask|bit)
+            .putInt("match_destroyed",prefs.getInt("match_destroyed",0)+1).commit();
         addProgress("destroys",1);
+    }
+
+    public synchronized void recordPlayerWeaponDestroyed(int lane) {
+        if(!prefs.getBoolean("match_active",false) || lane<0 || lane>2)return;
+        int mask=prefs.getInt("player_lost_mask",0),bit=1<<lane;
+        if((mask&bit)!=0)return;
+        prefs.edit().putInt("player_lost_mask",mask|bit).commit();
+    }
+
+    public synchronized int getPlayerLostWeaponCount() {
+        int mask=prefs.getInt("player_lost_mask",0),count=0;
+        for(int i=0;i<3;i++)if((mask&(1<<i))!=0)count++;
+        return count;
     }
 
     public synchronized void finishTrackedMatch(boolean won,int difficulty,int lostPlayerWeapons,boolean perfect) {
@@ -182,7 +198,7 @@ public final class MissionManager {
             if(lostPlayerWeapons==0)addProgress("no_loss",1);
             if(perfect)addProgress("perfect",1);
         } else { streak=0; setStreakProgress(0); }
-        prefs.edit().putInt("win_streak",streak).putBoolean("match_active",false).putInt("match_destroyed",0).commit();
+        prefs.edit().putInt("win_streak",streak).putBoolean("match_active",false).putInt("match_destroyed",0).putInt("general_destroyed_mask",0).putInt("player_lost_mask",0).commit();
     }
 
     private void recoverInterruptedMatch() {
