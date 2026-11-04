@@ -2,6 +2,7 @@ package com.generalgame;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.SystemClock;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.ArrayList;
@@ -80,10 +81,19 @@ public final class MissionManager {
     }
 
     private synchronized long trustedNow() {
-        long now=System.currentTimeMillis();
-        long last=prefs.getLong("last_trusted_time",0L);
-        long accepted=Math.max(now,last);
-        if(accepted>last)prefs.edit().putLong("last_trusted_time",accepted).commit();
+        long wall=System.currentTimeMillis();
+        long elapsed=SystemClock.elapsedRealtime();
+        long lastWall=prefs.getLong("last_trusted_time",0L);
+        long lastElapsed=prefs.getLong("last_elapsed_time", -1L);
+        long accepted=Math.max(wall,lastWall);
+        // Within the same boot, elapsed realtime helps reject large manual clock jumps.
+        if(lastElapsed>=0 && elapsed>=lastElapsed) {
+            long monotonicExpected=lastWall+(elapsed-lastElapsed);
+            long tolerance=6L*60L*60L*1000L;
+            accepted=(wall>monotonicExpected+tolerance)?monotonicExpected:Math.max(wall,monotonicExpected);
+        }
+        accepted=Math.max(accepted,lastWall);
+        prefs.edit().putLong("last_trusted_time",accepted).putLong("last_elapsed_time",elapsed).apply();
         return accepted;
     }
 
