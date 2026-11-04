@@ -189,6 +189,7 @@ public class MainActivity extends Activity {
             cyberCardDrawable=loadCardAnimation("ui/Vi.gif");
             repairCardDrawable=loadCardAnimation("ui/En.gif");
         }
+        // ImageDecoder preserves GIF frame transparency on Android 9 and newer.
         private Drawable loadCardAnimation(String assetPath) {
             if(Build.VERSION.SDK_INT<28)return null;
             try {
