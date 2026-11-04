@@ -84,6 +84,21 @@ public final class CardInventory {
         return result;
     }
 
+    /** Idempotent grant: the same reward token can never add cards twice. */
+    public synchronized boolean addCardsOnce(String token, int[] amounts) {
+        if (token == null || token.length() == 0 || amounts == null || amounts.length != CARD_TYPES) return false;
+        String grants = prefs.getString("applied_reward_tokens", "");
+        String wrapped = "|" + grants + "|";
+        if (wrapped.contains("|" + token + "|")) return false;
+        SharedPreferences.Editor edit = prefs.edit();
+        for (int i = 0; i < CARD_TYPES; i++) {
+            int amount = Math.max(0, amounts[i]);
+            if (amount > 0) edit.putInt(COUNT_KEYS[i], getCount(i) + amount);
+        }
+        edit.putString("applied_reward_tokens", grants + (grants.length() == 0 ? "" : "|") + token);
+        return edit.commit();
+    }
+
     /** Adds one card of a uniformly random type and returns its type. */
     public synchronized int addRandomCard() {
         int type = random.nextInt(CARD_TYPES);
