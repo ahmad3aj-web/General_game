@@ -1525,7 +1525,7 @@ public class MainActivity extends Activity {
             muzzleFlashX=side==1?w*.874f:w*.126f;
             muzzleFlashY=new float[]{h*.29f,h*.49f,h*.69f}[lane];
             final int start=positions(side)[lane];
-            final int target=Math.min(15,start+Math.max(1,Math.min(6,amount)));
+            final int target=Math.min(15,start+Math.max(1,Math.min(12,amount)));
             message=(side==1?"الأزرق":"الأحمر")+" يطلق...";
             final Runnable[] step=new Runnable[1];
             step[0]=new Runnable(){ @Override public void run(){
