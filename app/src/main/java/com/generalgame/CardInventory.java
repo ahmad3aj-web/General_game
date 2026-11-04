@@ -58,6 +58,18 @@ public final class CardInventory {
         edit.commit();
     }
 
+    /** One-time top-up for the first build that includes the mission system. */
+    public synchronized void topUpCardsToFiveOnce() {
+        final String key = "mission_feature_topup_v1";
+        if (prefs.getBoolean(key, false)) return;
+        SharedPreferences.Editor edit = prefs.edit();
+        for (int i = 0; i < CARD_TYPES; i++) {
+            edit.putInt(COUNT_KEYS[i], Math.max(getCount(i), 5));
+        }
+        edit.putBoolean(key, true);
+        edit.commit();
+    }
+
     private void recoverInterruptedSetup() {
         // A selection is only a reservation until a match starts. If the app was
         // closed before starting, simply clear it; counts were never deducted.
