@@ -1911,7 +1911,7 @@ public class MainActivity extends Activity {
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
                 else if(y>=h*.275f&&y<=h*.55f&&x>=w*.075f&&x<=w*.285f){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.3975f&&x<=w*.6025f){mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.3975f&&x<=w*.6025f){cardInventory.prepareNewMatchSetup();mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
                 else if(y>=h*.275f&&y<=h*.55f&&x>=w*.7175f&&x<=w*.9225f)showOnlineModeDialog();
                 else if(y>=h*.59f&&y<=h*.89f&&x>=w*.075f&&x<=w*.285f)historyScreen=true;
                 else if(y>=h*.59f&&y<=h*.89f&&x>=w*.3975f&&x<=w*.6025f)progressScreen=true;
@@ -1926,7 +1926,20 @@ public class MainActivity extends Activity {
                     invalidate();return true;
                 }
                 int idx=setupSide-1;
-                if(mode==2 && x>=w*.585f && x<=w*.945f && y>=h*.745f && y<=h*.865f) { int type=Math.max(0,Math.min(3,(int)((x/w-.592f)/.087f)));cardInventory.toggleSelection(type); }
+                if(mode==2 && y>=h*.745f && y<=h*.865f) {
+                    boolean hitCard=false;
+                    for(int type=0;type<CardInventory.CARD_TYPES;type++) {
+                        float left=w*(.592f+type*.087f), right=left+w*.078f;
+                        if(x>=left && x<=right) {
+                            hitCard=true;
+                            boolean changed=cardInventory.toggleSelection(type);
+                            if(!changed) message=cardInventory.getCount(type)<=0?"لا توجد نسخ من هذه البطاقة في المخزن":"تعذر اختيار البطاقة — أعد فتح إعداد المباراة";
+                            else message=cardInventory.isSelected(type)?"تم اختيار البطاقة":"تم إلغاء اختيار البطاقة";
+                            break;
+                        }
+                    }
+                    if(hitCard) { invalidate(); return true; }
+                }
                 else if(mode==2 && x>=w*.585f && x<=w*.945f && y>=h*.615f && y<=h*.70f) { showNameDialog(); return true; }
                 else if(mode==2 && x>=w*.105f && x<=w*.425f && y>=h*.615f && y<=h*.90f) { difficulty=Math.max(0,Math.min(3,(int)((y/h-.615f)/.058f))); }
                 else if(mode==2 && y>=h*.28f && y<=h*.59f && x>=w*.60f && x<=w*.93f) { if(x<=w*.68f)avatars[0]=nextAvatar(avatars[0],-1);else if(x>=w*.85f)avatars[0]=nextAvatar(avatars[0],1); }
