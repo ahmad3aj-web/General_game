@@ -52,7 +52,7 @@ public final class CardInventory {
         if (prefs.getBoolean(KEY_TEST_GRANT_V1, false)) return;
         SharedPreferences.Editor edit = prefs.edit();
         for (int i = 0; i < CARD_TYPES; i++) {
-            edit.putInt(COUNT_KEYS[i], getCount(i) + 5);
+            edit.putInt(COUNT_KEYS[i], Math.max(getCount(i), 5));
         }
         edit.putBoolean(KEY_TEST_GRANT_V1, true);
         edit.commit();
