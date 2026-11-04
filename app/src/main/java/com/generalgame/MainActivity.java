@@ -1313,7 +1313,7 @@ public class MainActivity extends Activity {
             if(winner==0)return;
             awardProgressPoints();
             if(mode==2 && missionManager.isTrackedMatchActive()) {
-                int lostWeapons=0;for(int i=0;i<3;i++)if(dead1[i])lostWeapons++;
+                int lostWeapons=missionManager.getPlayerLostWeaponCount();
                 missionManager.finishTrackedMatch(winner==1,difficulty,lostWeapons,winner==1 && perfectWin);
             }
             if(mode==2 && !cardMatchSettled && cardInventory.isMatchActive()) {
@@ -1773,8 +1773,8 @@ public class MainActivity extends Activity {
                     if(target>=15){
                         // The blue weapon is on the right and the red weapon is on the left.
                         // Explosions must appear on the opposing weapon that was destroyed.
-                        if(side==1){boolean firstDestroy=!dead2[lane];dead2[lane]=true;if(mode==2 && firstDestroy)missionManager.recordGeneralWeaponDestroyed();blueWinEffect[lane]=true;setBattleDialogue(1,2);spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
-                        else {dead1[lane]=true;redWinEffect[lane]=true;setBattleDialogue(2,2);spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                        if(side==1){boolean firstDestroy=!dead2[lane];dead2[lane]=true;if(mode==2)missionManager.recordGeneralWeaponDestroyed(lane);blueWinEffect[lane]=true;setBattleDialogue(1,2);spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                        else {dead1[lane]=true;if(mode==2)missionManager.recordPlayerWeaponDestroyed(lane);redWinEffect[lane]=true;setBattleDialogue(2,2);spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
                     }
                     finishCheck();
                     if(bonusShot && bonusAttempt && winner==1)finishMatch();
