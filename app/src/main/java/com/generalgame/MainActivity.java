@@ -19,6 +19,9 @@ import android.graphics.Path;
 import android.graphics.LinearGradient;
 import android.graphics.Shader;
 import android.graphics.Movie;
+import android.graphics.ImageDecoder;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.AnimatedImageDrawable;
 import android.view.MotionEvent;
 import android.view.View;
 import android.media.AudioAttributes;
@@ -63,6 +66,7 @@ public class MainActivity extends Activity {
         private Movie fireMovie;
         private Movie winMovie;
         private Movie shieldCardMovie, cyberCardMovie, repairCardMovie;
+        private Drawable shieldCardDrawable, cyberCardDrawable, repairCardDrawable;
         private final long[][] repairEffectUntil = new long[3][3];
         private final boolean[] blueWinEffect = {false,false,false};
         private final boolean[] redWinEffect = {false,false,false};
@@ -181,6 +185,24 @@ public class MainActivity extends Activity {
             try { shieldCardMovie=Movie.decodeStream(getAssets().open("ui/Sh.gif")); } catch(Exception ignored) {}
             try { cyberCardMovie=Movie.decodeStream(getAssets().open("ui/Vi.gif")); } catch(Exception ignored) {}
             try { repairCardMovie=Movie.decodeStream(getAssets().open("ui/En.gif")); } catch(Exception ignored) {}
+            shieldCardDrawable=loadCardAnimation("ui/Sh.gif");
+            cyberCardDrawable=loadCardAnimation("ui/Vi.gif");
+            repairCardDrawable=loadCardAnimation("ui/En.gif");
+        }
+        private Drawable loadCardAnimation(String assetPath) {
+            if(Build.VERSION.SDK_INT<28)return null;
+            try {
+                Drawable drawable=ImageDecoder.decodeDrawable(ImageDecoder.createSource(getAssets(),assetPath));
+                if(drawable instanceof AnimatedImageDrawable) {
+                    AnimatedImageDrawable animated=(AnimatedImageDrawable)drawable;
+                    animated.setRepeatCount(AnimatedImageDrawable.REPEAT_INFINITE);
+                    animated.setCallback(this);
+                    animated.start();
+                }
+                return drawable;
+            } catch(Exception ignored) {
+                return null;
+            }
         }
         private void drawArt(Canvas c,String name,float l,float t,float r,float b,boolean flip) {
             Bitmap bitmap=art.get(name);if(bitmap==null)return;RectF dst=new RectF(l,t,r,b);
@@ -1667,20 +1689,25 @@ public class MainActivity extends Activity {
             String file=lane==0?"tank_01.png":lane==1?"fighter_01.png":"cannon_01.png";float ww=w*.105f,hh=h*.105f;
             drawArt(c,file,cx-ww*.5f,cy-hh*.5f,cx+ww*.5f,cy+hh*.5f,!faceRight);
         }
-        private void drawCardGif(Canvas c,Movie movie,float cx,float cy) {
+        private void drawCardGif(Canvas c,Drawable drawable,Movie movie,float cx,float cy) {
+            float fw=w*.105f,fh=h*.105f;
+            if(drawable!=null) {
+                drawable.setBounds((int)(cx-fw*.5f),(int)(cy-fh*.5f),(int)(cx+fw*.5f),(int)(cy+fh*.5f));
+                drawable.draw(c);
+                return;
+            }
             if(movie==null)return;
             int duration=Math.max(1,movie.duration());
             movie.setTime((int)(System.currentTimeMillis()%duration));
-            float fw=w*.105f,fh=h*.105f;
             c.save();c.translate(cx-fw*.5f,cy-fh*.5f);
             c.scale(fw/Math.max(1,movie.width()),fh/Math.max(1,movie.height()));
             movie.draw(c,0,0);c.restore();postInvalidateDelayed(45);
         }
         private void drawWeaponCardEffect(Canvas c,int side,int lane,float cx,float cy) {
             long now=System.currentTimeMillis();
-            if(repairEffectUntil[side][lane]>now) drawCardGif(c,repairCardMovie,cx,cy);
-            else if(cyberDisabled[side][lane]) drawCardGif(c,cyberCardMovie,cx,cy);
-            else if(shieldActive[side][lane]) drawCardGif(c,shieldCardMovie,cx,cy);
+            if(repairEffectUntil[side][lane]>now) drawCardGif(c,repairCardDrawable,repairCardMovie,cx,cy);
+            else if(cyberDisabled[side][lane]) drawCardGif(c,cyberCardDrawable,cyberCardMovie,cx,cy);
+            else if(shieldActive[side][lane]) drawCardGif(c,shieldCardDrawable,shieldCardMovie,cx,cy);
         }
 
         @Override protected void onDraw(Canvas c) {
@@ -1969,8 +1996,13 @@ public class MainActivity extends Activity {
                 }
                 if(lane>=0 && mode==2 && player==1 && selectedBattleCard>=0) {
                     int card=selectedBattleCard;
-                    if(executeBattleCard(card,lane)) {selectedBattleCard=-1;cardTargeting=false;}
-                    else message="لا يمكن استخدام البطاقة على هذا السلاح الآن";
+                    if(executeBattleCard(card,lane)) {
+                        selectedBattleCard=-1;cardTargeting=false;
+                        if(card==CardInventory.DOUBLE_DICE) {
+                            if(canMove(player,lane)) animateMove(player,lane,die);
+                            else message="لا يمكن تنفيذ الحركة المضاعفة بهذا السلاح";
+                        }
+                    } else message="لا يمكن استخدام البطاقة على هذا السلاح الآن";
                 } else if(lane>=0) {
                     if(!canMove(player,lane))message="هذه الحركة غير ممكنة — اختر سلاحاً آخر";
                     else {
