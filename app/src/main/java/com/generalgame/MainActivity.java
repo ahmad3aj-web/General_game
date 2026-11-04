@@ -30,6 +30,7 @@ import java.util.Random;
 import java.util.Date;
 import java.util.Locale;
 import java.util.HashMap;
+import java.util.List;
 import java.text.SimpleDateFormat;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -59,6 +60,9 @@ public class MainActivity extends Activity {
     private class GameView extends View {
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final CardInventory cardInventory;
+        private final MissionManager missionManager;
+        private boolean missionsScreen=false;
+        private boolean weeklyMissionTab=false;
         private final HashMap<String,Bitmap> art = new HashMap<>();
         private Movie fireMovie;
         private Movie winMovie;
@@ -240,7 +244,8 @@ public class MainActivity extends Activity {
         GameView() {
             super(MainActivity.this);
             cardInventory = new CardInventory(MainActivity.this);
-            cardInventory.recordDailyLogin();
+            missionManager = new MissionManager(MainActivity.this,cardInventory);
+            missionManager.recordDailyLogin();
             loadGameArt();
             setLayerType(View.LAYER_TYPE_SOFTWARE,null);
             android.content.SharedPreferences prefs=getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE);
@@ -1155,6 +1160,76 @@ public class MainActivity extends Activity {
             }
             btn(c,"عودة",w*.41f,h*.91f,w*.59f,h*.985f,dark);
         }
+
+        private String missionDifficultyName(int difficulty) {
+            String[] labels={"سهلة","متوسطة","صعبة","صعبة جداً"};
+            return labels[Math.max(0,Math.min(3,difficulty))];
+        }
+        private void drawMissions(Canvas c) {
+            txt(c,"المهمات العسكرية",w*.5f,h*.115f,h*.052f,Color.rgb(245,190,65),true);
+            float tabTop=h*.18f,tabBottom=h*.27f;
+            box(c,w*.25f,tabTop,w*.49f,tabBottom,weeklyMissionTab?Color.rgb(37,58,48):Color.rgb(155,105,28));
+            box(c,w*.51f,tabTop,w*.75f,tabBottom,weeklyMissionTab?Color.rgb(155,105,28):Color.rgb(37,58,48));
+            txt(c,"المهمات اليومية",w*.37f,h*.238f,h*.026f,Color.WHITE,true);
+            txt(c,"المهمات الأسبوعية",w*.63f,h*.238f,h*.026f,Color.WHITE,true);
+            txt(c,"التجديد خلال: "+missionManager.getCountdown(weeklyMissionTab),w*.5f,h*.315f,h*.025f,Color.WHITE,true);
+            List<MissionManager.MissionTask> tasks=missionManager.getTasks(weeklyMissionTab);
+            float top=h*.355f,rowH=h*.105f;
+            for(int i=0;i<tasks.size();i++) {
+                MissionManager.MissionTask task=tasks.get(i);
+                float y=top+i*rowH;
+                box(c,w*.075f,y,w*.925f,y+rowH-h*.008f,Color.rgb(238,244,232));
+                txt(c,task.title,w*.49f,y+h*.027f,h*.025f,Color.rgb(35,55,42),true);
+                String meta=missionDifficultyName(task.difficulty)+"  •  المكافأة: "+task.reward+" "+(task.reward==1?"بطاقة":"بطاقات");
+                txt(c,meta,w*.49f,y+h*.055f,h*.018f,Color.rgb(130,91,29),false);
+                float l=w*.19f,r=w*.79f,barY=y+h*.071f,barH=h*.014f;
+                box(c,l,barY,r,barY+barH,Color.rgb(205,215,202));
+                float ratio=Math.min(1f,(float)task.progress/Math.max(1,task.target));
+                if(ratio>0)box(c,l,barY,l+(r-l)*ratio,barY+barH,task.completed?Color.rgb(35,155,83):Color.rgb(65,130,180));
+                txt(c,task.progress+"/"+task.target,w*.12f,barY+barH*1.25f,h*.017f,Color.rgb(45,65,48),true);
+                if(task.completed)txt(c,"✓",w*.87f,y+h*.065f,h*.052f,Color.rgb(25,155,75),true);
+            }
+            btn(c,"عودة",w*.41f,h*.925f,w*.59f,h*.985f,dark);
+            postInvalidateDelayed(1000);
+        }
+        private boolean hasMissionRewards() {
+            int[] values=missionManager.getPendingMissionRewards();
+            for(int value:values)if(value>0)return true;
+            return false;
+        }
+        private boolean isRewardPopupVisible() {
+            return mode==0 && !missionsScreen && !historyScreen && !progressScreen && !helpScreen && !inventoryScreen
+                && (missionManager.getPendingLoginCard()>=0 || hasMissionRewards());
+        }
+        private void drawRewardPopup(Canvas c) {
+            int login=missionManager.getPendingLoginCard();
+            int[] rewards=missionManager.getPendingMissionRewards();
+            if(login<0 && !hasMissionRewards())return;
+            p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(205,0,0,0));c.drawRect(0,0,w,h,p);
+            box(c,w*.20f,h*.16f,w*.80f,h*.86f,Color.rgb(239,245,232));
+            txt(c,login>=0?"مكافأة الدخول اليومي":"مكافآت المهمات",w*.5f,h*.265f,h*.052f,Color.rgb(120,83,25),true);
+            if(login>=0) {
+                txt(c,"حصلت على بطاقة جديدة",w*.5f,h*.37f,h*.030f,dark,true);
+                float tw=w*.13f,th=h*.25f;
+                drawCardTile(c,login,w*.5f-tw*.5f,h*.43f,w*.5f+tw*.5f,h*.43f+th,false,true,1);
+            } else {
+                txt(c,"البطاقات التي أضيفت إلى مخزنك",w*.5f,h*.36f,h*.027f,dark,true);
+                int count=0;for(int n:rewards)if(n>0)count++;
+                float tw=Math.min(w*.12f,w*.62f/Math.max(1,count)),th=h*.23f,gap=w*.018f;
+                float total=count*tw+Math.max(0,count-1)*gap,left=(w-total)*.5f;int slot=0;
+                for(int type=0;type<4;type++)if(rewards[type]>0) {
+                    float x=left+slot*(tw+gap);
+                    drawCardTile(c,type,x,h*.43f,x+tw,h*.43f+th,false,true,rewards[type]);slot++;
+                }
+            }
+            btn(c,"موافق",w*.39f,h*.755f,w*.61f,h*.835f,dark);
+        }
+        private void acknowledgeRewardPopup() {
+            if(missionManager.getPendingLoginCard()>=0)missionManager.acknowledgeLoginCard();
+            else missionManager.acknowledgeMissionRewards();
+            invalidate();
+        }
+
         private void drawSetup(Canvas c) {
             txt(c,"إعداد اللاعبين",w*.5f,h*.105f,h*.060f,dark,true);
             iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
@@ -1237,6 +1312,10 @@ public class MainActivity extends Activity {
         private void finishMatch() {
             if(winner==0)return;
             awardProgressPoints();
+            if(mode==2 && missionManager.isTrackedMatchActive()) {
+                int lostWeapons=0;for(int i=0;i<3;i++)if(dead1[i])lostWeapons++;
+                missionManager.finishTrackedMatch(winner==1,difficulty,lostWeapons,winner==1 && perfectWin);
+            }
             if(mode==2 && !cardMatchSettled && cardInventory.isMatchActive()) {
                 cardInventory.finishMatchNormally();
                 int[] rewards={1,2,3,4};
@@ -1694,7 +1773,7 @@ public class MainActivity extends Activity {
                     if(target>=15){
                         // The blue weapon is on the right and the red weapon is on the left.
                         // Explosions must appear on the opposing weapon that was destroyed.
-                        if(side==1){dead2[lane]=true;blueWinEffect[lane]=true;setBattleDialogue(1,2);spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                        if(side==1){boolean firstDestroy=!dead2[lane];dead2[lane]=true;if(mode==2 && firstDestroy)missionManager.recordGeneralWeaponDestroyed();blueWinEffect[lane]=true;setBattleDialogue(1,2);spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
                         else {dead1[lane]=true;redWinEffect[lane]=true;setBattleDialogue(2,2);spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
                     }
                     finishCheck();
@@ -1793,6 +1872,7 @@ public class MainActivity extends Activity {
             if(setup) { drawSetup(c); return; }
             if(mode==0) {
                 drawMenuBackdrop(c);
+                if(missionsScreen){drawMissions(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}
                 if(inventoryScreen){drawInventory(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}if(historyScreen){drawHistory(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}if(progressScreen){drawProgress(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}if(helpScreen){drawHelp(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}
                 txt(c,"اختر ساحة المعركة",w*.5f,h*.205f,h*.060f,Color.rgb(248,232,190),true);
                 iconButton(c,w*.035f,h*.065f,w*.125f,h*.165f,dark,"⚙");iconButton(c,w*.875f,h*.065f,w*.965f,h*.165f,Color.rgb(135,48,43),"⏻");
@@ -1803,6 +1883,7 @@ public class MainActivity extends Activity {
                 menuButton(c,"▤","سجل المباريات",c1-w*.15f,h*.59f,c1+w*.15f,h*.88f,dark);
                 menuButton(c,"♜","لوحة التقدم",c2-w*.15f,h*.59f,c2+w*.15f,h*.88f,Color.rgb(155,105,28));
                 menuButton(c,"?","شرح اللعبة",c3-w*.15f,h*.59f,c3+w*.15f,h*.88f,Color.rgb(55,91,72));
+                btn(c,"المهمات",w*.17f,h*.885f,w*.39f,h*.925f,dark);
                 box(c,w*.405f,h*.885f,w*.595f,h*.925f,Color.rgb(27,48,39));txt(c,"مخزن البطاقات  •  "+cardInventory.getTotalCount(),w*.5f,h*.913f,h*.023f,Color.rgb(245,210,125),true);
                 p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(true);
                 p.setTextSize(h*.020f);p.setColor(Color.WHITE);
@@ -1810,6 +1891,7 @@ public class MainActivity extends Activity {
                 p.setTextSize(h*.018f);
                 c.drawText("ahmad3aj@gmail.com",w*.5f,h*.975f,p);
                 p.setFakeBoldText(false);
+                drawRewardPopup(c);
                 return;
             }
             if(winner!=0 && !bonusAttempt) {
@@ -1971,7 +2053,18 @@ public class MainActivity extends Activity {
                 invalidate();return true;
             }
             if(mode==0) {
-                if(historyScreen || progressScreen || helpScreen || inventoryScreen) { if((x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f)||(x>=w*.38f&&x<=w*.62f&&y>=h*.91f&&y<=h*.995f)){historyScreen=false;progressScreen=false;helpScreen=false;inventoryScreen=false;} }
+                if(isRewardPopupVisible()) {
+                    if(x>=w*.35f&&x<=w*.65f&&y>=h*.74f&&y<=h*.85f)acknowledgeRewardPopup();
+                    invalidate();return true;
+                }
+                if(historyScreen || progressScreen || helpScreen || inventoryScreen || missionsScreen) {
+                    if((x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f)||(x>=w*.38f&&x<=w*.62f&&y>=h*.91f&&y<=h*.995f)) {
+                        historyScreen=false;progressScreen=false;helpScreen=false;inventoryScreen=false;missionsScreen=false;
+                    } else if(missionsScreen && y>=h*.18f&&y<=h*.27f) {
+                        if(x>=w*.25f&&x<=w*.49f)weeklyMissionTab=false;
+                        else if(x>=w*.51f&&x<=w*.75f)weeklyMissionTab=true;
+                    }
+                }
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
                 else if(y>=h*.275f&&y<=h*.55f&&x>=w*.075f&&x<=w*.285f){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
@@ -1980,6 +2073,7 @@ public class MainActivity extends Activity {
                 else if(y>=h*.59f&&y<=h*.89f&&x>=w*.075f&&x<=w*.285f)historyScreen=true;
                 else if(y>=h*.59f&&y<=h*.89f&&x>=w*.3975f&&x<=w*.6025f)progressScreen=true;
                 else if(y>=h*.59f&&y<=h*.89f&&x>=w*.7175f&&x<=w*.9225f)helpScreen=true;
+                else if(y>=h*.885f&&y<=h*.925f&&x>=w*.17f&&x<=w*.39f)missionsScreen=true;
                 else if(y>=h*.885f&&y<=h*.925f&&x>=w*.405f&&x<=w*.595f)inventoryScreen=true;
                 invalidate();return true;
             }
@@ -2023,7 +2117,7 @@ public class MainActivity extends Activity {
                         else if(onlineInvitePending)startOnlineHost(playerNames[0],avatars[0]);
                         else if(onlineLocalSide==1)startOnlineHost(playerNames[0],avatars[0]);
                         else startOnlineJoin(onlineJoinCode,playerNames[1],avatars[1]);}
-                    else { if(mode==2 && !cardInventory.beginMatch()){message="تعذر تجهيز البطاقات — تحقق من المخزن";invalidate();return true;}cardMatchSettled=false;clearBattleCardEffects();setup=false;resetMatch(); }
+                    else { if(mode==2 && !cardInventory.beginMatch()){message="تعذر تجهيز البطاقات — تحقق من المخزن";invalidate();return true;}if(mode==2)missionManager.beginTrackedMatch();cardMatchSettled=false;clearBattleCardEffects();setup=false;resetMatch(); }
                 }
                 invalidate();return true;
             }
