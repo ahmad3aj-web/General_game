@@ -88,6 +88,9 @@ public class MainActivity extends Activity {
         private final boolean[][] shieldActive = new boolean[3][3];
         private final int[][] shieldTurns = new int[3][3];
         private boolean cardTargeting = false;
+        private long cardNoticeUntil = 0;
+        private int cardNoticeType = -1;
+        private boolean cardNoticeFromGeneral = false;
         private final boolean[] generalCards = new boolean[CardInventory.CARD_TYPES];
         private final boolean[] generalCardsUsed = new boolean[CardInventory.CARD_TYPES];
         private boolean recorded = false;
@@ -575,9 +578,15 @@ public class MainActivity extends Activity {
             return mode==2 && cardInventory.isMatchActive()
                     && cardInventory.getActiveCards()[type] && !cardInventory.getUsedCards()[type];
         }
+        private void showCardUseNotice(int type,boolean fromGeneral) {
+            cardNoticeType=type;cardNoticeFromGeneral=fromGeneral;
+            cardNoticeUntil=System.currentTimeMillis()+2000L;
+            invalidate();postInvalidateDelayed(35);
+        }
         private boolean useCard(int type) {
             if(!cardAvailable(type) || !cardInventory.markUsed(type))return false;
             selectedBattleCard=-1;cardTargeting=false;
+            showCardUseNotice(type,false);
             return true;
         }
         private void finishCardTurnEffects(int side) {
@@ -627,6 +636,29 @@ public class MainActivity extends Activity {
                 float left=cx-(width*2+gap*1.5f)+(type%4)*(width+gap);
                 drawCardTile(c,type,left,top,left+width,top+h*.075f,selectedBattleCard==type,true,1);
             }
+        }
+        private void drawCardUseNotice(Canvas c) {
+            long now=System.currentTimeMillis();
+            if(cardNoticeType<0 || now>=cardNoticeUntil)return;
+            float progress=1f-(cardNoticeUntil-now)/2000f;
+            float pulse=(float)(1.0+0.045*Math.sin(progress*Math.PI*10));
+            float cx=w*.5f,cy=h*.48f,halfW=w*.31f*pulse,halfH=h*.105f*pulse;
+            int alpha=(int)(245*Math.min(1f,Math.min(progress*7f,(1f-progress)*7f+0.25f)));
+            p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(Math.max(0,alpha),8,18,20));
+            c.drawRoundRect(new RectF(cx-halfW,cy-halfH,cx+halfW,cy+halfH),h*.025f,h*.025f,p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(h*.006f);
+            p.setColor(Color.argb(Math.max(0,alpha),245,190,65));
+            c.drawRoundRect(new RectF(cx-halfW,cy-halfH,cx+halfW,cy+halfH),h*.025f,h*.025f,p);
+            p.setStyle(Paint.Style.FILL);
+            txt(c,"تم استخدام بطاقة",cx,cy-h*.018f,h*.050f,Color.argb(Math.max(0,alpha),255,220,125),true);
+            String[] labels={"إصلاح السلاح","مضاعفة النرد","الحرب السيبرانية","درع الحماية"};
+            String who=cardNoticeFromGeneral?"جنيرال":"أنت";
+            txt(c,who+" — "+labels[Math.max(0,Math.min(3,cardNoticeType))],cx,cy+h*.047f,h*.030f,Color.argb(Math.max(0,alpha),255,255,255),true);
+            float ring=h*(.075f+progress*.11f);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(h*.004f);
+            p.setColor(Color.argb(Math.max(0,(int)(170*(1f-progress))),245,190,65));
+            c.drawCircle(cx,cy,ring,p);p.setStyle(Paint.Style.FILL);
+            postInvalidateDelayed(35);
         }
         private void drawGeneralBattleCards(Canvas c) {
             if(mode!=2 || winner!=0 || battleIntro)return;
@@ -1355,6 +1387,7 @@ public class MainActivity extends Activity {
         private boolean generalUseCard(int type) {
             if(!generalHasCard(type))return false;
             generalCardsUsed[type]=true;
+            showCardUseNotice(type,true);
             return true;
         }
         private boolean generalUseBeforeRoll() {
@@ -1444,13 +1477,12 @@ public class MainActivity extends Activity {
             }},2600);
         }
         private void finishCheck() {
-            int blueLaneWins=0,redLaneWins=0,resolvedDuels=0;
+            int blueLaneWins=0,redLaneWins=0;
             for(int i=0;i<3;i++) {
-                if(dead2[i] && !dead1[i]){blueLaneWins++;resolvedDuels++;}
-                else if(dead1[i] && !dead2[i]){redLaneWins++;resolvedDuels++;}
+                if(dead2[i] && !dead1[i])blueLaneWins++;
+                else if(dead1[i] && !dead2[i])redLaneWins++;
             }
-            // Do not end after only two lanes: the third opposing pair must also be decided.
-            if(resolvedDuels<3)return;
+            // حسم المباراة فور فوز أحد الطرفين بمواجهتين من أصل ثلاث.
             if(blueLaneWins>=2){winner=1;perfectWin=blueLaneWins==3;finishMatch();return;}
             if(redLaneWins>=2){winner=2;finishMatch();}
         }
@@ -1765,6 +1797,7 @@ public class MainActivity extends Activity {
             }
             drawBattleCards(c);
             drawGeneralBattleCards(c);
+            drawCardUseNotice(c);
             drawMuzzleFlash(c);
             drawExplosion(c);
             drawBattleDialogue(c);
