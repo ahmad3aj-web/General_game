@@ -73,6 +73,7 @@ public final class MissionManager {
         this.prefs=context.getApplicationContext().getSharedPreferences(PREFS,Context.MODE_PRIVATE);
         this.inventory=inventory;
         recoverInterruptedMatch();
+        recoverCompletedMissionGrants();
         refreshPeriods();
         applyPendingGrants();
         applyPendingLoginGrant();
@@ -95,6 +96,28 @@ public final class MissionManager {
         int days=(c.get(Calendar.DAY_OF_WEEK)-Calendar.FRIDAY+7)%7;
         c.add(Calendar.DAY_OF_YEAR,-days);
         return dayKey(c.getTimeInMillis());
+    }
+
+    private void recoverCompletedMissionGrants() {
+        recoverCompletedMissionGrantsIn("daily_tasks","daily_period");
+        recoverCompletedMissionGrantsIn("weekly_tasks","weekly_period");
+    }
+
+    private void recoverCompletedMissionGrantsIn(String taskKey,String periodKey) {
+        JSONArray tasks;
+        try{tasks=new JSONArray(prefs.getString(taskKey,"[]"));}catch(Exception e){return;}
+        String pending=prefs.getString("pending_grants","");
+        String period=prefs.getString(periodKey,"");
+        for(int i=0;i<tasks.length();i++)try {
+            JSONObject task=tasks.getJSONObject(i);
+            if(!task.optBoolean("completed"))continue;
+            String token=taskKey+"-"+period+"-"+task.optString("id");
+            if(pending.contains(token+"|"))continue;
+            int[] grant=new int[CardInventory.CARD_TYPES];
+            for(int n=0;n<task.optInt("reward",1);n++)grant[random.nextInt(CardInventory.CARD_TYPES)]++;
+            addPendingGrant(token,grant);
+            pending=prefs.getString("pending_grants","");
+        }catch(Exception ignored){}
     }
 
     private synchronized void refreshPeriods() {
