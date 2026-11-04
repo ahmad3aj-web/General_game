@@ -280,9 +280,16 @@ public class MainActivity extends Activity {
                 }).setPositiveButton("تم",null).show();
         }
         private void showExitConfirmation() {
-            new AlertDialog.Builder(MainActivity.this).setTitle("تأكيد الخروج")
-                .setMessage("هل أنت متأكد أنك تريد الخروج من لعبة GENERAL؟")
-                .setPositiveButton("خروج",(dialog,which)->{timerlessCloseLan();timerlessCloseOnline();finish();})
+            boolean surrender=mode==2 && winner==0 && cardInventory.isMatchActive();
+            new AlertDialog.Builder(MainActivity.this)
+                .setTitle(surrender?"الاستسلام":"تأكيد الخروج")
+                .setMessage(surrender?"هل تريد الاستسلام وإنهاء المعركة؟ ستخسر جميع البطاقات التي دخلت بها.":"هل أنت متأكد أنك تريد الخروج من لعبة GENERAL؟")
+                .setPositiveButton(surrender?"استسلام":"خروج",(dialog,which)->{
+                    if(surrender) {
+                        winner=2;cardInventory.abandonMatch();cardMatchSettled=true;
+                        clearBattleCardEffects();bonusAttempt=false;finishMatch();
+                    } else {timerlessCloseLan();timerlessCloseOnline();finish();}
+                })
                 .setNegativeButton("إلغاء",null).show();
         }
         private void vibrateForExplosion() {
