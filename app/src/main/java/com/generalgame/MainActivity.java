@@ -1500,7 +1500,9 @@ public class MainActivity extends Activity {
             if(generalHasCard(CardInventory.REPAIR)) {
                 for(int lane=0;lane<3;lane++) if(dead2[lane] || cyberDisabled[2][lane]) {
                     if(generalUseCard(CardInventory.REPAIR)) {
-                        dead2[lane]=false;pos2[lane]=0;cyberDisabled[2][lane]=false;cyberTurns[2][lane]=0;
+                        dead2[lane]=false;pos2[lane]=0;
+                        pos1[lane]=0;blueWinEffect[lane]=false;redWinEffect[lane]=false;
+                        cyberDisabled[2][lane]=false;cyberTurns[2][lane]=0;
                         repairEffectUntil[2][lane]=System.currentTimeMillis()+Math.max(900,repairCardMovie==null?900:repairCardMovie.duration());
                         message="جنيرال فعّل بطاقة إصلاح السلاح — "+names[lane];
                         playGameSound(3);invalidate();return true;
