@@ -199,9 +199,11 @@ public final class MissionManager {
         if(!prefs.getBoolean("match_active",false) || lane<0 || lane>2)return;
         int mask=prefs.getInt("general_destroyed_mask",0),bit=1<<lane;
         if((mask&bit)!=0)return;
+        // Persist the achievement before the per-match mask so a sudden process death
+        // cannot erase a destruction that was already visibly completed.
+        addProgress("destroys",1);
         prefs.edit().putInt("general_destroyed_mask",mask|bit)
             .putInt("match_destroyed",prefs.getInt("match_destroyed",0)+1).commit();
-        addProgress("destroys",1);
     }
 
     public synchronized void recordPlayerWeaponDestroyed(int lane) {
