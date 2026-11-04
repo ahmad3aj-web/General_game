@@ -577,6 +577,39 @@ public class MainActivity extends Activity {
                 if(shieldActive[side][lane] && --shieldTurns[side][lane]<=0) shieldActive[side][lane]=false;
             }
         }
+        private boolean executeBattleCard(int type,int lane) {
+            if(type==CardInventory.DOUBLE_DICE) {
+                if(die<=0)return false;
+                int doubled=die*2;
+                if(lane<0 || destroyed(1)[lane] || destroyed(2)[lane] || cyberDisabled[1][lane]
+                        || shieldActive[2][lane] || positions(1)[lane]+doubled>15)return false;
+                if(!useCard(type))return false;
+                die=doubled;message="تم تفعيل مضاعفة النرد — اختر السلاح المناسب";choosing=true;return true;
+            }
+            if(lane<0 || lane>2)return false;
+            if(type==CardInventory.REPAIR) {
+                if(!destroyed(1)[lane] && !cyberDisabled[1][lane])return false;
+                if(!useCard(type))return false;
+                destroyed(1)[lane]=false;positions(1)[lane]=0;
+                cyberDisabled[1][lane]=false;cyberTurns[1][lane]=0;
+                message="تم إصلاح "+names[lane]+" وإعادته إلى العمل";playGameSound(3);return true;
+            }
+            if(type==CardInventory.CYBER_WARFARE) {
+                if(destroyed(2)[lane])return false;
+                if(!useCard(type))return false;
+                cyberDisabled[2][lane]=true;cyberTurns[2][lane]=2;
+                message="تم تعطيل "+names[lane]+" لدى جنيرال لمدة دورين";return true;
+            }
+            if(type==CardInventory.SHIELD) {
+                if(destroyed(1)[lane] || shieldActive[1][lane])return false;
+                boolean allProtected=true;for(int i=0;i<3;i++)if(!shieldActive[1][i]&&!destroyed(1)[i])allProtected=false;
+                if(allProtected)return false;
+                if(!useCard(type))return false;
+                shieldActive[1][lane]=true;shieldTurns[1][lane]=2;
+                message="تم تفعيل درع الحماية على "+names[lane];return true;
+            }
+            return false;
+        }
         private void drawBattleCards(Canvas c) {
             if(mode!=2 || !cardInventory.isMatchActive())return;
             boolean[] active=cardInventory.getActiveCards(),used=cardInventory.getUsedCards();
@@ -1434,11 +1467,10 @@ public class MainActivity extends Activity {
                     if(bonusShot && bonusAttempt && winner==1)finishMatch();
                     if(winner==0){
                         if(mode==2 && side==1){
-                            finishCardTurnEffects(2);
                             player=2; setBattleDialogue(2,1); die=0; message="دور جنيرال";
                             postDelayed(new Runnable(){@Override public void run(){if(epoch==matchEpoch && mode==2 && winner==0 && player==2){computerTurn();invalidate();}}},650);
                         } else if(mode==2 && side==2){
-                            finishCardTurnEffects(1);
+                            finishCardTurnEffects(1);finishCardTurnEffects(2);
                             player=1;die=0;choosing=false;message="دورك — اضغط النرد";
                         } else afterTurn();
                     }
@@ -1719,6 +1751,16 @@ public class MainActivity extends Activity {
                 invalidate();return true;
             }
             if(openingToss)return true;
+            if(mode==2 && player==1 && winner==0 && !bonusAttempt
+                    && y>=h*.145f && y<=h*.220f && x>=w*.70f && x<=w*.99f) {
+                boolean[] active=cardInventory.getActiveCards(),used=cardInventory.getUsedCards();
+                float width=w*.052f,gap=w*.012f,cx=w*.835f;int slot=(int)Math.floor((x-(cx-(width*2+gap*1.5f)))/(width+gap));
+                if(slot>=0&&slot<4&&active[slot]&&!used[slot]) {
+                    if(slot==CardInventory.DOUBLE_DICE && die<=0)message="مضاعفة النرد متاحة بعد رمية النرد";
+                    else {selectedBattleCard=selectedBattleCard==slot?-1:slot;cardTargeting=selectedBattleCard>=0;message=selectedBattleCard<0?"تم إلغاء اختيار البطاقة":"اختر الهدف على ساحة المعركة";}
+                }
+                invalidate();return true;
+            }
             if((mode==3 && (lanSession==null || !lanSession.isConnected()))
                     || (mode==4 && (onlineSession==null || !onlineSession.isConnected()))) {
                 if(x>=w*.31f && x<=w*.69f && y>=h*.81f && y<=h*.92f) {
@@ -1775,7 +1817,11 @@ public class MainActivity extends Activity {
                 if(Math.abs(x-ownX)<w*.052f) {
                     for(int i=0;i<3;i++) if(Math.abs(y-weaponRows[i])<h*.052f) lane=i;
                 }
-                if(lane>=0) {
+                if(lane>=0 && mode==2 && player==1 && selectedBattleCard>=0) {
+                    int card=selectedBattleCard;
+                    if(executeBattleCard(card,lane)) {selectedBattleCard=-1;cardTargeting=false;}
+                    else message="لا يمكن استخدام البطاقة على هذا السلاح الآن";
+                } else if(lane>=0) {
                     if(!canMove(player,lane))message="هذه الحركة غير ممكنة — اختر سلاحاً آخر";
                     else {
                         if(mode==3 && lanSession!=null){if(lanSession.sendMove(lane))animateMove(player,lane,die);}
