@@ -88,6 +88,8 @@ public class MainActivity extends Activity {
         private final boolean[][] shieldActive = new boolean[3][3];
         private final int[][] shieldTurns = new int[3][3];
         private boolean cardTargeting = false;
+        private final boolean[] generalCards = new boolean[CardInventory.CARD_TYPES];
+        private final boolean[] generalCardsUsed = new boolean[CardInventory.CARD_TYPES];
         private boolean recorded = false;
         private boolean bonusAttempt = false, perfectWin = false, pointsAwarded = false;
         private int matchPoints = 0;
@@ -1325,12 +1327,72 @@ public class MainActivity extends Activity {
             btn(c,"عودة",w*.41f,h*.945f,w*.59f,h*.995f,dark);
         }
 
+        private void prepareGeneralCards() {
+            for(int i=0;i<CardInventory.CARD_TYPES;i++){generalCards[i]=false;generalCardsUsed[i]=false;}
+            int count=new int[]{0,1,2,3}[Math.max(0,Math.min(3,difficulty))];
+            int[] pool={0,1,2,3};
+            for(int i=pool.length-1;i>0;i--){int j=random.nextInt(i+1);int t=pool[i];pool[i]=pool[j];pool[j]=t;}
+            for(int i=0;i<count;i++)generalCards[pool[i]]=true;
+        }
+        private boolean generalHasCard(int type) {
+            return type>=0 && type<CardInventory.CARD_TYPES && generalCards[type] && !generalCardsUsed[type];
+        }
+        private boolean generalUseCard(int type) {
+            if(!generalHasCard(type))return false;
+            generalCardsUsed[type]=true;
+            return true;
+        }
+        private boolean generalUseBeforeRoll() {
+            // الإصلاح أولوية قصوى إذا فقد جنيرال سلاحاً أو عُطّل سيبرانياً.
+            if(generalHasCard(CardInventory.REPAIR)) {
+                for(int lane=0;lane<3;lane++) if(dead2[lane] || cyberDisabled[2][lane]) {
+                    if(generalUseCard(CardInventory.REPAIR)) {
+                        dead2[lane]=false;pos2[lane]=0;cyberDisabled[2][lane]=false;cyberTurns[2][lane]=0;
+                        message="جنيرال فعّل بطاقة إصلاح السلاح — "+names[lane];
+                        playGameSound(3);invalidate();return true;
+                    }
+                }
+            }
+            // الحرب السيبرانية تستهدف سلاح اللاعب المتقدم أو الأخطر.
+            if(generalHasCard(CardInventory.CYBER_WARFARE)) {
+                int target=-1,best=-1;
+                for(int lane=0;lane<3;lane++) if(!dead1[lane] && !cyberDisabled[1][lane]) {
+                    int score=pos1[lane]+(shieldActive[1][lane]?18:0);
+                    if(score>best){best=score;target=lane;}
+                }
+                if(target>=0 && best>=5 && generalUseCard(CardInventory.CYBER_WARFARE)) {
+                    cyberDisabled[1][target]=true;cyberTurns[1][target]=2;
+                    message="جنيرال فعّل الحرب السيبرانية ضد "+names[target];
+                    invalidate();return true;
+                }
+            }
+            // الدرع يحمي سلاح جنيرال الأكثر تقدماً، إن لم يكن محمياً.
+            if(generalHasCard(CardInventory.SHIELD)) {
+                int target=-1,best=-1;
+                for(int lane=0;lane<3;lane++) if(!dead2[lane] && !shieldActive[2][lane]) {
+                    int score=pos2[lane]+(pos2[lane]>=8?12:0);
+                    if(score>best){best=score;target=lane;}
+                }
+                if(target>=0 && (best>=6 || pos1[target]>=8) && generalUseCard(CardInventory.SHIELD)) {
+                    shieldActive[2][target]=true;shieldTurns[2][target]=2;
+                    message="جنيرال فعّل درع الحماية على "+names[target];
+                    invalidate();return true;
+                }
+            }
+            return false;
+        }
+        private boolean generalDoubleDiceAvailable(int roll) {
+            if(!generalHasCard(CardInventory.DOUBLE_DICE))return false;
+            for(int lane=0;lane<3;lane++) if(canMove(2,lane) && pos2[lane]+roll*2<=15)return true;
+            return false;
+        }
         private void resetMatch() {
             matchEpoch++;
             for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}clearWinEffects();
             stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false; recorded=false; explosionAt=0;
             bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
             clearBattleCardEffects();
+            if(mode==2)prepareGeneralCards();
             openingRoll1=0; openingRoll2=0; openingToss=false;
             battleDialogueText="";battleDialogueReplyText="";dialogueSequence[0]=dialogueSequence[1]=dialogueSequence[2]=0;
             if(mode==3 && lanSession!=null && lanSession.isConnected()) {
@@ -1397,8 +1459,15 @@ public class MainActivity extends Activity {
             if(mode!=2 || winner!=0 || player!=2)return;
             final int epoch=matchEpoch;
             choosing=false;
+            generalUseBeforeRoll();
             die=random.nextInt(6)+1;
-            message="جنيرال يرمي النرد...";
+            if(generalDoubleDiceAvailable(die)) {
+                int lane=-1,best=-1;
+                for(int i=0;i<3;i++)if(canMove(2,i)&&pos2[i]+die*2<=15&&pos2[i]>best){best=pos2[i];lane=i;}
+                if(lane>=0 && generalUseCard(CardInventory.DOUBLE_DICE)) {
+                    die*=2;message="جنيرال فعّل بطاقة مضاعفة النرد!";
+                } else message="جنيرال يرمي النرد...";
+            } else message="جنيرال يرمي النرد...";
             invalidate();
             postDelayed(new Runnable(){ @Override public void run(){
                 if(epoch!=matchEpoch || mode!=2 || winner!=0 || player!=2)return;
