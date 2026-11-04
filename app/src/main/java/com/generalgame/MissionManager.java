@@ -75,6 +75,7 @@ public final class MissionManager {
         recoverInterruptedMatch();
         refreshPeriods();
         applyPendingGrants();
+        applyPendingLoginGrant();
     }
 
     private synchronized long trustedNow() {
@@ -136,8 +137,17 @@ public final class MissionManager {
         int type=random.nextInt(CardInventory.CARD_TYPES);
         String token="daily-login-"+today;
         prefs.edit().putString("login_reward_day",today).putInt("login_reward_type",type).putBoolean("login_reward_pending",true).commit();
-        inventory.addCardsOnce(token,new int[]{type==0?1:0,type==1?1:0,type==2?1:0,type==3?1:0});
+        applyPendingLoginGrant();
         return type;
+    }
+
+    private void applyPendingLoginGrant() {
+        if(!prefs.getBoolean("login_reward_pending",false))return;
+        int type=prefs.getInt("login_reward_type",-1);
+        if(type>=0 && type<CardInventory.CARD_TYPES) {
+            int[] grant=new int[4];grant[type]=1;
+            inventory.addCardsOnce("daily-login-"+prefs.getString("login_reward_day",""),grant);
+        }
     }
 
     public synchronized int getPendingLoginCard() {
@@ -164,13 +174,14 @@ public final class MissionManager {
         if(won) {
             streak++;
             addProgress("wins",1);
-            addProgress("streak",streak);
+            addProgress("difficulty",1);
+            setStreakProgress(streak);
             if(difficulty>=1)addProgress("medium_wins",1);
             if(difficulty>=2)addProgress("pro_wins",1);
             if(difficulty>=3)addProgress("legend_wins",1);
             if(lostPlayerWeapons==0)addProgress("no_loss",1);
             if(perfect)addProgress("perfect",1);
-        } else streak=0;
+        } else { streak=0; setStreakProgress(0); }
         prefs.edit().putInt("win_streak",streak).putBoolean("match_active",false).putInt("match_destroyed",0).commit();
     }
 
@@ -179,6 +190,28 @@ public final class MissionManager {
             // Per-weapon destruction progress was already committed as it happened.
             prefs.edit().putInt("win_streak",0).putBoolean("match_active",false).putInt("match_destroyed",0).commit();
         }
+    }
+
+    public synchronized boolean isTrackedMatchActive() { return prefs.getBoolean("match_active",false); }
+
+    private void setStreakProgress(int streak) {
+        setTaskProgress("daily_tasks","streak",streak);
+        setTaskProgress("weekly_tasks","streak",streak);
+    }
+
+    private void setTaskProgress(String key,String type,int value) {
+        JSONArray tasks;try{tasks=new JSONArray(prefs.getString(key,"[]"));}catch(Exception e){return;}
+        for(int i=0;i<tasks.length();i++)try {
+            JSONObject o=tasks.getJSONObject(i);if(o.optBoolean("completed") || !type.equals(o.optString("type")))continue;
+            o.put("progress",Math.min(o.optInt("target",1),Math.max(0,value)));
+            if(value>=o.optInt("target",1)){
+                o.put("completed",true);
+                prefs.edit().putString(key,tasks.toString()).commit();
+                String token=key+"-"+prefs.getString(key.equals("daily_tasks")?"daily_period":"weekly_period","")+"-"+o.optString("id");
+                int[] grant=new int[4];for(int n=0;n<o.optInt("reward",1);n++)grant[random.nextInt(4)]++;
+                addPendingGrant(token,grant);
+            } else prefs.edit().putString(key,tasks.toString()).commit();
+        }catch(Exception ignored){}
     }
 
     private void addProgress(String type,int amount) {
@@ -190,34 +223,33 @@ public final class MissionManager {
     private void updateTasks(String key,String type,int amount) {
         JSONArray tasks;
         try{tasks=new JSONArray(prefs.getString(key,"[]"));}catch(Exception e){return;}
-        boolean changed=false;
         for(int i=0;i<tasks.length();i++)try {
             JSONObject o=tasks.getJSONObject(i);
             if(o.optBoolean("completed") || !type.equals(o.optString("type")))continue;
             int progress=o.optInt("progress",0)+amount,target=o.optInt("target",1);
             o.put("progress",Math.min(target,progress));
-            if(progress>=target) {
-                o.put("completed",true);
+            boolean completed=progress>=target;
+            if(completed)o.put("completed",true);
+            // Persist progress/completion before attempting the inventory grant.
+            prefs.edit().putString(key,tasks.toString()).commit();
+            if(completed) {
                 String token=key+"-"+prefs.getString(key.equals("daily_tasks")?"daily_period":"weekly_period","")+"-"+o.optString("id");
                 int[] grant=new int[CardInventory.CARD_TYPES];
                 for(int n=0;n<o.optInt("reward",1);n++)grant[random.nextInt(CardInventory.CARD_TYPES)]++;
                 addPendingGrant(token,grant);
             }
-            changed=true;
         }catch(Exception ignored){}
-        if(changed)prefs.edit().putString(key,tasks.toString()).commit();
     }
 
     private void addPendingGrant(String token,int[] grant) {
-        String encoded=token+"|"+grant[0]+","+grant[1]+","+grant[2]+","+grant[3];
         String pending=prefs.getString("pending_grants","");
-        if(!pending.contains(token+"|")) {
-            prefs.edit().putString("pending_grants",pending+(pending.isEmpty()?"":";")+encoded).commit();
-        }
-        applyPendingGrants();
+        if(pending.contains(token+"|"))return;
+        String encoded=token+"|"+grant[0]+","+grant[1]+","+grant[2]+","+grant[3];
+        prefs.edit().putString("pending_grants",pending+(pending.isEmpty()?"":";")+encoded).commit();
         int[] total=getPendingMissionRewards();
         for(int i=0;i<4;i++)total[i]+=grant[i];
         prefs.edit().putString("pending_mission_popup",join(total)).commit();
+        applyPendingGrants();
     }
 
     private void applyPendingGrants() {
