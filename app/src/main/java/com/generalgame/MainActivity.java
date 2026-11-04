@@ -250,6 +250,11 @@ public class MainActivity extends Activity {
             }
         }
 
+        @Override protected boolean verifyDrawable(Drawable who) {
+            return who==shieldCardDrawable || who==cyberCardDrawable || who==repairCardDrawable
+                    || super.verifyDrawable(who);
+        }
+
         @Override protected void onDetachedFromWindow() {
             timerlessCloseLan();
             timerlessCloseOnline();
