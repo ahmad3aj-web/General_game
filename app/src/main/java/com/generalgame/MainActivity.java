@@ -82,6 +82,12 @@ public class MainActivity extends Activity {
         private boolean helpScreen = false;
         private boolean inventoryScreen = false;
         private boolean cardMatchSettled = false;
+        private int selectedBattleCard = -1;
+        private final boolean[][] cyberDisabled = new boolean[3][3];
+        private final int[][] cyberTurns = new int[3][3];
+        private final boolean[][] shieldActive = new boolean[3][3];
+        private final int[][] shieldTurns = new int[3][3];
+        private boolean cardTargeting = false;
         private boolean recorded = false;
         private boolean bonusAttempt = false, perfectWin = false, pointsAwarded = false;
         private int matchPoints = 0;
@@ -544,8 +550,41 @@ public class MainActivity extends Activity {
         private boolean[] destroyed(int side) { return side==1 ? dead1 : dead2; }
         private boolean canMove(int side,int lane) {
             int opposingSide=side==1?2:1;
-            // Each lane is a one-on-one duel: once either weapon is destroyed, that lane is closed.
-            return !destroyed(side)[lane] && !destroyed(opposingSide)[lane] && positions(side)[lane]+die<=15;
+            // Disabled weapons cannot fire; a shield blocks ordinary attacks on its weapon.
+            return !destroyed(side)[lane] && !destroyed(opposingSide)[lane]
+                    && !cyberDisabled[side][lane] && !shieldActive[opposingSide][lane]
+                    && positions(side)[lane]+die<=15;
+        }
+        private void clearBattleCardEffects() {
+            for(int side=1;side<=2;side++) for(int lane=0;lane<3;lane++) {
+                cyberDisabled[side][lane]=false;cyberTurns[side][lane]=0;
+                shieldActive[side][lane]=false;shieldTurns[side][lane]=0;
+            }
+            selectedBattleCard=-1;cardTargeting=false;
+        }
+        private boolean cardAvailable(int type) {
+            return mode==2 && cardInventory.isMatchActive()
+                    && cardInventory.getActiveCards()[type] && !cardInventory.getUsedCards()[type];
+        }
+        private boolean useCard(int type) {
+            if(!cardAvailable(type) || !cardInventory.markUsed(type))return false;
+            selectedBattleCard=-1;cardTargeting=false;
+            return true;
+        }
+        private void finishCardTurnEffects(int side) {
+            for(int lane=0;lane<3;lane++) {
+                if(cyberDisabled[side][lane] && --cyberTurns[side][lane]<=0) cyberDisabled[side][lane]=false;
+                if(shieldActive[side][lane] && --shieldTurns[side][lane]<=0) shieldActive[side][lane]=false;
+            }
+        }
+        private void drawBattleCards(Canvas c) {
+            if(mode!=2 || !cardInventory.isMatchActive())return;
+            boolean[] active=cardInventory.getActiveCards(),used=cardInventory.getUsedCards();
+            float cx=w*.835f, top=h*.145f, width=w*.052f, gap=w*.012f;
+            for(int type=0;type<4;type++) if(active[type]&&!used[type]) {
+                float left=cx-(width*2+gap*1.5f)+(type%4)*(width+gap);
+                drawCardTile(c,type,left,top,left+width,top+h*.075f,selectedBattleCard==type,true,1);
+            }
         }
         private boolean anyMove(int side) {
             for(int i=0;i<3;i++) if(canMove(side,i)) return true;
@@ -1015,6 +1054,7 @@ public class MainActivity extends Activity {
                 int[] rewards={1,2,3,4};
                 if(winner==1)cardInventory.addRandomCards(rewards[Math.max(0,Math.min(3,difficulty))]+(perfectWin?1:0));
                 cardMatchSettled=true;
+                clearBattleCardEffects();
             }
             bonusAttempt=false;battleIntro=false;die=0;choosing=false;
             if(mode==2)message=winner==1?"انتهت المباراة — أنت الفائز!":"انتهت المباراة — فاز جنيرال!";
@@ -1250,6 +1290,7 @@ public class MainActivity extends Activity {
             for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}clearWinEffects();
             stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false; recorded=false; explosionAt=0;
             bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
+            clearBattleCardEffects();
             openingRoll1=0; openingRoll2=0; openingToss=false;
             battleDialogueText="";battleDialogueReplyText="";dialogueSequence[0]=dialogueSequence[1]=dialogueSequence[2]=0;
             if(mode==3 && lanSession!=null && lanSession.isConnected()) {
@@ -1393,9 +1434,11 @@ public class MainActivity extends Activity {
                     if(bonusShot && bonusAttempt && winner==1)finishMatch();
                     if(winner==0){
                         if(mode==2 && side==1){
+                            finishCardTurnEffects(2);
                             player=2; setBattleDialogue(2,1); die=0; message="دور جنيرال";
                             postDelayed(new Runnable(){@Override public void run(){if(epoch==matchEpoch && mode==2 && winner==0 && player==2){computerTurn();invalidate();}}},650);
                         } else if(mode==2 && side==2){
+                            finishCardTurnEffects(1);
                             player=1;die=0;choosing=false;message="دورك — اضغط النرد";
                         } else afterTurn();
                     }
@@ -1590,6 +1633,7 @@ public class MainActivity extends Activity {
                     }
                 }
             }
+            drawBattleCards(c);
             drawMuzzleFlash(c);
             drawExplosion(c);
             drawBattleDialogue(c);
@@ -1662,7 +1706,7 @@ public class MainActivity extends Activity {
                         else if(onlineInvitePending)startOnlineHost(playerNames[0],avatars[0]);
                         else if(onlineLocalSide==1)startOnlineHost(playerNames[0],avatars[0]);
                         else startOnlineJoin(onlineJoinCode,playerNames[1],avatars[1]);}
-                    else { if(mode==2 && !cardInventory.beginMatch()){message="تعذر تجهيز البطاقات — تحقق من المخزن";invalidate();return true;}cardMatchSettled=false;setup=false;resetMatch(); }
+                    else { if(mode==2 && !cardInventory.beginMatch()){message="تعذر تجهيز البطاقات — تحقق من المخزن";invalidate();return true;}cardMatchSettled=false;clearBattleCardEffects();setup=false;resetMatch(); }
                 }
                 invalidate();return true;
             }
