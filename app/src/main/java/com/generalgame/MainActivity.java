@@ -19,9 +19,6 @@ import android.graphics.Path;
 import android.graphics.LinearGradient;
 import android.graphics.Shader;
 import android.graphics.Movie;
-import android.graphics.ImageDecoder;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.AnimatedImageDrawable;
 import android.view.MotionEvent;
 import android.view.View;
 import android.media.AudioAttributes;
@@ -66,7 +63,7 @@ public class MainActivity extends Activity {
         private Movie fireMovie;
         private Movie winMovie;
         private Movie shieldCardMovie, cyberCardMovie, repairCardMovie;
-        private Drawable shieldCardDrawable, cyberCardDrawable, repairCardDrawable;
+        private Bitmap shieldCardImage, cyberCardImage, repairCardImage;
         private final long[][] repairEffectUntil = new long[3][3];
         private final boolean[] blueWinEffect = {false,false,false};
         private final boolean[] redWinEffect = {false,false,false};
@@ -182,28 +179,52 @@ public class MainActivity extends Activity {
             for(String name:scenes)try{art.put(name,BitmapFactory.decodeStream(getAssets().open("backgrounds/"+name)));}catch(Exception ignored){}
             try { fireMovie=Movie.decodeStream(getAssets().open("vehicles/Flame_GIF_2.gif")); } catch(Exception ignored) {}
             try { winMovie=Movie.decodeStream(getAssets().open("vehicles/Win.gif")); } catch(Exception ignored) {}
-            try { shieldCardMovie=Movie.decodeStream(getAssets().open("ui/Sh.gif")); } catch(Exception ignored) {}
-            try { cyberCardMovie=Movie.decodeStream(getAssets().open("ui/Vi.gif")); } catch(Exception ignored) {}
-            try { repairCardMovie=Movie.decodeStream(getAssets().open("ui/En.gif")); } catch(Exception ignored) {}
-            shieldCardDrawable=loadCardAnimation("ui/Sh.gif");
-            cyberCardDrawable=loadCardAnimation("ui/Vi.gif");
-            repairCardDrawable=loadCardAnimation("ui/En.gif");
+            repairCardImage=loadCardImage("ui/card_repair.jpg");
+            cyberCardImage=loadCardImage("ui/card_cyber.jpg");
+            shieldCardImage=loadCardImage("ui/card_shield.png");
         }
-        // ImageDecoder preserves GIF frame transparency on Android 9 and newer.
-        private Drawable loadCardAnimation(String assetPath) {
-            if(Build.VERSION.SDK_INT<28)return null;
+        // Remove the light checkerboard background from the newly supplied card artwork.
+        private Bitmap loadCardImage(String assetPath) {
             try {
-                Drawable drawable=ImageDecoder.decodeDrawable(ImageDecoder.createSource(getAssets(),assetPath));
-                if(drawable instanceof AnimatedImageDrawable) {
-                    AnimatedImageDrawable animated=(AnimatedImageDrawable)drawable;
-                    animated.setRepeatCount(AnimatedImageDrawable.REPEAT_INFINITE);
-                    animated.setCallback(this);
-                    animated.start();
-                }
-                return drawable;
-            } catch(Exception ignored) {
-                return null;
+                Bitmap decoded=BitmapFactory.decodeStream(getAssets().open(assetPath));
+                return decoded==null?null:removeCheckerBackground(decoded);
+            } catch(Exception ignored) { return null; }
+        }
+        private Bitmap removeCheckerBackground(Bitmap source) {
+            int width=source.getWidth(),height=source.getHeight();
+            Bitmap result=source.copy(Bitmap.Config.ARGB_8888,true);
+            int[] pixels=new int[width*height];
+            result.getPixels(pixels,0,width,0,0,width,height);
+            boolean[] visited=new boolean[pixels.length];
+            int[] queue=new int[pixels.length];
+            int head=0,tail=0;
+            for(int x=0;x<width;x++) {
+                queue[tail++]=x;
+                queue[tail++]=(height-1)*width+x;
             }
+            for(int y=1;y<height-1;y++) {
+                queue[tail++]=y*width;
+                queue[tail++]=y*width+width-1;
+            }
+            while(head<tail) {
+                int index=queue[head++];
+                if(index<0 || index>=pixels.length || visited[index])continue;
+                visited[index]=true;
+                int color=pixels[index],a=Color.alpha(color);
+                int r=Color.red(color),g=Color.green(color),b=Color.blue(color);
+                int max=Math.max(r,Math.max(g,b)),min=Math.min(r,Math.min(g,b));
+                // Background squares are bright neutral grays/whites; keep colored artwork intact.
+                if(a==0 || (min>=185 && max-min<=32)) {
+                    pixels[index]=Color.TRANSPARENT;
+                    int x=index%width,y=index/width;
+                    if(x>0)queue[tail++]=index-1;
+                    if(x<width-1)queue[tail++]=index+1;
+                    if(y>0)queue[tail++]=index-width;
+                    if(y<height-1)queue[tail++]=index+width;
+                }
+            }
+            result.setPixels(pixels,0,width,0,0,width,height);
+            return result;
         }
         private void drawArt(Canvas c,String name,float l,float t,float r,float b,boolean flip) {
             Bitmap bitmap=art.get(name);if(bitmap==null)return;RectF dst=new RectF(l,t,r,b);
@@ -248,11 +269,6 @@ public class MainActivity extends Activity {
                     && gameSoundLoaded[index]) {
                 gameSoundPool.play(gameSoundIds[index], 0.95f, 0.95f, 1, 0, 1.0f);
             }
-        }
-
-        @Override protected boolean verifyDrawable(Drawable who) {
-            return who==shieldCardDrawable || who==cyberCardDrawable || who==repairCardDrawable
-                    || super.verifyDrawable(who);
         }
 
         @Override protected void onDetachedFromWindow() {
@@ -1699,25 +1715,18 @@ public class MainActivity extends Activity {
             String file=lane==0?"tank_01.png":lane==1?"fighter_01.png":"cannon_01.png";float ww=w*.105f,hh=h*.105f;
             drawArt(c,file,cx-ww*.5f,cy-hh*.5f,cx+ww*.5f,cy+hh*.5f,!faceRight);
         }
-        private void drawCardGif(Canvas c,Drawable drawable,Movie movie,float cx,float cy) {
+        private void drawCardImage(Canvas c,Bitmap bitmap,float cx,float cy) {
+            if(bitmap==null)return;
             float fw=w*.105f,fh=h*.105f;
-            if(drawable!=null) {
-                drawable.setBounds((int)(cx-fw*.5f),(int)(cy-fh*.5f),(int)(cx+fw*.5f),(int)(cy+fh*.5f));
-                drawable.draw(c);
-                return;
-            }
-            if(movie==null)return;
-            int duration=Math.max(1,movie.duration());
-            movie.setTime((int)(System.currentTimeMillis()%duration));
-            c.save();c.translate(cx-fw*.5f,cy-fh*.5f);
-            c.scale(fw/Math.max(1,movie.width()),fh/Math.max(1,movie.height()));
-            movie.draw(c,0,0);c.restore();postInvalidateDelayed(45);
+            RectF dst=new RectF(cx-fw*.5f,cy-fh*.5f,cx+fw*.5f,cy+fh*.5f);
+            p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
+            c.drawBitmap(bitmap,null,dst,p);
         }
         private void drawWeaponCardEffect(Canvas c,int side,int lane,float cx,float cy) {
             long now=System.currentTimeMillis();
-            if(repairEffectUntil[side][lane]>now) drawCardGif(c,repairCardDrawable,repairCardMovie,cx,cy);
-            else if(cyberDisabled[side][lane]) drawCardGif(c,cyberCardDrawable,cyberCardMovie,cx,cy);
-            else if(shieldActive[side][lane]) drawCardGif(c,shieldCardDrawable,shieldCardMovie,cx,cy);
+            if(repairEffectUntil[side][lane]>now) drawCardImage(c,repairCardImage,cx,cy);
+            else if(cyberDisabled[side][lane]) drawCardImage(c,cyberCardImage,cx,cy);
+            else if(shieldActive[side][lane]) drawCardImage(c,shieldCardImage,cx,cy);
         }
 
         @Override protected void onDraw(Canvas c) {
