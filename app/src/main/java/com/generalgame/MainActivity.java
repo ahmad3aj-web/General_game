@@ -628,6 +628,21 @@ public class MainActivity extends Activity {
                 drawCardTile(c,type,left,top,left+width,top+h*.075f,selectedBattleCard==type,true,1);
             }
         }
+        private void drawGeneralBattleCards(Canvas c) {
+            if(mode!=2 || winner!=0 || battleIntro)return;
+            int count=0;
+            for(int type=0;type<CardInventory.CARD_TYPES;type++) if(generalCards[type])count++;
+            if(count==0)return;
+            float width=w*.043f,gap=w*.008f,left=w*.035f,top=h*.145f;
+            txt(c,"بطاقات جنيرال",left+w*.095f,top-h*.012f,h*.018f,Color.rgb(235,194,105),true);
+            int slot=0;
+            for(int type=0;type<CardInventory.CARD_TYPES;type++) if(generalCards[type]) {
+                float l=left+slot*(width+gap);
+                boolean available=!generalCardsUsed[type];
+                drawCardTile(c,type,l,top,l+width,top+h*.065f,false,available,available?1:0);
+                slot++;
+            }
+        }
         private boolean anyMove(int side) {
             for(int i=0;i<3;i++) if(canMove(side,i)) return true;
             return false;
@@ -1749,6 +1764,7 @@ public class MainActivity extends Activity {
                 }
             }
             drawBattleCards(c);
+            drawGeneralBattleCards(c);
             drawMuzzleFlash(c);
             drawExplosion(c);
             drawBattleDialogue(c);
