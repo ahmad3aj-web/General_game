@@ -2203,7 +2203,9 @@ public class MainActivity extends Activity {
                     || (mode==4 && player==onlineLocalSide && onlineSession!=null && onlineSession.isConnected()));
             boolean launchTapped=localRollTurn && !choosing && die==0
                     && y>=h*.80f && y<=h*.94f && Math.abs(x-diceCx)<=w*.115f;
-            if(!choosing && !diceTapped && !launchTapped)return true;
+            // Allow the selected battle card to receive a weapon tap even before rolling; repair must work on a destroyed weapon with die==0.
+            boolean cardTargetTap=mode==2 && player==1 && winner==0 && selectedBattleCard>=0;
+            if(!choosing && !diceTapped && !launchTapped && !cardTargetTap)return true;
             if(stage<2 && diceTapped) {
                 // قرعة البداية أصبحت تلقائية وتُعرض بجانب كل لاعب.
                 return true;
@@ -2236,8 +2238,8 @@ public class MainActivity extends Activity {
                 float ownX=player==1?w*.925f:w*.075f;                int lane=-1;
                 float[] weaponRows={h*.30f,h*.49f,h*.68f};
                 // اختيار السلاح بالضغط على رسمه نفسه، وليس على زر يحمل اسمه.
-                if(Math.abs(x-ownX)<w*.052f) {
-                    for(int i=0;i<3;i++) if(Math.abs(y-weaponRows[i])<h*.052f) lane=i;
+                if(Math.abs(x-ownX)<w*.070f) {
+                    for(int i=0;i<3;i++) if(Math.abs(y-weaponRows[i])<h*.060f) lane=i;
                 }
                 if(lane>=0 && mode==2 && player==1 && selectedBattleCard>=0) {
                     int card=selectedBattleCard;
