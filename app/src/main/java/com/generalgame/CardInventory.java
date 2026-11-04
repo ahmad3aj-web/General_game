@@ -168,6 +168,12 @@ public final class CardInventory {
         return parseFlags(prefs.getString(KEY_PENDING, ""))[type];
     }
 
+    public synchronized void clearSelection() {
+        if (!prefs.getBoolean(KEY_MATCH_ACTIVE, false)) {
+            prefs.edit().remove(KEY_PENDING).commit();
+        }
+    }
+
     public synchronized int getSelectedCount() {
         return countFlags(parseFlags(prefs.getString(KEY_PENDING, "")));
     }
