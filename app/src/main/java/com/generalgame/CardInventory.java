@@ -34,12 +34,28 @@ public final class CardInventory {
     private static final String KEY_LAST_LOGIN_DAY = "last_login_day";
     private static final String KEY_LOGIN_STREAK = "login_streak";
     private static final String KEY_WEEKLY_CLAIMED = "weekly_claimed";
+    private static final String KEY_TEST_GRANT_V1 = "test_card_bundle_granted_v1";
     private final SharedPreferences prefs;
     private final Random random = new Random();
 
     public CardInventory(Context context) {
         prefs = context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        grantTestingBundleOnce();
         recoverInterruptedSetup();
+    }
+
+    /**
+     * One-time testing bundle for this experimental build: five of each card.
+     * The preference guard prevents repeated grants on subsequent app launches.
+     */
+    private synchronized void grantTestingBundleOnce() {
+        if (prefs.getBoolean(KEY_TEST_GRANT_V1, false)) return;
+        SharedPreferences.Editor edit = prefs.edit();
+        for (int i = 0; i < CARD_TYPES; i++) {
+            edit.putInt(COUNT_KEYS[i], getCount(i) + 5);
+        }
+        edit.putBoolean(KEY_TEST_GRANT_V1, true);
+        edit.commit();
     }
 
     private void recoverInterruptedSetup() {
