@@ -99,6 +99,7 @@ public class MainActivity extends Activity {
         private boolean recorded = false;
         private boolean bonusAttempt = false, perfectWin = false, pointsAwarded = false;
         private int matchPoints = 0;
+        private final int[] matchRewardCounts = new int[CardInventory.CARD_TYPES];
         private boolean battleIntro = false;
         private int introStep = 0;
         private final String[] rankNames = {"جندي","عريف","رقيب","ملازم","نقيب","رائد","عقيد","لواء"};
@@ -632,8 +633,11 @@ public class MainActivity extends Activity {
                     && cardInventory.getActiveCards()[type] && !cardInventory.getUsedCards()[type];
         }
         private void showCardUseNotice(int type,boolean fromGeneral) {
-            cardNoticeType=-1;cardNoticeFromGeneral=fromGeneral;
-            invalidate();postInvalidateDelayed(35);
+            cardNoticeType=type;
+            cardNoticeFromGeneral=fromGeneral;
+            cardNoticeUntil=System.currentTimeMillis()+2000L;
+            invalidate();
+            postInvalidateDelayed(35);
         }
         private boolean useCard(int type) {
             if(!cardAvailable(type) || !cardInventory.markUsed(type))return false;
@@ -664,7 +668,11 @@ public class MainActivity extends Activity {
                 // weapon is rebuilt from the beginning with its original ammunition.
                 boolean wasDestroyed=destroyed(1)[lane];
                 destroyed(1)[lane]=false;
-                if(wasDestroyed) positions(1)[lane]=0;
+                if(wasDestroyed) {
+                    positions(1)[lane]=0;
+                    positions(2)[lane]=0;
+                    blueWinEffect[lane]=false;redWinEffect[lane]=false;
+                }
                 cyberDisabled[1][lane]=false;cyberTurns[1][lane]=0;
                 repairEffectUntil[1][lane]=System.currentTimeMillis()+Math.max(900,repairCardMovie==null?900:repairCardMovie.duration());
                 message="تم إصلاح "+names[lane]+" وإعادته إلى العمل";playGameSound(3);return true;
@@ -685,6 +693,20 @@ public class MainActivity extends Activity {
             }
             return false;
         }
+        private void drawIntroCardRow(Canvas c,boolean general,float centerX,float top) {
+            boolean[] cards=general?generalCards:cardInventory.getActiveCards();
+            boolean[] used=general?generalCardsUsed:cardInventory.getUsedCards();
+            float tileW=w*.052f,tileH=h*.075f,gap=w*.008f;
+            int count=0;for(int i=0;i<CardInventory.CARD_TYPES;i++)if(cards[i]&&!used[i])count++;
+            if(count==0)return;
+            float total=count*tileW+(count-1)*gap,left=centerX-total*.5f;
+            int slot=0;
+            for(int type=0;type<CardInventory.CARD_TYPES;type++)if(cards[type]&&!used[type]) {
+                float l=left+slot*(tileW+gap);
+                drawCardTile(c,type,l,top,l+tileW,top+tileH,false,true,1);
+                slot++;
+            }
+        }
         private void drawBattleCards(Canvas c) {
             if(mode!=2 || !cardInventory.isMatchActive())return;
             boolean[] active=cardInventory.getActiveCards(),used=cardInventory.getUsedCards();
@@ -698,23 +720,35 @@ public class MainActivity extends Activity {
             long now=System.currentTimeMillis();
             if(cardNoticeType<0 || now>=cardNoticeUntil)return;
             float progress=1f-(cardNoticeUntil-now)/2000f;
-            float pulse=(float)(1.0+0.045*Math.sin(progress*Math.PI*10));
-            float cx=w*.5f,cy=h*.48f,halfW=w*.31f*pulse,halfH=h*.105f*pulse;
-            int alpha=(int)(245*Math.min(1f,Math.min(progress*7f,(1f-progress)*7f+0.25f)));
-            p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(Math.max(0,alpha),8,18,20));
-            c.drawRoundRect(new RectF(cx-halfW,cy-halfH,cx+halfW,cy+halfH),h*.025f,h*.025f,p);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(h*.006f);
+            float pulse=(float)(1.0+0.025*Math.sin(progress*Math.PI*10));
+            float cx=w*.5f,cy=h*.49f;
+            int alpha=(int)(245*Math.min(1f,Math.min(progress*9f,(1f-progress)*9f+0.25f)));
+            p.setShader(null);p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.argb(Math.max(0,alpha),5,12,10));c.drawRect(0,0,w,h,p);
+            float cardW=w*.40f*pulse,cardH=h*.58f*pulse;
+            RectF frame=new RectF(cx-cardW*.5f,cy-cardH*.5f,cx+cardW*.5f,cy+cardH*.5f);
+            p.setColor(Color.argb(Math.max(0,alpha),28,45,36));
+            c.drawRoundRect(frame,h*.025f,h*.025f,p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(h*.008f);
             p.setColor(Color.argb(Math.max(0,alpha),245,190,65));
-            c.drawRoundRect(new RectF(cx-halfW,cy-halfH,cx+halfW,cy+halfH),h*.025f,h*.025f,p);
-            p.setStyle(Paint.Style.FILL);
-            txt(c,"تم استخدام بطاقة",cx,cy-h*.018f,h*.050f,Color.argb(Math.max(0,alpha),255,220,125),true);
+            c.drawRoundRect(frame,h*.025f,h*.025f,p);p.setStyle(Paint.Style.FILL);
+            Bitmap image=cardNoticeType==CardInventory.REPAIR?repairCardImage:
+                    cardNoticeType==CardInventory.CYBER_WARFARE?cyberCardImage:
+                    cardNoticeType==CardInventory.SHIELD?shieldCardImage:null;
+            float imageMaxW=cardW*.78f,imageMaxH=cardH*.70f;
+            if(image!=null) {
+                float scale=Math.min(imageMaxW/Math.max(1,image.getWidth()),imageMaxH/Math.max(1,image.getHeight()));
+                float iw=image.getWidth()*scale,ih=image.getHeight()*scale;
+                p.setAlpha(Math.max(0,alpha));p.setFilterBitmap(true);
+                c.drawBitmap(image,null,new RectF(cx-iw*.5f,cy-ih*.40f,cx+iw*.5f,cy+ih*.60f),p);
+                p.setAlpha(255);
+            } else {
+                txt(c,cardIcons[Math.max(0,Math.min(3,cardNoticeType))],cx,cy+h*.10f,h*.30f,Color.WHITE,true);
+            }
             String[] labels={"إصلاح السلاح","مضاعفة النرد","الحرب السيبرانية","درع الحماية"};
             String who=cardNoticeFromGeneral?"جنيرال":"أنت";
-            txt(c,who+" — "+labels[Math.max(0,Math.min(3,cardNoticeType))],cx,cy+h*.047f,h*.030f,Color.argb(Math.max(0,alpha),255,255,255),true);
-            float ring=h*(.075f+progress*.11f);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(h*.004f);
-            p.setColor(Color.argb(Math.max(0,(int)(170*(1f-progress))),245,190,65));
-            c.drawCircle(cx,cy,ring,p);p.setStyle(Paint.Style.FILL);
+            txt(c,who+" استخدم بطاقة",cx,frame.top+h*.055f,h*.032f,Color.rgb(255,220,125),true);
+            txt(c,labels[Math.max(0,Math.min(3,cardNoticeType))],cx,frame.bottom-h*.045f,h*.040f,Color.WHITE,true);
             postInvalidateDelayed(35);
         }
         private void drawGeneralBattleCards(Canvas c) {
@@ -1206,7 +1240,11 @@ public class MainActivity extends Activity {
             if(mode==2 && !cardMatchSettled && cardInventory.isMatchActive()) {
                 cardInventory.finishMatchNormally();
                 int[] rewards={1,2,3,4};
-                if(winner==1)cardInventory.addRandomCards(rewards[Math.max(0,Math.min(3,difficulty))]+(perfectWin?1:0));
+                for(int i=0;i<CardInventory.CARD_TYPES;i++)matchRewardCounts[i]=0;
+                if(winner==1) {
+                    int[] awarded=cardInventory.addRandomCards(rewards[Math.max(0,Math.min(3,difficulty))]+(perfectWin?1:0));
+                    System.arraycopy(awarded,0,matchRewardCounts,0,CardInventory.CARD_TYPES);
+                }
                 cardMatchSettled=true;
                 clearBattleCardEffects();
             }
@@ -1254,6 +1292,8 @@ public class MainActivity extends Activity {
                 drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.115f,true);
                 txt(c,"جنيرال",w*.30f,h*.61f,h*.036f,Color.WHITE,true);
                 txt(c,rankedPlayerName(playerNames[0]),w*.70f,h*.61f,h*.036f,Color.WHITE,true);
+                drawIntroCardRow(c,true,w*.30f,h*.665f);
+                drawIntroCardRow(c,false,w*.70f,h*.665f);
             } else {
                 drawAvatar(c,avatars[1],w*.30f,h*.45f,h*.115f,false);
                 drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.115f,true);
@@ -1502,6 +1542,7 @@ public class MainActivity extends Activity {
         }
         private void resetMatch() {
             matchEpoch++;
+            for(int i=0;i<CardInventory.CARD_TYPES;i++)matchRewardCounts[i]=0;
             for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}clearWinEffects();
             stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false; recorded=false; explosionAt=0;
             bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
@@ -1805,8 +1846,22 @@ public class MainActivity extends Activity {
                     txt(c,playerNames[0]+": "+blueWins+" أسلحة",w*.66f,h*.615f,h*.032f,blue,true);
                 }
                 txt(c,"الفائز: "+winnerName,w*.5f,h*.685f,h*.040f,winner==1?blue:red,true);
-                if(mode==2 && winner==1)txt(c,"النقاط المكتسبة: "+matchPoints,w*.5f,h*.715f,h*.025f,Color.rgb(35,125,72),true);
-                btn(c,"العودة إلى الرئيسية",w*.36f,h*.73f,w*.64f,h*.80f,dark);
+                if(mode==2 && winner==1) {
+                    txt(c,"النقاط المكتسبة: "+matchPoints,w*.5f,h*.715f,h*.022f,Color.rgb(35,125,72),true);
+                    int earnedTypes=0;for(int n:matchRewardCounts)if(n>0)earnedTypes++;
+                    if(earnedTypes>0) {
+                        txt(c,"البطاقات التي ربحتها",w*.5f,h*.755f,h*.022f,dark,true);
+                        float tileW=w*.070f,tileH=h*.085f,gap=w*.012f;
+                        float total=earnedTypes*tileW+(earnedTypes-1)*gap,left=(w-total)*.5f;
+                        int slot=0;
+                        for(int type=0;type<CardInventory.CARD_TYPES;type++)if(matchRewardCounts[type]>0) {
+                            float l=left+slot*(tileW+gap);
+                            drawCardTile(c,type,l,h*.775f,l+tileW,h*.775f+tileH,false,true,matchRewardCounts[type]);
+                            slot++;
+                        }
+                    }
+                }
+                btn(c,"العودة إلى الرئيسية",w*.36f,h*.895f,w*.64f,h*.975f,dark);
                 return;
             }
             txt(c,message,w*.5f,h*.145f,h*.036f,dark,true);
@@ -1892,6 +1947,7 @@ public class MainActivity extends Activity {
                 } else if(die>0) drawDiceFace(c,diceCx,diceCy,diceSize*.88f,die);
             }
             if(choosing) { txt(c,"اختر السلاح",w*.5f,h*.965f,h*.026f,dark,true);txt(c,"عدد الطلقات المطلوبة: "+die,w*.5f,h*.925f,h*.022f,Color.WHITE,true); }
+            drawCardUseNotice(c);
         }
 
         @Override public boolean onTouchEvent(MotionEvent e) {
