@@ -190,6 +190,19 @@ public final class CardInventory {
         }
     }
 
+    /**
+     * Called when the player opens the pre-match setup screen. Any match ledger
+     * still active at this point belongs to an interrupted previous session:
+     * settle it normally (used cards stay consumed; unused cards are returned),
+     * then allow a fresh selection.
+     */
+    public synchronized void prepareNewMatchSetup() {
+        if (prefs.getBoolean(KEY_MATCH_ACTIVE, false)) {
+            finishMatchNormally();
+        }
+        clearSelection();
+    }
+
     public synchronized int getSelectedCount() {
         return countFlags(parseFlags(prefs.getString(KEY_PENDING, "")));
     }
