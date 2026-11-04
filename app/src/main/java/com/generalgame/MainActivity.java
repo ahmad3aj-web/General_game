@@ -1166,30 +1166,40 @@ public class MainActivity extends Activity {
             String[] labels={"سهلة","متوسطة","صعبة","صعبة جداً"};
             return labels[Math.max(0,Math.min(3,difficulty))];
         }
-        private void drawMissions(Canvas c) {
-            txt(c,"المهمات العسكرية",w*.5f,h*.115f,h*.052f,Color.rgb(245,190,65),true);
-            float tabTop=h*.18f,tabBottom=h*.27f;
-            box(c,w*.25f,tabTop,w*.49f,tabBottom,weeklyMissionTab?Color.rgb(37,58,48):Color.rgb(155,105,28));
-            box(c,w*.51f,tabTop,w*.75f,tabBottom,weeklyMissionTab?Color.rgb(155,105,28):Color.rgb(37,58,48));
-            txt(c,"المهمات اليومية",w*.37f,h*.238f,h*.026f,Color.WHITE,true);
-            txt(c,"المهمات الأسبوعية",w*.63f,h*.238f,h*.026f,Color.WHITE,true);
-            txt(c,"التجديد خلال: "+missionManager.getCountdown(weeklyMissionTab),w*.5f,h*.315f,h*.025f,Color.WHITE,true);
-            List<MissionManager.MissionTask> tasks=missionManager.getTasks(weeklyMissionTab);
-            float top=h*.355f,rowH=h*.105f;
+        private void drawMissionColumn(Canvas c,boolean weekly,float left,float right,int accent) {
+            List<MissionManager.MissionTask> tasks=missionManager.getTasks(weekly);
+            float headerTop=h*.185f,headerBottom=h*.245f;
+            box(c,left,headerTop,right,headerBottom,Color.rgb(25,43,35));
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.003f));p.setColor(accent);
+            c.drawRoundRect(new RectF(left,headerTop,right,headerBottom),h*.014f,h*.014f,p);p.setStyle(Paint.Style.FILL);
+            txt(c,weekly?"المهمات الأسبوعية":"المهمات اليومية",(left+right)*.5f,h*.224f,h*.027f,Color.WHITE,true);
+            txt(c,"التجديد خلال: "+missionManager.getCountdown(weekly),(left+right)*.5f,h*.264f,h*.016f,Color.rgb(240,211,145),true);
+            float top=h*.285f,rowH=h*.122f;
             for(int i=0;i<tasks.size();i++) {
                 MissionManager.MissionTask task=tasks.get(i);
                 float y=top+i*rowH;
-                box(c,w*.075f,y,w*.925f,y+rowH-h*.008f,Color.rgb(238,244,232));
-                txt(c,task.title,w*.49f,y+h*.027f,h*.025f,Color.rgb(35,55,42),true);
-                String meta=missionDifficultyName(task.difficulty)+"  •  المكافأة: "+task.reward+" "+(task.reward==1?"بطاقة":"بطاقات");
-                txt(c,meta,w*.49f,y+h*.055f,h*.018f,Color.rgb(130,91,29),false);
-                float l=w*.19f,r=w*.79f,barY=y+h*.071f,barH=h*.014f;
+                box(c,left,y,right,y+rowH-h*.008f,Color.rgb(238,244,232));
+                float titleSize=h*.019f;
+                p.setTextSize(titleSize);p.setFakeBoldText(true);
+                float maxTextWidth=(right-left)*.88f;
+                while(p.measureText(task.title)>maxTextWidth && titleSize>h*.013f){titleSize*=.94f;p.setTextSize(titleSize);}
+                txt(c,task.title,(left+right)*.5f,y+h*.027f,titleSize,Color.rgb(35,55,42),true);
+                String meta=missionDifficultyName(task.difficulty)+"  •  "+task.reward+" "+(task.reward==1?"بطاقة":"بطاقات");
+                txt(c,meta,(left+right)*.5f,y+h*.052f,h*.015f,Color.rgb(130,91,29),false);
+                float barWidth=(right-left)*.52f,l=(left+right-barWidth)*.5f,r=l+barWidth;
+                float barY=y+h*.071f,barH=h*.012f;
                 box(c,l,barY,r,barY+barH,Color.rgb(205,215,202));
                 float ratio=Math.min(1f,(float)task.progress/Math.max(1,task.target));
                 if(ratio>0)box(c,l,barY,l+(r-l)*ratio,barY+barH,task.completed?Color.rgb(35,155,83):Color.rgb(65,130,180));
-                txt(c,task.progress+"/"+task.target,w*.12f,barY+barH*1.25f,h*.017f,Color.rgb(45,65,48),true);
-                if(task.completed)txt(c,"✓",w*.87f,y+h*.065f,h*.052f,Color.rgb(25,155,75),true);
+                txt(c,task.progress+"/"+task.target,(left+right)*.5f,y+h*.108f,h*.014f,Color.rgb(45,65,48),true);
+                if(task.completed)txt(c,"✓",right-h*.025f,y+h*.030f,h*.030f,Color.rgb(25,155,75),true);
             }
+        }
+        private void drawMissions(Canvas c) {
+            txt(c,"المهمات العسكرية",w*.5f,h*.115f,h*.052f,Color.rgb(245,190,65),true);
+            // عمودان متجاوران: اليومية على اليمين والأسبوعية على اليسار.
+            drawMissionColumn(c,true,w*.035f,w*.485f,Color.rgb(155,105,28));
+            drawMissionColumn(c,false,w*.515f,w*.965f,Color.rgb(55,125,175));
             btn(c,"عودة",w*.41f,h*.925f,w*.59f,h*.985f,dark);
             postInvalidateDelayed(1000);
         }
@@ -1298,6 +1308,18 @@ public class MainActivity extends Activity {
             p.setStyle(Paint.Style.FILL);
             txt(c,glyph,cx,top+side*.68f,side*.56f,Color.WHITE,true);
             txt(c,label,cx,top+side+h*.032f,h*.024f,Color.WHITE,true);
+        }
+        private void miniMenuButton(Canvas c,String glyph,String label,float cx,float top,int color) {
+            float side=h*.083f;
+            RectF tile=new RectF(cx-side*.5f,top,cx+side*.5f,top+side);
+            p.setShader(new LinearGradient(tile.left,tile.top,tile.right,tile.bottom,
+                    shade(color,1.22f),shade(color,.58f),Shader.TileMode.CLAMP));
+            p.setStyle(Paint.Style.FILL);c.drawRoundRect(tile,side*.15f,side*.15f,p);
+            p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,side*.025f));
+            p.setColor(Color.argb(225,238,224,190));c.drawRoundRect(tile,side*.15f,side*.15f,p);
+            p.setStyle(Paint.Style.FILL);
+            txt(c,glyph,cx,top+side*.69f,side*.54f,Color.WHITE,true);
+            txt(c,label,cx,top+side+h*.025f,h*.021f,Color.WHITE,true);
         }
         private int rankIndex(int points) {
             int rank=0;
@@ -1901,14 +1923,14 @@ public class MainActivity extends Activity {
                 txt(c,"اختر ساحة المعركة",w*.5f,h*.205f,h*.060f,Color.rgb(248,232,190),true);
                 iconButton(c,w*.035f,h*.065f,w*.125f,h*.165f,dark,"⚙");iconButton(c,w*.875f,h*.065f,w*.965f,h*.165f,Color.rgb(135,48,43),"⏻");
                 float c1=w*.18f,c2=w*.50f,c3=w*.82f;
-                menuButton(c,"⚔","لاعبان على نفس الجهاز",c1-w*.15f,h*.275f,c1+w*.15f,h*.55f,blue);
-                menuButton(c,"★","ضد جنيرال الكمبيوتر",c2-w*.15f,h*.275f,c2+w*.15f,h*.55f,red);
-                menuButton(c,"◎","اللعب عبر الإنترنت",c3-w*.15f,h*.275f,c3+w*.15f,h*.55f,Color.rgb(37,105,160));
-                menuButton(c,"▤","سجل المباريات",c1-w*.15f,h*.59f,c1+w*.15f,h*.88f,dark);
-                menuButton(c,"♜","لوحة التقدم",c2-w*.15f,h*.59f,c2+w*.15f,h*.88f,Color.rgb(155,105,28));
-                menuButton(c,"?","شرح اللعبة",c3-w*.15f,h*.59f,c3+w*.15f,h*.88f,Color.rgb(55,91,72));
-                btn(c,"المهمات",w*.17f,h*.885f,w*.39f,h*.925f,dark);
-                box(c,w*.405f,h*.885f,w*.595f,h*.925f,Color.rgb(27,48,39));txt(c,"مخزن البطاقات  •  "+cardInventory.getTotalCount(),w*.5f,h*.913f,h*.023f,Color.rgb(245,210,125),true);
+                menuButton(c,"⚔","لاعبان على نفس الجهاز",c1-w*.15f,h*.245f,c1+w*.15f,h*.505f,blue);
+                menuButton(c,"★","ضد جنيرال الكمبيوتر",c2-w*.15f,h*.245f,c2+w*.15f,h*.505f,red);
+                menuButton(c,"◎","اللعب عبر الإنترنت",c3-w*.15f,h*.245f,c3+w*.15f,h*.505f,Color.rgb(37,105,160));
+                menuButton(c,"▤","سجل المباريات",c1-w*.15f,h*.515f,c1+w*.15f,h*.775f,dark);
+                menuButton(c,"♜","لوحة التقدم",c2-w*.15f,h*.515f,c2+w*.15f,h*.775f,Color.rgb(155,105,28));
+                menuButton(c,"?","شرح اللعبة",c3-w*.15f,h*.515f,c3+w*.15f,h*.775f,Color.rgb(55,91,72));
+                miniMenuButton(c,"⚑","المهمات",w*.31f,h*.795f,Color.rgb(155,105,28));
+                miniMenuButton(c,"▣","مخزن البطاقات  •  "+cardInventory.getTotalCount(),w*.69f,h*.795f,Color.rgb(37,105,160));
                 p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(true);
                 p.setTextSize(h*.020f);p.setColor(Color.WHITE);
                 c.drawText("© 2026 أحمد جرادات",w*.5f,h*.945f,p);
@@ -2084,21 +2106,18 @@ public class MainActivity extends Activity {
                 if(historyScreen || progressScreen || helpScreen || inventoryScreen || missionsScreen) {
                     if((x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f)||(x>=w*.38f&&x<=w*.62f&&y>=h*.91f&&y<=h*.995f)) {
                         historyScreen=false;progressScreen=false;helpScreen=false;inventoryScreen=false;missionsScreen=false;
-                    } else if(missionsScreen && y>=h*.18f&&y<=h*.27f) {
-                        if(x>=w*.25f&&x<=w*.49f)weeklyMissionTab=false;
-                        else if(x>=w*.51f&&x<=w*.75f)weeklyMissionTab=true;
                     }
                 }
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
-                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.075f&&x<=w*.285f){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.3975f&&x<=w*.6025f){cardInventory.prepareNewMatchSetup();mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.275f&&y<=h*.55f&&x>=w*.7175f&&x<=w*.9225f)showOnlineModeDialog();
-                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.075f&&x<=w*.285f)historyScreen=true;
-                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.3975f&&x<=w*.6025f)progressScreen=true;
-                else if(y>=h*.59f&&y<=h*.89f&&x>=w*.7175f&&x<=w*.9225f)helpScreen=true;
-                else if(y>=h*.885f&&y<=h*.925f&&x>=w*.17f&&x<=w*.39f)missionsScreen=true;
-                else if(y>=h*.885f&&y<=h*.925f&&x>=w*.405f&&x<=w*.595f)inventoryScreen=true;
+                else if(y>=h*.245f&&y<=h*.505f&&x>=w*.075f&&x<=w*.285f){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.245f&&y<=h*.505f&&x>=w*.3975f&&x<=w*.6025f){cardInventory.prepareNewMatchSetup();mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
+                else if(y>=h*.245f&&y<=h*.505f&&x>=w*.7175f&&x<=w*.9225f)showOnlineModeDialog();
+                else if(y>=h*.515f&&y<=h*.775f&&x>=w*.075f&&x<=w*.285f)historyScreen=true;
+                else if(y>=h*.515f&&y<=h*.775f&&x>=w*.3975f&&x<=w*.6025f)progressScreen=true;
+                else if(y>=h*.515f&&y<=h*.775f&&x>=w*.7175f&&x<=w*.9225f)helpScreen=true;
+                else if(y>=h*.795f&&y<=h*.94f&&x>=w*.20f&&x<=w*.42f)missionsScreen=true;
+                else if(y>=h*.795f&&y<=h*.94f&&x>=w*.58f&&x<=w*.80f)inventoryScreen=true;
                 invalidate();return true;
             }
             if(setup) {
