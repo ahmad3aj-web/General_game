@@ -1813,7 +1813,7 @@ public class MainActivity extends Activity {
                 return;
             }
             if(winner!=0 && !bonusAttempt) {
-                box(c,w*.12f,h*.19f,w*.88f,h*.80f,Color.rgb(245,249,239));
+                box(c,w*.12f,h*.19f,w*.88f,h*.88f,Color.rgb(245,249,239));
                 String winnerName=winner==1?playerNames[0]:(mode==2?"جنيرال":playerNames[1]);
                 int blueWins=0,redWins=0;
                 for(int i=0;i<3;i++) {
@@ -2056,7 +2056,7 @@ public class MainActivity extends Activity {
                 invalidate();return true;
             }
             if(winner!=0 && !bonusAttempt) {
-                if(y>=h*.70f&&y<=h*.80f) {
+                if(y>=h*.885f&&y<=h*.985f) {
                     if(x>=w*.36f&&x<=w*.64f) { matchEpoch++; timerlessCloseLan(); timerlessCloseOnline(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; battleIntro=false; progressScreen=false; explosionAt=0; message="اختر طريقة اللعب"; }
                 }
                 invalidate();return true;
