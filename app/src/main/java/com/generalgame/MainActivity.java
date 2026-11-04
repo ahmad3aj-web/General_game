@@ -1430,11 +1430,13 @@ public class MainActivity extends Activity {
                         invalidate();
                         postDelayed(new Runnable(){ @Override public void run(){
                             if(epoch==matchEpoch && mode==2 && winner==0 && player==2) {
+                                finishCardTurnEffects(1);finishCardTurnEffects(2);
                                 player=1;die=0;choosing=false;
                                 message="دورك — اضغط النرد";
                                 invalidate();
                             }
-                        }},1200);                    }
+                        }},1200);
+                    }
                 }},850);
             }},850);
         }
@@ -1655,6 +1657,10 @@ public class MainActivity extends Activity {
                 if(redWinEffect[lane]) drawWinEffect(c,w*.075f,y-h*.025f);
                 drawWeapon(c,lane,w*.925f,y,blue,false);
                 drawWeapon(c,lane,w*.075f,y,red,true);
+                if(shieldActive[1][lane])txt(c,"🛡",w*.925f,y-h*.075f,h*.035f,Color.WHITE,true);
+                if(cyberDisabled[1][lane])txt(c,"✖",w*.925f,y-h*.075f,h*.035f,Color.rgb(80,205,255),true);
+                if(shieldActive[2][lane])txt(c,"🛡",w*.075f,y-h*.075f,h*.035f,Color.WHITE,true);
+                if(cyberDisabled[2][lane])txt(c,"✖",w*.075f,y-h*.075f,h*.035f,Color.rgb(80,205,255),true);
                 if(dead1[lane]) drawFire(c,w*.925f,y);
                 if(dead2[lane]) drawFire(c,w*.075f,y);
                 if(choosing && winner==0) {
