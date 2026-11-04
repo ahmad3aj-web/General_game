@@ -244,6 +244,7 @@ public class MainActivity extends Activity {
         GameView() {
             super(MainActivity.this);
             cardInventory = new CardInventory(MainActivity.this);
+            cardInventory.topUpCardsToFiveOnce();
             missionManager = new MissionManager(MainActivity.this,cardInventory);
             missionManager.recordDailyLogin();
             loadGameArt();
