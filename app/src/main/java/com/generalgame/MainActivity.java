@@ -62,6 +62,8 @@ public class MainActivity extends Activity {
         private final HashMap<String,Bitmap> art = new HashMap<>();
         private Movie fireMovie;
         private Movie winMovie;
+        private Movie shieldCardMovie, cyberCardMovie, repairCardMovie;
+        private final long[][] repairEffectUntil = new long[3][3];
         private final boolean[] blueWinEffect = {false,false,false};
         private final boolean[] redWinEffect = {false,false,false};
         private long fireStartedAt = System.currentTimeMillis();
@@ -176,6 +178,9 @@ public class MainActivity extends Activity {
             for(String name:scenes)try{art.put(name,BitmapFactory.decodeStream(getAssets().open("backgrounds/"+name)));}catch(Exception ignored){}
             try { fireMovie=Movie.decodeStream(getAssets().open("vehicles/Flame_GIF_2.gif")); } catch(Exception ignored) {}
             try { winMovie=Movie.decodeStream(getAssets().open("vehicles/Win.gif")); } catch(Exception ignored) {}
+            try { shieldCardMovie=Movie.decodeStream(getAssets().open("ui/Sh.gif")); } catch(Exception ignored) {}
+            try { cyberCardMovie=Movie.decodeStream(getAssets().open("ui/Vi.gif")); } catch(Exception ignored) {}
+            try { repairCardMovie=Movie.decodeStream(getAssets().open("ui/En.gif")); } catch(Exception ignored) {}
         }
         private void drawArt(Canvas c,String name,float l,float t,float r,float b,boolean flip) {
             Bitmap bitmap=art.get(name);if(bitmap==null)return;RectF dst=new RectF(l,t,r,b);
@@ -579,8 +584,7 @@ public class MainActivity extends Activity {
                     && cardInventory.getActiveCards()[type] && !cardInventory.getUsedCards()[type];
         }
         private void showCardUseNotice(int type,boolean fromGeneral) {
-            cardNoticeType=type;cardNoticeFromGeneral=fromGeneral;
-            cardNoticeUntil=System.currentTimeMillis()+2000L;
+            cardNoticeType=-1;cardNoticeFromGeneral=fromGeneral;
             invalidate();postInvalidateDelayed(35);
         }
         private boolean useCard(int type) {
@@ -610,6 +614,7 @@ public class MainActivity extends Activity {
                 if(!useCard(type))return false;
                 destroyed(1)[lane]=false;positions(1)[lane]=0;
                 cyberDisabled[1][lane]=false;cyberTurns[1][lane]=0;
+                repairEffectUntil[1][lane]=System.currentTimeMillis()+Math.max(900,repairCardMovie==null?900:repairCardMovie.duration());
                 message="تم إصلاح "+names[lane]+" وإعادته إلى العمل";playGameSound(3);return true;
             }
             if(type==CardInventory.CYBER_WARFARE) {
@@ -1396,6 +1401,7 @@ public class MainActivity extends Activity {
                 for(int lane=0;lane<3;lane++) if(dead2[lane] || cyberDisabled[2][lane]) {
                     if(generalUseCard(CardInventory.REPAIR)) {
                         dead2[lane]=false;pos2[lane]=0;cyberDisabled[2][lane]=false;cyberTurns[2][lane]=0;
+                        repairEffectUntil[2][lane]=System.currentTimeMillis()+Math.max(900,repairCardMovie==null?900:repairCardMovie.duration());
                         message="جنيرال فعّل بطاقة إصلاح السلاح — "+names[lane];
                         playGameSound(3);invalidate();return true;
                     }
@@ -1661,6 +1667,21 @@ public class MainActivity extends Activity {
             String file=lane==0?"tank_01.png":lane==1?"fighter_01.png":"cannon_01.png";float ww=w*.105f,hh=h*.105f;
             drawArt(c,file,cx-ww*.5f,cy-hh*.5f,cx+ww*.5f,cy+hh*.5f,!faceRight);
         }
+        private void drawCardGif(Canvas c,Movie movie,float cx,float cy) {
+            if(movie==null)return;
+            int duration=Math.max(1,movie.duration());
+            movie.setTime((int)(System.currentTimeMillis()%duration));
+            float fw=w*.105f,fh=h*.105f;
+            c.save();c.translate(cx-fw*.5f,cy-fh*.5f);
+            c.scale(fw/Math.max(1,movie.width()),fh/Math.max(1,movie.height()));
+            movie.draw(c,0,0);c.restore();postInvalidateDelayed(45);
+        }
+        private void drawWeaponCardEffect(Canvas c,int side,int lane,float cx,float cy) {
+            long now=System.currentTimeMillis();
+            if(repairEffectUntil[side][lane]>now) drawCardGif(c,repairCardMovie,cx,cy);
+            else if(cyberDisabled[side][lane]) drawCardGif(c,cyberCardMovie,cx,cy);
+            else if(shieldActive[side][lane]) drawCardGif(c,shieldCardMovie,cx,cy);
+        }
 
         @Override protected void onDraw(Canvas c) {
             super.onDraw(c); w=getWidth(); h=getHeight();
@@ -1781,10 +1802,8 @@ public class MainActivity extends Activity {
                 if(redWinEffect[lane]) drawWinEffect(c,w*.075f,y-h*.025f);
                 drawWeapon(c,lane,w*.925f,y,blue,false);
                 drawWeapon(c,lane,w*.075f,y,red,true);
-                if(shieldActive[1][lane])txt(c,"🛡",w*.925f,y-h*.075f,h*.035f,Color.WHITE,true);
-                if(cyberDisabled[1][lane])txt(c,"✖",w*.925f,y-h*.075f,h*.035f,Color.rgb(80,205,255),true);
-                if(shieldActive[2][lane])txt(c,"🛡",w*.075f,y-h*.075f,h*.035f,Color.WHITE,true);
-                if(cyberDisabled[2][lane])txt(c,"✖",w*.075f,y-h*.075f,h*.035f,Color.rgb(80,205,255),true);
+                drawWeaponCardEffect(c,1,lane,w*.925f,y);
+                drawWeaponCardEffect(c,2,lane,w*.075f,y);
                 if(dead1[lane]) drawFire(c,w*.925f,y);
                 if(dead2[lane]) drawFire(c,w*.075f,y);
                 if(choosing && winner==0) {
@@ -1797,7 +1816,6 @@ public class MainActivity extends Activity {
             }
             drawBattleCards(c);
             drawGeneralBattleCards(c);
-            drawCardUseNotice(c);
             drawMuzzleFlash(c);
             drawExplosion(c);
             drawBattleDialogue(c);
