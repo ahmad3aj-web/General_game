@@ -1201,6 +1201,20 @@ public class MainActivity extends Activity {
             return mode==0 && !missionsScreen && !historyScreen && !progressScreen && !helpScreen && !inventoryScreen
                 && (missionManager.getPendingLoginCard()>=0 || hasMissionRewards());
         }
+        private void drawRewardCard(Canvas c,int type,float l,float t,float r,float b,int count) {
+            box(c,l,t,r,b,Color.rgb(28,47,38));
+            Bitmap image=type==CardInventory.REPAIR?repairCardImage:
+                type==CardInventory.CYBER_WARFARE?cyberCardImage:
+                type==CardInventory.SHIELD?shieldCardImage:null;
+            if(image!=null) {
+                RectF dst=new RectF(l+(r-l)*.12f,t+(b-t)*.08f,r-(r-l)*.12f,b-(b-t)*.22f);
+                p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
+                c.drawBitmap(image,null,dst,p);
+            } else {
+                txt(c,cardIcons[type],(l+r)*.5f,t+(b-t)*.56f,(b-t)*.48f,Color.WHITE,true);
+            }
+            txt(c,String.valueOf(count),(l+r)*.5f,b-(b-t)*.055f,h*.023f,Color.rgb(255,220,130),true);
+        }
         private void drawRewardPopup(Canvas c) {
             int login=missionManager.getPendingLoginCard();
             int[] rewards=missionManager.getPendingMissionRewards();
@@ -1211,7 +1225,7 @@ public class MainActivity extends Activity {
             if(login>=0) {
                 txt(c,"حصلت على بطاقة جديدة",w*.5f,h*.37f,h*.030f,dark,true);
                 float tw=w*.13f,th=h*.25f;
-                drawCardTile(c,login,w*.5f-tw*.5f,h*.43f,w*.5f+tw*.5f,h*.43f+th,false,true,1);
+                drawRewardCard(c,login,w*.5f-tw*.5f,h*.43f,w*.5f+tw*.5f,h*.43f+th,1);
             } else {
                 txt(c,"البطاقات التي أضيفت إلى مخزنك",w*.5f,h*.36f,h*.027f,dark,true);
                 int count=0;for(int n:rewards)if(n>0)count++;
@@ -1219,7 +1233,7 @@ public class MainActivity extends Activity {
                 float total=count*tw+Math.max(0,count-1)*gap,left=(w-total)*.5f;int slot=0;
                 for(int type=0;type<4;type++)if(rewards[type]>0) {
                     float x=left+slot*(tw+gap);
-                    drawCardTile(c,type,x,h*.43f,x+tw,h*.43f+th,false,true,rewards[type]);slot++;
+                    drawRewardCard(c,type,x,h*.43f,x+tw,h*.43f+th,rewards[type]);slot++;
                 }
             }
             btn(c,"موافق",w*.39f,h*.755f,w*.61f,h*.835f,dark);
