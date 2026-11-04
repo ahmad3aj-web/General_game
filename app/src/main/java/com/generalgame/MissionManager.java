@@ -285,10 +285,11 @@ public final class MissionManager {
         String pending=prefs.getString("pending_grants","");
         if(pending.contains(token+"|"))return;
         String encoded=token+"|"+grant[0]+","+grant[1]+","+grant[2]+","+grant[3];
-        prefs.edit().putString("pending_grants",pending+(pending.isEmpty()?"":";")+encoded).commit();
         int[] total=getPendingMissionRewards();
         for(int i=0;i<4;i++)total[i]+=grant[i];
-        prefs.edit().putString("pending_mission_popup",join(total)).commit();
+        // The grant ledger and popup totals are committed atomically in one preferences file.
+        prefs.edit().putString("pending_grants",pending+(pending.isEmpty()?"":";")+encoded)
+            .putString("pending_mission_popup",join(total)).commit();
         applyPendingGrants();
     }
 
