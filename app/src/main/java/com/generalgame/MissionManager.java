@@ -204,7 +204,8 @@ public final class MissionManager {
     private void recoverInterruptedMatch() {
         if(prefs.getBoolean("match_active",false)) {
             // Per-weapon destruction progress was already committed as it happened.
-            prefs.edit().putInt("win_streak",0).putBoolean("match_active",false).putInt("match_destroyed",0).commit();
+            prefs.edit().putInt("win_streak",0).putBoolean("match_active",false).putInt("match_destroyed",0).putInt("general_destroyed_mask",0).putInt("player_lost_mask",0).commit();
+            setStreakProgress(0);
         }
     }
 
