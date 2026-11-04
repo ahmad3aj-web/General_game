@@ -1670,8 +1670,17 @@ public class MainActivity extends Activity {
                 if(dead2[i] && !dead1[i])blueLaneWins++;
                 else if(dead1[i] && !dead2[i])redLaneWins++;
             }
-            // حسم المباراة فور فوز أحد الطرفين بمواجهتين من أصل ثلاث.
-            if(blueLaneWins>=2){winner=1;perfectWin=blueLaneWins==3;finishMatch();return;}
+            // الفوز يُحسم بمواجهتين، مع فرصة اختيارية لمهاجمة السلاح الثالث.
+            if(blueLaneWins>=2) {
+                winner=1;
+                perfectWin=blueLaneWins==3;
+                if(mode==2 && !perfectWin && !bonusAttempt) {
+                    beginBonusAttempt();
+                    return;
+                }
+                finishMatch();
+                return;
+            }
             if(redLaneWins>=2){winner=2;finishMatch();}
         }
         private void afterTurn() {
