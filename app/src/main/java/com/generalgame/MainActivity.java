@@ -190,38 +190,41 @@ public class MainActivity extends Activity {
                 return decoded==null?null:removeCheckerBackground(decoded);
             } catch(Exception ignored) { return null; }
         }
+        private boolean isCheckerBackground(int color) {
+            int r=Color.red(color),g=Color.green(color),b=Color.blue(color);
+            int max=Math.max(r,Math.max(g,b)),min=Math.min(r,Math.min(g,b));
+            return Color.alpha(color)==0 || (min>=185 && max-min<=32);
+        }
+        private void enqueueBackground(int index,int[] pixels,boolean[] queued,int[] queue,int[] tail) {
+            if(index<0 || index>=pixels.length || queued[index] || !isCheckerBackground(pixels[index]))return;
+            queued[index]=true;
+            queue[tail[0]++]=index;
+        }
         private Bitmap removeCheckerBackground(Bitmap source) {
             int width=source.getWidth(),height=source.getHeight();
             Bitmap result=source.copy(Bitmap.Config.ARGB_8888,true);
             int[] pixels=new int[width*height];
             result.getPixels(pixels,0,width,0,0,width,height);
-            boolean[] visited=new boolean[pixels.length];
+            boolean[] queued=new boolean[pixels.length];
             int[] queue=new int[pixels.length];
-            int head=0,tail=0;
+            int[] tail={0};
             for(int x=0;x<width;x++) {
-                queue[tail++]=x;
-                queue[tail++]=(height-1)*width+x;
+                enqueueBackground(x,pixels,queued,queue,tail);
+                enqueueBackground((height-1)*width+x,pixels,queued,queue,tail);
             }
             for(int y=1;y<height-1;y++) {
-                queue[tail++]=y*width;
-                queue[tail++]=y*width+width-1;
+                enqueueBackground(y*width,pixels,queued,queue,tail);
+                enqueueBackground(y*width+width-1,pixels,queued,queue,tail);
             }
-            while(head<tail) {
+            int head=0;
+            while(head<tail[0]) {
                 int index=queue[head++];
-                if(index<0 || index>=pixels.length || visited[index])continue;
-                visited[index]=true;
-                int color=pixels[index],a=Color.alpha(color);
-                int r=Color.red(color),g=Color.green(color),b=Color.blue(color);
-                int max=Math.max(r,Math.max(g,b)),min=Math.min(r,Math.min(g,b));
-                // Background squares are bright neutral grays/whites; keep colored artwork intact.
-                if(a==0 || (min>=185 && max-min<=32)) {
-                    pixels[index]=Color.TRANSPARENT;
-                    int x=index%width,y=index/width;
-                    if(x>0)queue[tail++]=index-1;
-                    if(x<width-1)queue[tail++]=index+1;
-                    if(y>0)queue[tail++]=index-width;
-                    if(y<height-1)queue[tail++]=index+width;
-                }
+                pixels[index]=Color.TRANSPARENT;
+                int x=index%width,y=index/width;
+                if(x>0)enqueueBackground(index-1,pixels,queued,queue,tail);
+                if(x<width-1)enqueueBackground(index+1,pixels,queued,queue,tail);
+                if(y>0)enqueueBackground(index-width,pixels,queued,queue,tail);
+                if(y<height-1)enqueueBackground(index+width,pixels,queued,queue,tail);
             }
             result.setPixels(pixels,0,width,0,0,width,height);
             return result;
