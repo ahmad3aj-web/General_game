@@ -997,10 +997,14 @@ public class MainActivity extends Activity {
             int level=Math.max(0,Math.min(3,difficulty));
             int earned=base[level]+(perfectWin?perfectBonus[level]:0);
             android.content.SharedPreferences prefs=getSharedPreferences("GENERAL_PROGRESS",MODE_PRIVATE);
-            prefs.edit().putInt("points",prefs.getInt("points",0)+earned)
+            int oldPoints=prefs.getInt("points",0);
+            int newPoints=oldPoints+earned;
+            int oldRank=rankIndex(oldPoints),newRank=rankIndex(newPoints);
+            prefs.edit().putInt("points",newPoints)
                 .putInt("wins",prefs.getInt("wins",0)+1)
                 .putInt("perfectWins",prefs.getInt("perfectWins",0)+(perfectWin?1:0))
                 .putInt("lastEarned",earned).putInt("lastDifficulty",difficulty).apply();
+            for(int rank=oldRank+1;rank<=newRank;rank++) cardInventory.claimRankPromotion(rank-1);
             matchPoints=earned;pointsAwarded=true;
         }
         private void finishMatch() {
