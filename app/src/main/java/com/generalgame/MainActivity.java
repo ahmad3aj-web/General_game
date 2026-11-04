@@ -635,7 +635,11 @@ public class MainActivity extends Activity {
             if(type==CardInventory.REPAIR) {
                 if(!destroyed(1)[lane] && !cyberDisabled[1][lane])return false;
                 if(!useCard(type))return false;
-                destroyed(1)[lane]=false;positions(1)[lane]=0;
+                // Cyber-disabled weapons keep their exact progress; only a destroyed
+                // weapon is rebuilt from the beginning with its original ammunition.
+                boolean wasDestroyed=destroyed(1)[lane];
+                destroyed(1)[lane]=false;
+                if(wasDestroyed) positions(1)[lane]=0;
                 cyberDisabled[1][lane]=false;cyberTurns[1][lane]=0;
                 repairEffectUntil[1][lane]=System.currentTimeMillis()+Math.max(900,repairCardMovie==null?900:repairCardMovie.duration());
                 message="تم إصلاح "+names[lane]+" وإعادته إلى العمل";playGameSound(3);return true;
