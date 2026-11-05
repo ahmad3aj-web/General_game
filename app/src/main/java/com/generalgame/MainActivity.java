@@ -2382,12 +2382,8 @@ public class MainActivity extends Activity {
                 final int radarOwner=radarOwnerSide;radarPending=false;radarOwnerSide=0;radarPauseActive=true;
                 onlineRadarBlockedLane=-1;onlineRadarBlockedAttackerSide=side;
                 if(side==onlineLocalSide){
-                    message="رادار الخصم كشف هجومك — انتظر 10 ثوانٍ لقرار الدفاع";invalidate();
-                    postDelayed(()->{if(epoch==matchEpoch&&mode==4&&radarPauseActive){
-                        radarPauseActive=false;
-                        if(onlineRadarBlockedLane==lane&&onlineRadarBlockedAttackerSide==side){message="تم صد الهجوم بالرادار";invalidate();}
-                        else {message="انتهت مهلة الرادار — استكمل الهجوم";animateMove(side,lane,amount);}
-                    }},10000L);
+                    onlineRadarPendingLane=lane;onlineRadarPendingAmount=amount;onlineRadarPendingAttackerSide=side;
+                    message="رادار الخصم كشف هجومك — بانتظار قرار الدفاع خلال 10 ثوانٍ";invalidate();
                     return true;
                 }
                 boolean shieldReady=onlineCards[onlineLocalSide][CardInventory.SHIELD]
@@ -2405,17 +2401,18 @@ public class MainActivity extends Activity {
                     })
                     .setNegativeButton("متابعة الهجوم",(d,which)->{
                         if(resolved[0])return;resolved[0]=true;radarPauseActive=false;
+                        if(onlineSession!=null)onlineSession.sendRadarDecision(lane,true);
                         message="تم تجاوز إنذار الرادار";animateMove(side,lane,amount);
                     }).setCancelable(false).create();
                 dialog.show();
                 if(!shieldReady)dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
                 postDelayed(()->{if(!resolved[0]&&epoch==matchEpoch&&radarPauseActive){
                     resolved[0]=true;radarPauseActive=false;if(dialog.isShowing())dialog.dismiss();
+                    if(onlineSession!=null)onlineSession.sendRadarDecision(lane,true);
                     message="انتهت مهلة الرادار — استكمل الخصم الهجوم";animateMove(side,lane,amount);
                 }},10000L);
                 invalidate();return true;
             }
-            final int unusedRadarOwner=radarOwnerSide;
             final int radarOwner=radarOwnerSide;
             radarPending=false;radarOwnerSide=0;radarPauseActive=true;
             if(radarOwner==2 && side==1) {
