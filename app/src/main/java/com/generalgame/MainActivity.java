@@ -937,7 +937,7 @@ public class MainActivity extends Activity {
                     if(mode==3 && side==player){
                         final int epoch=matchEpoch;
                         message="الدور ملغي — النرد: "+die;
-                        postDelayed(()->{if(epoch==matchEpoch && mode==3 && side==player){die=0;choosing=false;if(bonusAttempt)finishMatch();else afterTurn();invalidate();}},1100);
+                        postDelayed(()->{if(epoch==matchEpoch && mode==3 && side==player){die=0;choosing=false;afterTurn();invalidate();}},1100);
                         invalidate();
                     }
                 });}
@@ -1022,7 +1022,7 @@ public class MainActivity extends Activity {
                         final int epoch=matchEpoch;
                         message="الدور ملغي — النرد: "+die;
                         postDelayed(()->{if(epoch==matchEpoch && mode==4 && side==player){
-                            die=0;choosing=false;if(bonusAttempt)finishMatch();else afterTurn();invalidate();
+                            die=0;choosing=false;afterTurn();invalidate();
                         }},1100);
                         invalidate();
                     }
@@ -1265,7 +1265,7 @@ public class MainActivity extends Activity {
             iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
             int idx=setupSide-1;
             if(mode==2) {
-                box(c,w*.055f,h*.19f,w*.47f,h*.86f,Color.argb(225,238,243,230));box(c,w*.53f,h*.19f,w*.945f,h*.86f,Color.argb(225,248,250,239));
+                box(c,w*.055f,h*.18f,w*.47f,h*.90f,Color.argb(225,238,243,230));box(c,w*.53f,h*.18f,w*.945f,h*.90f,Color.argb(225,248,250,239));
                 drawGeneralAvatar(c,w*.265f,h*.36f,h*.115f,true,false);
                 String[] generalLevels={"خبير ناشئ","قائد ذو خبرة","جنرال مخضرم","قائد فائق الخبرة"};
                 txt(c,"المستوى الحالي: "+generalLevels[Math.max(0,Math.min(3,difficulty))],w*.265f,h*.555f,h*.023f,dark,true);
@@ -1686,8 +1686,12 @@ public class MainActivity extends Activity {
             if(generalHasCard(CardInventory.REPAIR)) {
                 for(int lane=0;lane<3;lane++) if(dead2[lane] || cyberDisabled[2][lane]) {
                     if(generalUseCard(CardInventory.REPAIR)) {
-                        dead2[lane]=false;pos2[lane]=0;
-                        pos1[lane]=0;blueWinEffect[lane]=false;redWinEffect[lane]=false;
+                        boolean wasDestroyed=dead2[lane];
+                        dead2[lane]=false;
+                        if(wasDestroyed) {
+                            pos2[lane]=0;pos1[lane]=0;
+                            blueWinEffect[lane]=false;redWinEffect[lane]=false;
+                        }
                         cyberDisabled[2][lane]=false;cyberTurns[2][lane]=0;
                         repairEffectUntil[2][lane]=System.currentTimeMillis()+Math.max(900,repairCardMovie==null?900:repairCardMovie.duration());
                         message="جنيرال فعّل بطاقة إصلاح السلاح — "+names[lane];
@@ -1772,23 +1776,29 @@ public class MainActivity extends Activity {
             }},2600);
         }
         private void finishCheck() {
-            int blueLaneWins=0,redLaneWins=0;
+            int blueLaneWins=0,redLaneWins=0,resolvedLanes=0;
             for(int i=0;i<3;i++) {
-                if(dead2[i] && !dead1[i])blueLaneWins++;
-                else if(dead1[i] && !dead2[i])redLaneWins++;
+                if(dead2[i] && !dead1[i]) { blueLaneWins++; resolvedLanes++; }
+                else if(dead1[i] && !dead2[i]) { redLaneWins++; resolvedLanes++; }
             }
-            // الفوز يُحسم بمواجهتين، مع فرصة اختيارية لمهاجمة السلاح الثالث.
+            // لا تُحسم المباراة بعد مواجهتين؛ يجب أن تُحسم المواجهة الثالثة أيضاً.
+            if(resolvedLanes<3) {
+                winner=0;
+                perfectWin=false;
+                bonusAttempt=false;
+                return;
+            }
             if(blueLaneWins>=2) {
                 winner=1;
                 perfectWin=blueLaneWins==3;
-                if(mode==2 && !perfectWin && !bonusAttempt) {
-                    beginBonusAttempt();
-                    return;
-                }
                 finishMatch();
                 return;
             }
-            if(redLaneWins>=2){winner=2;finishMatch();}
+            if(redLaneWins>=2) {
+                winner=2;
+                perfectWin=false;
+                finishMatch();
+            }
         }
         private void afterTurn() {
             if(winner!=0 && !bonusAttempt)return;
@@ -1893,7 +1903,6 @@ public class MainActivity extends Activity {
                         else {dead1[lane]=true;if(mode==2)missionManager.recordPlayerWeaponDestroyed(lane);redWinEffect[lane]=true;setBattleDialogue(2,2);spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
                     }
                     finishCheck();
-                    if(bonusShot && bonusAttempt && winner==1)finishMatch();
                     if(winner==0){
                         if(mode==2 && side==1){
                             finishCardTurnEffects(1);
@@ -1921,10 +1930,10 @@ public class MainActivity extends Activity {
         private void applyScreenShake(Canvas c) {
             if(!screenShakeEnabled || screenShakeStartedAt<=0)return;
             long elapsed=System.currentTimeMillis()-screenShakeStartedAt;
-            final long duration=360L;
+            final long duration=430L;
             if(elapsed>=duration) { screenShakeStartedAt=0; return; }
             float fade=1f-(float)elapsed/duration;
-            float strength=h*.010f*fade;
+            float strength=h*.016f*fade;
             float phase=elapsed/24f;
             float dx=(float)Math.sin(phase*2.7f)*strength;
             float dy=(float)Math.cos(phase*3.2f)*strength*.62f;
@@ -2318,7 +2327,6 @@ public class MainActivity extends Activity {
                         final int epoch=matchEpoch;
                         postDelayed(new Runnable(){ @Override public void run(){
                             if(epoch!=matchEpoch || (winner!=0 && !bonusAttempt))return;
-                            if(bonusAttempt){finishMatch();return;}
                             if(mode==2){
                                 die=0;player=2;message="دور جنيرال";invalidate();
                                 postDelayed(new Runnable(){@Override public void run(){
@@ -2332,10 +2340,11 @@ public class MainActivity extends Activity {
                 }
             } else {
                 float ownX=player==1?w*.925f:w*.075f;                int lane=-1;
-                float[] weaponRows={h*.30f,h*.49f,h*.68f};
-                // اختيار السلاح بالضغط على رسمه نفسه، وليس على زر يحمل اسمه.
-                if(Math.abs(x-ownX)<w*.070f) {
-                    for(int i=0;i<3;i++) if(Math.abs(y-weaponRows[i])<h*.060f) lane=i;
+                float targetX=(selectedBattleCard==CardInventory.CYBER_WARFARE)?w*.075f:ownX;
+                float[] weaponRows={h*.29f,h*.49f,h*.69f};
+                // هدف السيبراني هو سلاح الخصم يسار الشاشة؛ بقية البطاقات تستهدف سلاح اللاعب يميناً.
+                if(Math.abs(x-targetX)<w*.070f) {
+                    for(int i=0;i<3;i++) if(Math.abs(y-weaponRows[i])<h*.045f) lane=i;
                 }
                 if(lane>=0 && mode==2 && player==1 && selectedBattleCard>=0) {
                     int card=selectedBattleCard;
