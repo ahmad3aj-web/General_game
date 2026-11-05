@@ -4,8 +4,7 @@
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher_general"
         android:label="War of Generals"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:alertDialogTheme="@style/GeneralDialogTheme"
+        android:theme="@style/GeneralAppTheme"
         android:supportsRtl="true">
         <activity
             android:name=".MainActivity"
