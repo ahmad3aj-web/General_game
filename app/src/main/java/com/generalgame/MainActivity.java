@@ -791,6 +791,7 @@ public class MainActivity extends Activity {
                 message="تم تفعيل ستار الدخان على "+names[lane]+" لمدة 3 أدوار للخصم";return true;
             }
             if(type==CardInventory.MINEFIELD) {
+                if(triggerMineByCardAttempt(2,lane))return false;
                 if(mineTargetSide!=0 || destroyed(2)[lane] || smokeActive[2][lane])return false;
                 if(!useCard(type))return false;
                 mineOwnerSide=1;mineTargetSide=2;mineLane=lane;
@@ -1996,6 +1997,7 @@ public class MainActivity extends Activity {
             final int epoch=matchEpoch;
             choosing=false;
             generalUseBeforeRoll();
+            if(winner!=0)return;
             die=random.nextInt(6)+1;
             if(generalDoubleDiceAvailable(die)) {
                 int lane=-1,best=-1;
