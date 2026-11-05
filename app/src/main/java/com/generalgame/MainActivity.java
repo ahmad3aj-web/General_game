@@ -1217,6 +1217,7 @@ public class MainActivity extends Activity {
                     message=(side==lanLocalSide?"أنت تبدأ":"الخصم يبدأ");
                     lanSession.beginTurn(lanTurnId,side);startBattleIntro();invalidate();
                 });}
+                @Override public void onRadarDecision(int side,int lane,boolean continueAttack){runOnUiThread(()->{});}
                 @Override public void onTurnStarted(int id,int side,boolean local){runOnUiThread(()->{
                     lanTurnId=id;player=side;die=0;choosing=false;lanCountdown=30;
                     message=local?"دورك — اضغط أطلق خلال 30 ثانية":"دور الخصم — بانتظار رمي النرد";
