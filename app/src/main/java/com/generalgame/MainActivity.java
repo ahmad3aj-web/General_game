@@ -2258,7 +2258,8 @@ public class MainActivity extends Activity {
         }
         private void startAirstrikeAnimation(int targetSide) {
             airstrikeTargetSide=targetSide;
-            airstrikeStartedAt=System.currentTimeMillis();
+            // The card-use popup lasts two seconds; start the five-second animation just after it fades.
+            airstrikeStartedAt=System.currentTimeMillis()+2000L;
             invalidate();postInvalidateDelayed(16);
         }
         private void drawAirstrikeBlast(Canvas c,float cx,float cy,float progress) {
@@ -2279,7 +2280,7 @@ public class MainActivity extends Activity {
             }
         }
         private void drawAirstrikeEffect(Canvas c) {
-            if(airstrikeStartedAt<=0 || airstrikePlaneImage==null)return;
+            if(airstrikeStartedAt<=0)return;
             long elapsed=System.currentTimeMillis()-airstrikeStartedAt;
             if(elapsed>=5000L) { airstrikeStartedAt=0;return; }
             float progress=Math.max(0f,Math.min(1f,elapsed/5000f));
@@ -2290,9 +2291,11 @@ public class MainActivity extends Activity {
             float planeW=w*.145f,planeH=h*.112f;
             RectF planeRect=new RectF(planeX-planeW*.5f,planeY-planeH*.5f,planeX+planeW*.5f,planeY+planeH*.5f);
             p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
-            if(airstrikeTargetSide==1) {
-                c.save();c.scale(-1f,1f,planeX,planeY);c.drawBitmap(airstrikePlaneImage,null,planeRect,p);c.restore();
-            } else c.drawBitmap(airstrikePlaneImage,null,planeRect,p);
+            if(airstrikePlaneImage!=null) {
+                if(airstrikeTargetSide==1) {
+                    c.save();c.scale(-1f,1f,planeX,planeY);c.drawBitmap(airstrikePlaneImage,null,planeRect,p);c.restore();
+                } else c.drawBitmap(airstrikePlaneImage,null,planeRect,p);
+            } else txt(c,"✈",planeX,planeY+h*.025f,h*.085f,Color.WHITE,true);
             float targetX=airstrikeTargetSide==2?w*.075f:w*.925f;
             float[] rows={h*.29f,h*.49f,h*.69f};
             for(int lane=0;lane<3;lane++) {
