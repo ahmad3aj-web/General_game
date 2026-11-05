@@ -671,9 +671,9 @@ public class MainActivity extends Activity {
         private void finishCardTurnEffects(int side) {
             for(int lane=0;lane<3;lane++) {
                 if(cyberDisabled[side][lane] && --cyberTurns[side][lane]<=0) cyberDisabled[side][lane]=false;
-                if(shieldActive[side][lane] && --shieldTurns[side][lane]<=0) shieldActive[side][lane]=false;
-                int owner=side==1?2:1;
-                if(smokeActive[owner][lane] && --smokeTurns[owner][lane]<=0) smokeActive[owner][lane]=false;
+                int opponent=side==1?2:1;
+                if(shieldActive[opponent][lane] && --shieldTurns[opponent][lane]<=0) shieldActive[opponent][lane]=false;
+                if(smokeActive[opponent][lane] && --smokeTurns[opponent][lane]<=0) smokeActive[opponent][lane]=false;
             }
             if(radarPending && side!=radarOwnerSide) { radarPending=false;radarOwnerSide=0; }
         }
@@ -2550,7 +2550,8 @@ public class MainActivity extends Activity {
                         }
                     } else message="لا يمكن استخدام البطاقة على هذا السلاح الآن";
                 } else if(lane>=0) {
-                    if(!canMove(player,lane))message="هذه الحركة غير ممكنة — اختر سلاحاً آخر";
+                    if(mineTargetSide==player && mineLane==lane)animateMove(player,lane,die);
+                    else if(!canMove(player,lane))message="هذه الحركة غير ممكنة — اختر سلاحاً آخر";
                     else {
                         if(mode==3 && lanSession!=null){if(lanSession.sendMove(lane))animateMove(player,lane,die);}
                         else if(mode==4 && onlineSession!=null){if(onlineSession.sendMove(lane))animateMove(player,lane,die);}
