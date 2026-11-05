@@ -975,7 +975,8 @@ public class MainActivity extends Activity {
                 String found=names[mineLane];mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
                 message=(local?"اكتشفت":"اكتشف الخصم")+" لغماً في معسكر "+found+" وأبطله دون ضرر";
             } else if(type==CardInventory.MILITARY_SUPPLY) {
-                die+=value;message=(local?"الإمداد العسكري":"إمداد الخصم العسكري")+" — أضيفت "+value+" إلى النرد";
+                die+=value;if(onlineSession!=null)onlineSession.adjustCurrentRoll(value);
+                message=(local?"الإمداد العسكري":"إمداد الخصم العسكري")+" — أضيفت "+value+" إلى النرد";
             } else if(type==CardInventory.REPAIR) {
                 boolean wasDestroyed=destroyed(side)[lane];destroyed(side)[lane]=false;
                 if(wasDestroyed){positions(side)[lane]=0;positions(opponent)[lane]=0;blueWinEffect[lane]=false;redWinEffect[lane]=false;}
@@ -1291,7 +1292,8 @@ public class MainActivity extends Activity {
                     || onlineSession==null || !onlineSession.isConnected())return;
             onlineWaitingForPeer=false;
             message="اكتمل اختيار البطاقات — جارٍ إجراء قرعة البداية";
-            if(onlineLocalSide==1){onlineOpeningStarted=true;onlineSession.startOpeningToss();}
+            onlineOpeningStarted=true;
+            if(onlineLocalSide==1)onlineSession.startOpeningToss();
             invalidate();
         }
         private void createOnlineSession() {
@@ -1355,7 +1357,7 @@ public class MainActivity extends Activity {
                 });}
                 @Override public void onCardUsed(int side,int cardType,int lane,int value){runOnUiThread(()->{
                     if(mode!=4 || winner!=0 || onlineCardsUsedBySide[side][cardType])return;
-                    applyOnlineCardEffect(side,cardType,lane,value,false);
+                    if(!applyOnlineCardEffect(side,cardType,lane,value,false))return;
                     cardNoticeType=cardType;cardNoticeFromGeneral=(side!=onlineLocalSide);
                     cardNoticeUntil=System.currentTimeMillis()+2000L;
                     setCardBattleDialogue(cardType,side,true);
@@ -1370,6 +1372,7 @@ public class MainActivity extends Activity {
                     if(mode!=4 || winner!=0 || side!=player)return;
                     die=value;choosing=true;
                     if(onlineDoubleDicePending){die=value*2;int target=onlineDoubleDiceLane;
+                        if(onlineSession!=null)onlineSession.adjustCurrentRoll(value);
                         onlineDoubleDicePending=false;onlineDoubleDiceLane=-1;
                         if(side==onlineLocalSide && target>=0 && target<3 && onlineSession.sendMove(target)){
                             choosing=false;animateMove(side,target,die);return;
@@ -2908,7 +2911,7 @@ public class MainActivity extends Activity {
             if(mode==4 && winner==0 && player==onlineLocalSide && onlineLoadoutReady
                     && y>=h*.125f && y<=h*.210f) {
                 float left=onlineLocalSide==1?w*.70f:w*.02f,width=w*.075f,gap=w*.012f;int slot=0;
-                for(int type=0;type<CardInventory.CARD_TYPES;type++)if(onlineCards[type]&&!onlineCardsUsed[type]){
+                for(int type=0;type<CardInventory.CARD_TYPES;type++)if(onlineCards[type]&&!onlineCardsUsedBySide[onlineLocalSide][type]){
                     float l=left+slot*(width+gap);slot++;
                     if(x>=l&&x<=l+width){
                         if(type==CardInventory.MILITARY_SUPPLY){if(die>0&&choosing)showOnlineSupplyChoice();else message="استخدم الإمداد بعد رمي النرد";}
