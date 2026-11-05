@@ -680,8 +680,8 @@ public final class OnlineMatchSession {
         return true;
     }
 
-    public synchronized void adjustCurrentRoll(int amount) {
-        if (connected && activeSide == localSide && rolledValue > 0 && amount >= 0) rolledValue += amount;
+    public synchronized void adjustCurrentRoll(int side, int amount) {
+        if (connected && activeSide == side && rolledValue > 0 && amount >= 0) rolledValue += amount;
     }
 
     public synchronized boolean sendMove(int lane) {
