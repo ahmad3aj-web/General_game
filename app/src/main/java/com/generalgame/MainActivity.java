@@ -70,6 +70,9 @@ public class MainActivity extends Activity {
         private Bitmap shieldCardImage, cyberCardImage, repairCardImage;
         private Bitmap airstrikeCardImage, smokeCardImage, supplyCardImage, doubleDiceCardImage;
         private Bitmap radarCardImage, minefieldCardImage, mineDetectorCardImage;
+        private Bitmap airstrikePlaneImage, landMineImage;
+        private long airstrikeStartedAt=0;
+        private int airstrikeTargetSide=2;
         private final long[][] repairEffectUntil = new long[3][3];
         private final boolean[] blueWinEffect = {false,false,false};
         private final boolean[] redWinEffect = {false,false,false};
@@ -207,11 +210,26 @@ public class MainActivity extends Activity {
             radarCardImage=loadCardImage("ui/card_radar.png");
             minefieldCardImage=loadCardImage("ui/card_minefield.png");
             mineDetectorCardImage=loadCardImage("ui/card_mine_detector.png");
+            airstrikePlaneImage=loadTransparentEncodedArtwork("ui/airstrike_plane.jpg.b64");
+            landMineImage=loadTransparentEncodedArtwork("ui/land_mine.jpg.b64");
         }
         // Card images are preprocessed into real RGBA PNG files by the build workflow.
         private Bitmap loadCardImage(String assetPath) {
             try { return BitmapFactory.decodeStream(getAssets().open(assetPath)); }
             catch(Exception ignored) { return null; }
+        }
+        private Bitmap loadTransparentEncodedArtwork(String assetPath) {
+            try(java.io.InputStream input=getAssets().open(assetPath);
+                    java.io.ByteArrayOutputStream output=new java.io.ByteArrayOutputStream()) {
+                byte[] buffer=new byte[8192];int count;
+                while((count=input.read(buffer))!=-1)output.write(buffer,0,count);
+                byte[] bytes=android.util.Base64.decode(output.toByteArray(),android.util.Base64.DEFAULT);
+                Bitmap source=BitmapFactory.decodeByteArray(bytes,0,bytes.length);
+                if(source==null)return null;
+                Bitmap transparent=removeCheckerBackground(source);
+                source.recycle();
+                return transparent;
+            } catch(Exception ignored) { return null; }
         }
         private Bitmap cardImageForType(int type) {
             switch(type) {
@@ -713,6 +731,7 @@ public class MainActivity extends Activity {
                 .setPositiveButton("تأكيد",(d,wid)->{
                     if(!useCard(type))return;
                     if(type==CardInventory.AIRSTRIKE) {
+                        startAirstrikeAnimation(2);
                         for(int laneIndex=0;laneIndex<3;laneIndex++) if(!dead1[laneIndex]) {
                             pos1[laneIndex]=Math.min(15,pos1[laneIndex]+1);
                             if(pos1[laneIndex]>=15) {
@@ -840,7 +859,7 @@ public class MainActivity extends Activity {
         private void drawBattleCards(Canvas c) {
             if(mode!=2 || !cardInventory.isMatchActive())return;
             boolean[] active=cardInventory.getActiveCards(),used=cardInventory.getUsedCards();
-            float width=w*.075f,gap=w*.012f,top=h*.145f,tileHeight=h*.085f;
+            float width=w*.075f,gap=w*.012f,top=h*.125f,tileHeight=h*.085f;
             float left=w*.70f;
             int slot=0;
             for(int type=0;type<CardInventory.CARD_TYPES;type++) if(active[type]&&!used[type]) {
@@ -1862,6 +1881,7 @@ public class MainActivity extends Activity {
                 boolean useful=false;
                 for(int lane=0;lane<3;lane++)if(!dead1[lane] && pos1[lane]>=7)useful=true;
                 if(useful && generalUseCard(CardInventory.AIRSTRIKE)) {
+                    startAirstrikeAnimation(1);
                     for(int lane=0;lane<3;lane++)if(!dead1[lane]) {
                         pos1[lane]=Math.min(15,pos1[lane]+1);
                         if(pos1[lane]>=15) {
@@ -1938,7 +1958,7 @@ public class MainActivity extends Activity {
             matchEpoch++;
             for(int i=0;i<CardInventory.CARD_TYPES;i++)matchRewardCounts[i]=0;
             for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}clearWinEffects();
-            stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false; recorded=false; explosionAt=0;
+            stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false; recorded=false; explosionAt=0;airstrikeStartedAt=0;
             bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
             clearBattleCardEffects();
             if(mode==2)prepareGeneralCards();
@@ -2236,6 +2256,51 @@ public class MainActivity extends Activity {
             p.setColor(Color.WHITE);c.drawCircle(muzzleFlashX,muzzleFlashY,r*.32f,p);
             postInvalidateDelayed(30);
         }
+        private void startAirstrikeAnimation(int targetSide) {
+            airstrikeTargetSide=targetSide;
+            airstrikeStartedAt=System.currentTimeMillis();
+            invalidate();postInvalidateDelayed(16);
+        }
+        private void drawAirstrikeBlast(Canvas c,float cx,float cy,float progress) {
+            float radius=h*(.012f+.035f*progress);
+            int alpha=(int)(235*(1f-progress));
+            p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.argb(alpha,255,105,18));c.drawCircle(cx,cy,radius,p);
+            p.setColor(Color.argb(alpha,255,205,55));c.drawCircle(cx,cy,radius*.58f,p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1,h*.0025f));
+            p.setColor(Color.argb(alpha,255,235,150));c.drawCircle(cx,cy,radius*1.18f,p);
+            p.setStyle(Paint.Style.FILL);
+            for(int i=0;i<9;i++) {
+                double angle=Math.PI*2*i/9.0;
+                float distance=radius*(1.15f+(i%3)*.18f);
+                float sx=cx+(float)Math.cos(angle)*distance,sy=cy+(float)Math.sin(angle)*distance;
+                p.setColor(Color.argb(alpha,255,i%2==0?95:180,25));
+                c.drawCircle(sx,sy,Math.max(1,h*.0035f*(1f-progress)),p);
+            }
+        }
+        private void drawAirstrikeEffect(Canvas c) {
+            if(airstrikeStartedAt<=0 || airstrikePlaneImage==null)return;
+            long elapsed=System.currentTimeMillis()-airstrikeStartedAt;
+            if(elapsed>=5000L) { airstrikeStartedAt=0;return; }
+            float progress=Math.max(0f,Math.min(1f,elapsed/5000f));
+            float startX=airstrikeTargetSide==2?w*.94f:w*.06f;
+            float endX=airstrikeTargetSide==2?w*.06f:w*.94f;
+            float planeX=startX+(endX-startX)*progress;
+            float planeY=h*.225f-(float)Math.sin(progress*Math.PI)*h*.012f;
+            float planeW=w*.145f,planeH=h*.112f;
+            RectF planeRect=new RectF(planeX-planeW*.5f,planeY-planeH*.5f,planeX+planeW*.5f,planeY+planeH*.5f);
+            p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
+            if(airstrikeTargetSide==1) {
+                c.save();c.scale(-1f,1f,planeX,planeY);c.drawBitmap(airstrikePlaneImage,null,planeRect,p);c.restore();
+            } else c.drawBitmap(airstrikePlaneImage,null,planeRect,p);
+            float targetX=airstrikeTargetSide==2?w*.075f:w*.925f;
+            float[] rows={h*.29f,h*.49f,h*.69f};
+            for(int lane=0;lane<3;lane++) {
+                long blastElapsed=elapsed-(1750L+lane*650L);
+                if(blastElapsed>=0 && blastElapsed<850L)drawAirstrikeBlast(c,targetX,rows[lane]-h*.065f,blastElapsed/850f);
+            }
+            postInvalidateDelayed(30);
+        }
         private void drawExplosion(Canvas c) {
             if(explosionAt==0)return;
             float age=(System.currentTimeMillis()-explosionAt)/700f;
@@ -2282,15 +2347,22 @@ public class MainActivity extends Activity {
         }
         private void drawWeaponCardEffect(Canvas c,int side,int lane,float cx,float cy) {
             long now=System.currentTimeMillis();
-            if(mineTargetSide==side && mineLane==lane && mineOwnerSide==1 && side==2) {
-                txt(c,"💣",cx,cy-h*.065f,h*.045f,Color.rgb(255,215,80),true);
-            }
             if(smokeActive[side][lane]) {
                 if(smokeCardImage!=null)drawCardImage(c,smokeCardImage,cx,cy);
                 else txt(c,"🌫",cx,cy-h*.065f,h*.050f,Color.WHITE,true);
             } else if(repairEffectUntil[side][lane]>now) drawCardImage(c,repairCardImage,cx,cy);
             else if(cyberDisabled[side][lane]) drawCardImage(c,cyberCardImage,cx,cy);
             else if(shieldActive[side][lane]) drawCardImage(c,shieldCardImage,cx,cy);
+            // Actual landmine artwork sits in front of the targeted weapon.
+            if(mineTargetSide==side && mineLane==lane) {
+                float mineX=cx+(side==1?-1f:1f)*w*.047f;
+                float mineY=cy+h*.030f;
+                float mineW=w*.070f,mineH=h*.092f;
+                if(landMineImage!=null) {
+                    p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
+                    c.drawBitmap(landMineImage,null,new RectF(mineX-mineW*.5f,mineY-mineH*.5f,mineX+mineW*.5f,mineY+mineH*.5f),p);
+                } else txt(c,"💣",mineX,mineY+h*.012f,h*.045f,Color.rgb(255,215,80),true);
+            }
         }
 
         @Override protected void onDraw(Canvas c) {
@@ -2403,8 +2475,8 @@ public class MainActivity extends Activity {
             namePlate(c,mode==2?"جنيرال":rankedPlayerName(playerNames[1]),w*.165f,h*.075f,red);
             int blueDestroyed=0,redDestroyed=0;
             for(int i=0;i<3;i++){if(dead2[i])blueDestroyed++;if(dead1[i])redDestroyed++;}
-            txt(c,"أسلحة مدمرة: "+blueDestroyed,w*.835f,h*.125f,h*.019f,Color.WHITE,true);
-            txt(c,"أسلحة مدمرة: "+redDestroyed,w*.165f,h*.125f,h*.019f,Color.WHITE,true);
+            txt(c,"أسلحة مدمرة: "+blueDestroyed,w*.835f,h*.235f,h*.019f,Color.WHITE,true);
+            txt(c,"أسلحة مدمرة: "+redDestroyed,w*.165f,h*.235f,h*.019f,Color.WHITE,true);
             if(openingToss){
                 float ds=h*.075f;
                 // اللاعب الأول (الأزرق) على اليمين، والثاني (الأحمر) على اليسار.
@@ -2443,6 +2515,7 @@ public class MainActivity extends Activity {
                     }
                 }
             }
+            drawAirstrikeEffect(c);
             drawBattleCards(c);
             drawGeneralBattleCards(c);
             drawMuzzleFlash(c);
@@ -2568,9 +2641,9 @@ public class MainActivity extends Activity {
             }
             if(openingToss)return true;
             if(mode==2 && player==1 && winner==0 && !bonusAttempt
-                    && y>=h*.145f && y<=h*.270f && x>=w*.70f && x<=w*.99f) {
+                    && y>=h*.125f && y<=h*.210f && x>=w*.70f && x<=w*.99f) {
                 boolean[] active=cardInventory.getActiveCards(),used=cardInventory.getUsedCards();
-                float width=w*.075f,gap=w*.012f,top=h*.145f,tileHeight=h*.085f,left=w*.70f;
+                float width=w*.075f,gap=w*.012f,top=h*.125f,tileHeight=h*.085f,left=w*.70f;
                 int slot=0;
                 for(int type=0;type<CardInventory.CARD_TYPES;type++) {
                     if(!active[type]||used[type])continue;
