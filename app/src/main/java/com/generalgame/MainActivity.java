@@ -1879,7 +1879,6 @@ public class MainActivity extends Activity {
         }
         private void animateMove(final int side, final int lane, final int amount) {
             final int epoch=matchEpoch;
-            final boolean bonusShot=bonusAttempt;
             choosing=false;
             playGameSound(lane);
             muzzleFlashAt=System.currentTimeMillis();
