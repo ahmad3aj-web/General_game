@@ -197,10 +197,11 @@ public final class CardInventory {
         if (!today.equals(prefs.getString(KEY_LAST_LOGIN_DAY, ""))) return false;
         int streak = prefs.getInt(KEY_LOGIN_STREAK, 0);
         if (streak < 7 || prefs.getBoolean(KEY_WEEKLY_CLAIMED, false)) return false;
+        int[] awarded = new int[CARD_TYPES];
+        for (int i = 0; i < CARD_TYPES; i++) awarded[drawRewardCardType()]++;
         SharedPreferences.Editor edit = prefs.edit();
         for (int i = 0; i < CARD_TYPES; i++) {
-            int type = drawRewardCardType();
-            edit.putInt(COUNT_KEYS[type], getCount(type) + 1);
+            if (awarded[i] > 0) edit.putInt(COUNT_KEYS[i], getCount(i) + awarded[i]);
         }
         edit.putBoolean(KEY_WEEKLY_CLAIMED, true);
         return edit.commit();
