@@ -188,6 +188,11 @@ public class MainActivity extends Activity {
         private boolean onlineQuickMatch=false;
         private boolean onlineInvitePending=false;
         private boolean onlineWaitingForPeer=false;
+        private final boolean[] onlineCards = new boolean[CardInventory.CARD_TYPES];
+        private final boolean[] onlineCardsUsed = new boolean[CardInventory.CARD_TYPES];
+        private boolean onlineLoadoutReady=false, onlinePeerLoadoutReady=false, onlineLoadoutDialogShown=false;
+        private boolean onlineDoubleDicePending=false;
+        private int onlineDoubleDiceLane=-1;
 
         private void loadGameArt() {
             String[] names={"character_01.png","character_02.png","character_03.png","character_04.png","character_05.png","character_06.png","character_07.png","character_08.png","character_09.png","character_10.png","character_11.png","character_12.png","character_13.png","character_14.png","character_15.png","character_16.png","character_17.png","character_18.png","tank_01.png","cannon_01.png","fighter_01.png","fighter_02.png","fighter_03.png","ammo_round_left_gold.png","ammo_round_right_gold.png","ammo_round_left_white.png","ammo_round_right_white.png"};
@@ -944,6 +949,7 @@ public class MainActivity extends Activity {
             }
         }
         private void drawBattleCards(Canvas c) {
+            if(mode==4){drawOnlineBattleCards(c);return;}
             if(mode!=2 || !cardInventory.isMatchActive())return;
             boolean[] active=cardInventory.getActiveCards(),used=cardInventory.getUsedCards();
             float width=w*.075f,gap=w*.012f,top=h*.125f,tileHeight=h*.085f;
@@ -953,6 +959,14 @@ public class MainActivity extends Activity {
                 float x=left+slot*(width+gap);
                 drawCardTile(c,type,x,top,x+width,top+tileHeight,selectedBattleCard==type,true,1);
                 slot++;
+            }
+        }
+        private void drawOnlineBattleCards(Canvas c) {
+            float width=w*.075f,gap=w*.012f,top=h*.125f,tileHeight=h*.085f;
+            float left=onlineLocalSide==1?w*.70f:w*.02f;int slot=0;
+            for(int type=0;type<CardInventory.CARD_TYPES;type++)if(onlineCards[type]&&!onlineCardsUsed[type]){
+                float x=onlineLocalSide==1?left+slot*(width+gap):left+slot*(width+gap);
+                drawCardTile(c,type,x,top,x+width,top+tileHeight,selectedBattleCard==type,true,1);slot++;
             }
         }
         private void drawCardUseNotice(Canvas c) {
@@ -1173,6 +1187,46 @@ public class MainActivity extends Activity {
                 @Override public void onProtocolError(String reason){runOnUiThread(()->{message=reason;invalidate();});}
             });
         }
+        private void showOnlineCardSelectionDialog() {
+            if(onlineLoadoutDialogShown || onlineLoadoutReady || mode!=4)return;
+            onlineLoadoutDialogShown=true;
+            final int[] types={CardInventory.REPAIR,CardInventory.DOUBLE_DICE,CardInventory.CYBER_WARFARE,
+                    CardInventory.SHIELD,CardInventory.SMOKE_SCREEN,CardInventory.MILITARY_SUPPLY,
+                    CardInventory.RADAR,CardInventory.MINEFIELD,CardInventory.MINE_DETECTOR};
+            final String[] labels={"الإصلاح","مضاعفة النرد","الحرب السيبرانية","الدرع","ستار الدخان",
+                    "الإمداد العسكري","الرادار","الألغام الأرضية","كاشف الألغام"};
+            final boolean[] checked=new boolean[types.length];
+            new AlertDialog.Builder(MainActivity.this).setTitle("اختر 3 بطاقات سرية للحرب")
+                .setMessage("اختر ثلاث بطاقات مختلفة. لن يراها الخصم إلا عند استخدام كل بطاقة. الضربة الجوية مستثناة.")
+                .setMultiChoiceItems(labels,checked,(dialog,which,isChecked)->{
+                    if(isChecked){int count=0;for(boolean value:checked)if(value)count++;
+                        if(count>3){checked[which]=false;((AlertDialog)dialog).getListView().setItemChecked(which,false);
+                            android.widget.Toast.makeText(MainActivity.this,"مسموح بثلاث بطاقات فقط",android.widget.Toast.LENGTH_SHORT).show();}}
+                    invalidate();
+                })
+                .setPositiveButton("تأكيد الاختيار",(dialog,which)->{
+                    int count=0;for(boolean value:checked)if(value)count++;
+                    if(count!=3){onlineLoadoutDialogShown=false;
+                        new AlertDialog.Builder(MainActivity.this).setMessage("يجب اختيار 3 بطاقات بالضبط.")
+                            .setPositiveButton("متابعة",(d,wid)->showOnlineCardSelectionDialog()).show();return;}
+                    for(int i=0;i<types.length;i++)if(checked[i])onlineCards[types[i]]=true;
+                    onlineLoadoutReady=true;message="تم حفظ بطاقاتك بسرية — بانتظار اختيار الخصم";
+                    if(onlineSession!=null)onlineSession.markLoadoutReady();
+                    startOnlineBattleIfReady();invalidate();
+                })
+                .setNegativeButton("إلغاء",(dialog,which)->{
+                    onlineLoadoutDialogShown=false;timerlessCloseOnline();mode=0;setup=false;
+                    message="تم إلغاء المباراة";invalidate();
+                }).setCancelable(false).show();
+        }
+        private void startOnlineBattleIfReady() {
+            if(mode!=4 || !onlineLoadoutReady || !onlinePeerLoadoutReady || onlineOpeningStarted
+                    || onlineSession==null || !onlineSession.isConnected())return;
+            onlineWaitingForPeer=false;
+            message="اكتمل اختيار البطاقات — جارٍ إجراء قرعة البداية";
+            if(onlineLocalSide==1){onlineOpeningStarted=true;onlineSession.startOpeningToss();}
+            invalidate();
+        }
         private void createOnlineSession() {
             if(onlineSession!=null)onlineSession.close();
             onlineOpeningStarted=false; onlineTurnId=0;
@@ -1202,10 +1256,7 @@ public class MainActivity extends Activity {
                             (onlineLocalSide==1?"تم انضمام اللاعب — جارٍ إجراء قرعة البداية":"تم الاتصال بالمضيف — بانتظار القرعة");
                     onlineWaitingForPeer=false;
                     onlineQuickMatch=false;
-                    if(!onlineOpeningStarted) {
-                        onlineOpeningStarted=true;
-                        if(onlineLocalSide==1)onlineSession.startOpeningToss();
-                    }
+                    showOnlineCardSelectionDialog();
                     invalidate();
                 });}
                 @Override public void onOpeningRolls(int b,int r,boolean tied){runOnUiThread(()->{
@@ -1219,7 +1270,26 @@ public class MainActivity extends Activity {
                     onlineSession.beginTurn(onlineTurnId,side);startBattleIntro();invalidate();
                 });}
                 @Override public void onRematchReady(){runOnUiThread(()->{
-                    message="اللاعبان جاهزان — قرعة البداية"; invalidate();
+                    onlineOpeningStarted=false;onlineLoadoutReady=false;onlinePeerLoadoutReady=false;
+                    onlineLoadoutDialogShown=false;java.util.Arrays.fill(onlineCards,false);
+                    java.util.Arrays.fill(onlineCardsUsed,false);
+                    message="اختَر بطاقاتك الثلاث للمباراة الجديدة";
+                    showOnlineCardSelectionDialog();invalidate();
+                });}
+                @Override public void onPeerLoadoutReady(){runOnUiThread(()->{
+                    onlinePeerLoadoutReady=true;
+                    if(onlineLoadoutReady)startOnlineBattleIfReady();
+                    else message="الخصم أنهى اختيار بطاقاته — اختر بطاقاتك الثلاث";
+                    invalidate();
+                });}
+                @Override public void onCardUsed(int side,int cardType,int lane,int value){runOnUiThread(()->{
+                    if(mode!=4 || winner!=0)return;
+                    onlineCardsUsed[cardType]=true;
+                    applyOnlineCardEffect(side,cardType,lane,value,false);
+                    cardNoticeType=cardType;cardNoticeFromGeneral=(side!=onlineLocalSide);
+                    cardNoticeUntil=System.currentTimeMillis()+2000L;
+                    setCardBattleDialogue(cardType,side,true);
+                    invalidate();postInvalidateDelayed(35);
                 });}
                 @Override public void onTurnStarted(int id,int side,boolean local){runOnUiThread(()->{
                     onlineTurnId=id;player=side;die=0;choosing=false;lanCountdown=30;
@@ -1229,7 +1299,13 @@ public class MainActivity extends Activity {
                 @Override public void onRoll(int side,int value,boolean automatic){runOnUiThread(()->{
                     if(mode!=4 || winner!=0 || side!=player)return;
                     die=value;choosing=true;
-                    message=(side==onlineLocalSide?"أنت":"الخصم")+" رمى "+value+(automatic?" تلقائياً":"")+" — اختر السلاح";
+                    if(onlineDoubleDicePending){die=value*2;int target=onlineDoubleDiceLane;
+                        onlineDoubleDicePending=false;onlineDoubleDiceLane=-1;
+                        if(side==onlineLocalSide && target>=0 && target<3 && onlineSession.sendMove(target)){
+                            choosing=false;animateMove(side,target,die);return;
+                        }
+                    }
+                    message=(side==onlineLocalSide?"أنت":"الخصم")+" رمى "+die+(automatic?" تلقائياً":"")+" — اختر السلاح";
                     if(!anyMove(side)){                        message="لا توجد حركة متاحة — نتيجة النرد: "+die+" — تم تجاوز الدور";
                         choosing=false;invalidate();
                         if(side==onlineLocalSide)onlineSession.cancelTurn();
@@ -2758,6 +2834,21 @@ public class MainActivity extends Activity {
                 invalidate();return true;
             }
             if(openingToss)return true;
+            if(mode==4 && winner==0 && player==onlineLocalSide && onlineLoadoutReady
+                    && y>=h*.125f && y<=h*.210f) {
+                float left=onlineLocalSide==1?w*.70f:w*.02f,width=w*.075f,gap=w*.012f;int slot=0;
+                for(int type=0;type<CardInventory.CARD_TYPES;type++)if(onlineCards[type]&&!onlineCardsUsed[type]){
+                    float l=left+slot*(width+gap);slot++;
+                    if(x>=l&&x<=l+width){
+                        if(type==CardInventory.MILITARY_SUPPLY){if(die>0&&choosing)showOnlineSupplyChoice();else message="استخدم الإمداد بعد رمي النرد";}
+                        else if(type==CardInventory.RADAR||type==CardInventory.MINE_DETECTOR){
+                            if(applyOnlineCardEffect(onlineLocalSide,type,-1,0,true))selectedBattleCard=-1;
+                        } else {selectedBattleCard=selectedBattleCard==type?-1:type;
+                            message=selectedBattleCard<0?"تم إلغاء البطاقة":"اختر السلاح المستهدف";}
+                        invalidate();return true;
+                    }
+                }
+            }
             if(mode==2 && player==1 && winner==0 && !bonusAttempt
                     && y>=h*.125f && y<=h*.210f && x>=w*.70f && x<=w*.99f) {
                 boolean[] active=cardInventory.getActiveCards(),used=cardInventory.getUsedCards();
@@ -2802,7 +2893,8 @@ public class MainActivity extends Activity {
             boolean launchTapped=localRollTurn && !choosing && die==0
                     && y>=h*.80f && y<=h*.94f && Math.abs(x-diceCx)<=w*.115f;
             // Allow the selected battle card to receive a weapon tap even before rolling; repair must work on a destroyed weapon with die==0.
-            boolean cardTargetTap=mode==2 && player==1 && winner==0 && selectedBattleCard>=0;
+            boolean cardTargetTap=(mode==2 && player==1 || mode==4 && player==onlineLocalSide)
+                    && winner==0 && selectedBattleCard>=0;
             if(!choosing && !diceTapped && !launchTapped && !cardTargetTap)return true;
             if(stage<2 && diceTapped) {
                 // قرعة البداية أصبحت تلقائية وتُعرض بجانب كل لاعب.
@@ -2849,7 +2941,9 @@ public class MainActivity extends Activity {
                 }
             } else {
                 float ownX=player==1?w*.925f:w*.075f;                int lane=-1;
-                float targetX=(selectedBattleCard==CardInventory.CYBER_WARFARE || selectedBattleCard==CardInventory.MINEFIELD)?w*.075f:ownX;
+                boolean targetsOpponent=selectedBattleCard==CardInventory.CYBER_WARFARE || selectedBattleCard==CardInventory.MINEFIELD;
+                int cardTargetSide=targetsOpponent?(player==1?2:1):player;
+                float targetX=cardTargetSide==1?w*.925f:w*.075f;
                 float[] weaponRows={h*.29f,h*.49f,h*.69f};
                 // الحرب السيبرانية وحقل الألغام يستهدفان سلاح الخصم يسار الشاشة؛ بقية البطاقات تستهدف سلاح اللاعب يميناً.
                 if(Math.abs(x-targetX)<w*.070f) {
@@ -2857,6 +2951,8 @@ public class MainActivity extends Activity {
                 }
                 if(lane>=0 && mode==2 && player==1 && selectedBattleCard>=0) {
                     applySelectedBattleCardToLane(selectedBattleCard,lane);
+                } else if(lane>=0 && mode==4 && player==onlineLocalSide && selectedBattleCard>=0){
+                    int card=selectedBattleCard;applyOnlineCardEffect(onlineLocalSide,card,lane,0,true);selectedBattleCard=-1;
                 } else if(lane>=0) {
                     if(mineTargetSide==player && mineLane==lane)animateMove(player,lane,die);
                     else if(!canMove(player,lane))message="هذه الحركة غير ممكنة — اختر سلاحاً آخر";
