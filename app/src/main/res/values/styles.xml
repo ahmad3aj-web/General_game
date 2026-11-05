@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="GeneralAppTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:alertDialogTheme">@style/GeneralDialogTheme</item>
+        <item name="android:colorAccent">#E8B84A</item>
+    </style>
+
     <style name="GeneralDialogTheme" parent="@android:style/Theme.Material.Light.Dialog.Alert">
         <item name="android:colorAccent">#E8B84A</item>
         <item name="android:textColorPrimary">#F5E9CC</item>
