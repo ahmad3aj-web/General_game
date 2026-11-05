@@ -637,6 +637,7 @@ public class MainActivity extends Activity {
             // Disabled weapons cannot fire; a shield blocks ordinary attacks on its weapon.
             return !destroyed(side)[lane] && !destroyed(opposingSide)[lane]
                     && !cyberDisabled[side][lane] && !shieldActive[opposingSide][lane]
+                    && !smokeActive[opposingSide][lane]
                     && positions(side)[lane]+die<=15;
         }
         private void clearBattleCardEffects() {
@@ -691,6 +692,8 @@ public class MainActivity extends Activity {
                             pos2[laneIndex]=Math.min(15,pos2[laneIndex]+1);
                             if(pos2[laneIndex]>=15) {
                                 dead2[laneIndex]=true;redWinEffect[laneIndex]=true;
+                                smokeActive[2][laneIndex]=false;smokeTurns[2][laneIndex]=0;
+                                if(mineTargetSide==2&&mineLane==laneIndex){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}
                                 spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[laneIndex]);
                                 playGameSound(3);
                             }
@@ -2051,8 +2054,8 @@ public class MainActivity extends Activity {
                     if(target>=15){
                         // The blue weapon is on the right and the red weapon is on the left.
                         // Explosions must appear on the opposing weapon that was destroyed.
-                        if(side==1){boolean firstDestroy=!dead2[lane];dead2[lane]=true;if(mineTargetSide==2&&mineLane==lane){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}if(mode==2)missionManager.recordGeneralWeaponDestroyed(lane);blueWinEffect[lane]=true;setBattleDialogue(1,2);spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
-                        else {dead1[lane]=true;if(mineTargetSide==1&&mineLane==lane){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}if(mode==2)missionManager.recordPlayerWeaponDestroyed(lane);redWinEffect[lane]=true;setBattleDialogue(2,2);spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                        if(side==1){boolean firstDestroy=!dead2[lane];dead2[lane]=true;smokeActive[2][lane]=false;smokeTurns[2][lane]=0;if(mineTargetSide==2&&mineLane==lane){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}if(mode==2)missionManager.recordGeneralWeaponDestroyed(lane);blueWinEffect[lane]=true;setBattleDialogue(1,2);spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                        else {dead1[lane]=true;smokeActive[1][lane]=false;smokeTurns[1][lane]=0;if(mineTargetSide==1&&mineLane==lane){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}if(mode==2)missionManager.recordPlayerWeaponDestroyed(lane);redWinEffect[lane]=true;setBattleDialogue(2,2);spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
                     }
                     finishCheck();
                     if(winner==0){
