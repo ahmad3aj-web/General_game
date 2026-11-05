@@ -63,7 +63,7 @@ public final class CardInventory {
             return;
         }
         SharedPreferences.Editor edit = prefs.edit();
-        for (int i = AIRSTRIKE; i < CARD_TYPES; i++) {
+        for (int i = 0; i < CARD_TYPES; i++) {
             edit.putInt(COUNT_KEYS[i], getCount(i) + 3);
         }
         edit.putBoolean(key, true);
