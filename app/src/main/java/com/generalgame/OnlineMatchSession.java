@@ -47,6 +47,7 @@ public final class OnlineMatchSession {
         void onTurnCancelled(int side);
         void onPeerLoadoutReady();
         void onCardUsed(int side, int cardType, int lane, int value);
+        void onRadarDecision(int side, int lane, boolean continueAttack);
         void onDisconnected(String reason);
         void onError(String reason);
     }
@@ -706,10 +707,15 @@ public final class OnlineMatchSession {
     }
 
     public synchronized boolean sendCardUse(int cardType, int lane, int value) {
-        if (!connected || activeSide != localSide || cardType < 0 || cardType >= CardInventory.CARD_TYPES
+        if (!connected || expectedTurn < 1 || cardType < 0 || cardType >= CardInventory.CARD_TYPES
                 || cardType == CardInventory.AIRSTRIKE || lane < -1 || lane > 2) return false;
         send("card_use", expectedTurn, value, lane, cardType, false);
         return true;
+    }
+
+    public synchronized void sendRadarDecision(int lane, boolean continueAttack) {
+        if (!connected || expectedTurn < 1 || lane < 0 || lane > 2 || activeSide == localSide) return;
+        send("radar_decision", expectedTurn, continueAttack ? 1 : 0, lane, 0, false);
     }
 
     public synchronized void requestRematch() {
@@ -752,10 +758,16 @@ public final class OnlineMatchSession {
         } else if ("card_use".equals(type)) {
             int cardType = intValue(snapshot.child("round"), -1);
             int lane = intValue(snapshot.child("lane"), -1);
-            if (turn == expectedTurn && activeSide == side && cardType >= 0
-                    && cardType < CardInventory.CARD_TYPES && cardType != CardInventory.AIRSTRIKE
+            int cardValue = value;
+            if (turn == expectedTurn && (activeSide == side || (cardType == CardInventory.SHIELD && cardValue == -1))
+                    && cardType >= 0 && cardType < CardInventory.CARD_TYPES && cardType != CardInventory.AIRSTRIKE
                     && lane >= -1 && lane <= 2) {
                 listener.onCardUsed(side, cardType, lane, value);
+            }
+        } else if ("radar_decision".equals(type)) {
+            int lane = intValue(snapshot.child("lane"), -1);
+            if (turn == expectedTurn && activeSide != side && lane >= 0 && lane <= 2 && (value == 0 || value == 1)) {
+                listener.onRadarDecision(side, lane, value == 0);
             }
         } else if ("roll".equals(type)) {
             if (turn != expectedTurn || activeSide != side || rollReceived || rolledValue != 0
