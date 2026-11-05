@@ -2004,8 +2004,8 @@ public class MainActivity extends Activity {
                     if(target>=15){
                         // The blue weapon is on the right and the red weapon is on the left.
                         // Explosions must appear on the opposing weapon that was destroyed.
-                        if(side==1){boolean firstDestroy=!dead2[lane];dead2[lane]=true;if(mode==2)missionManager.recordGeneralWeaponDestroyed(lane);blueWinEffect[lane]=true;setBattleDialogue(1,2);spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
-                        else {dead1[lane]=true;if(mode==2)missionManager.recordPlayerWeaponDestroyed(lane);redWinEffect[lane]=true;setBattleDialogue(2,2);spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                        if(side==1){boolean firstDestroy=!dead2[lane];dead2[lane]=true;if(mineTargetSide==2&&mineLane==lane){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}if(mode==2)missionManager.recordGeneralWeaponDestroyed(lane);blueWinEffect[lane]=true;setBattleDialogue(1,2);spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                        else {dead1[lane]=true;if(mineTargetSide==1&&mineLane==lane){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}if(mode==2)missionManager.recordPlayerWeaponDestroyed(lane);redWinEffect[lane]=true;setBattleDialogue(2,2);spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
                     }
                     finishCheck();
                     if(winner==0){
@@ -2105,7 +2105,9 @@ public class MainActivity extends Activity {
         }
         private void drawWeaponCardEffect(Canvas c,int side,int lane,float cx,float cy) {
             long now=System.currentTimeMillis();
-            if(repairEffectUntil[side][lane]>now) drawCardImage(c,repairCardImage,cx,cy);
+            if(smokeActive[side][lane]) {
+                txt(c,"🌫",cx,cy-h*.065f,h*.050f,Color.WHITE,true);
+            } else if(repairEffectUntil[side][lane]>now) drawCardImage(c,repairCardImage,cx,cy);
             else if(cyberDisabled[side][lane]) drawCardImage(c,cyberCardImage,cx,cy);
             else if(shieldActive[side][lane]) drawCardImage(c,shieldCardImage,cx,cy);
         }
@@ -2391,7 +2393,14 @@ public class MainActivity extends Activity {
                     int row=type/5,col=type%5;float l=left+col*(width+gap),t=top+row*(h*.055f+rowGap);
                     if(x>=l&&x<=l+width&&y>=t&&y<=t+h*.055f&&active[type]&&!used[type]) {
                         if(type==CardInventory.DOUBLE_DICE && doubleDicePending)message="تم تفعيل مضاعفة النرد بالفعل";
-                        else {selectedBattleCard=selectedBattleCard==type?-1:type;cardTargeting=selectedBattleCard>=0;message=selectedBattleCard<0?"تم إلغاء اختيار البطاقة":"اختر الهدف على ساحة المعركة";}
+                        else if(type==CardInventory.AIRSTRIKE || type==CardInventory.RADAR || type==CardInventory.MINE_DETECTOR) {
+                            selectedBattleCard=-1;cardTargeting=false;confirmImmediateCard(type);
+                        }
+                        else if(type==CardInventory.MILITARY_SUPPLY) {
+                            if(die>0 && choosing)showSupplyChoice();
+                            else message="يمكن استخدام الإمداد العسكري بعد رمي النرد";
+                        }
+                        else {selectedBattleCard=selectedBattleCard==type?-1:type;cardTargeting=selectedBattleCard>=0;message=selectedBattleCard<0?"تم إلغاء اختيار البطاقة":"اختر السلاح المستهدف";}
                         invalidate();return true;
                     }
                 }
@@ -2463,9 +2472,9 @@ public class MainActivity extends Activity {
                 }
             } else {
                 float ownX=player==1?w*.925f:w*.075f;                int lane=-1;
-                float targetX=(selectedBattleCard==CardInventory.CYBER_WARFARE)?w*.075f:ownX;
+                float targetX=(selectedBattleCard==CardInventory.CYBER_WARFARE || selectedBattleCard==CardInventory.MINEFIELD)?w*.075f:ownX;
                 float[] weaponRows={h*.29f,h*.49f,h*.69f};
-                // هدف السيبراني هو سلاح الخصم يسار الشاشة؛ بقية البطاقات تستهدف سلاح اللاعب يميناً.
+                // الحرب السيبرانية وحقل الألغام يستهدفان سلاح الخصم يسار الشاشة؛ بقية البطاقات تستهدف سلاح اللاعب يميناً.
                 if(Math.abs(x-targetX)<w*.070f) {
                     for(int i=0;i<3;i++) if(Math.abs(y-weaponRows[i])<h*.045f) lane=i;
                 }
