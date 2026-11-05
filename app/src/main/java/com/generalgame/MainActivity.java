@@ -1771,7 +1771,8 @@ public class MainActivity extends Activity {
         private void prepareGeneralCards() {
             for(int i=0;i<CardInventory.CARD_TYPES;i++){generalCards[i]=false;generalCardsUsed[i]=false;}
             int count=new int[]{0,1,2,3}[Math.max(0,Math.min(3,difficulty))];
-            int[] pool={0,1,2,3};
+            int[] pool=new int[CardInventory.CARD_TYPES];
+            for(int i=0;i<CardInventory.CARD_TYPES;i++)pool[i]=i;
             for(int i=pool.length-1;i>0;i--){int j=random.nextInt(i+1);int t=pool[i];pool[i]=pool[j];pool[j]=t;}
             for(int i=0;i<count;i++)generalCards[pool[i]]=true;
         }
@@ -1828,7 +1829,77 @@ public class MainActivity extends Activity {
                     invalidate();return true;
                 }
             }
+            // الضربة الجوية: يستخدمها جنيرال عندما يقترب سلاح اللاعب من التدمير.
+            if(generalHasCard(CardInventory.AIRSTRIKE)) {
+                boolean useful=false;
+                for(int lane=0;lane<3;lane++)if(!dead1[lane] && pos1[lane]>=7)useful=true;
+                if(useful && generalUseCard(CardInventory.AIRSTRIKE)) {
+                    for(int lane=0;lane<3;lane++)if(!dead1[lane]) {
+                        pos1[lane]=Math.min(15,pos1[lane]+1);
+                        if(pos1[lane]>=15) {
+                            dead1[lane]=true;redWinEffect[lane]=true;
+                            if(mode==2)missionManager.recordPlayerWeaponDestroyed(lane);
+                            smokeActive[1][lane]=false;smokeTurns[1][lane]=0;
+                            if(mineTargetSide==1&&mineLane==lane){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}
+                            spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);
+                        }
+                    }
+                    message="جنيرال نفّذ ضربة جوية على أسلحتك الثلاثة";finishCheck();invalidate();return true;
+                }
+            }
+            // ستار الدخان يحمي أفضل سلاح لدى جنيرال من الاستهداف والبطاقات.
+            if(generalHasCard(CardInventory.SMOKE_SCREEN)) {
+                int target=-1,best=-1;
+                for(int lane=0;lane<3;lane++)if(!dead2[lane]&&!smokeActive[2][lane]) {
+                    int score=pos2[lane]+(cyberDisabled[2][lane]?12:0);
+                    if(score>best){best=score;target=lane;}
+                }
+                if(target>=0 && (best>=4 || cyberDisabled[2][target]) && generalUseCard(CardInventory.SMOKE_SCREEN)) {
+                    smokeActive[2][target]=true;smokeTurns[2][target]=3;
+                    message="جنيرال فعّل ستار الدخان على "+names[target];invalidate();return true;
+                }
+            }
+            // حقل الألغام: يزرع جنيرال لغماً واحداً في أكثر أسلحتك تقدماً.
+            if(generalHasCard(CardInventory.MINEFIELD) && mineTargetSide==0) {
+                int target=-1,best=-1;
+                for(int lane=0;lane<3;lane++)if(!dead1[lane]&&!smokeActive[1][lane]) {
+                    if(pos1[lane]>best){best=pos1[lane];target=lane;}
+                }
+                if(target>=0 && generalUseCard(CardInventory.MINEFIELD)) {
+                    mineOwnerSide=2;mineTargetSide=1;mineLane=target;
+                    message="تم زرع ألغام أرضية في أحد معسكراتك";invalidate();return true;
+                }
+            }
+            // كاشف الألغام لدى جنيرال يبطل اللغم الذي زرعه اللاعب في معسكراته.
+            if(generalHasCard(CardInventory.MINE_DETECTOR) && mineTargetSide==2 && mineOwnerSide==1) {
+                if(generalUseCard(CardInventory.MINE_DETECTOR)) {
+                    String found=names[mineLane];mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
+                    message="جنيرال اكتشف لغماً في معسكر "+found+" وأبطله دون ضرر";invalidate();return true;
+                }
+            }
+            // الرادار يراقب هجوم اللاعب القادم بعد انتهاء دور جنيرال.
+            if(generalHasCard(CardInventory.RADAR) && !radarPending) {
+                if(generalUseCard(CardInventory.RADAR)) {
+                    radarPending=true;radarOwnerSide=2;
+                    message="جنيرال فعّل الرادار لمراقبة هجومك القادم";invalidate();return true;
+                }
+            }
             return false;
+        }
+        private void generalUseAfterRoll() {
+            if(!generalHasCard(CardInventory.MILITARY_SUPPLY))return;
+            int bonus=0;
+            for(int add=3;add>=1;add--) {
+                for(int lane=0;lane<3;lane++) {
+                    if(!dead2[lane]&&!dead1[lane]&&!cyberDisabled[2][lane]
+                            &&!shieldActive[1][lane]&&!smokeActive[1][lane]
+                            &&pos2[lane]+die+add<=15) {bonus=add;break;}
+                }
+                if(bonus>0)break;
+            }
+            if(bonus>0 && generalUseCard(CardInventory.MILITARY_SUPPLY)) {
+                die+=bonus;message="جنيرال استخدم الإمداد العسكري وأضاف "+bonus+" إلى نتيجة النرد";
+            }
         }
         private boolean generalDoubleDiceAvailable(int roll) {
             if(!generalHasCard(CardInventory.DOUBLE_DICE))return false;
