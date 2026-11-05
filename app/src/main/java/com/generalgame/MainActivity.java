@@ -749,7 +749,7 @@ public class MainActivity extends Activity {
             }
             if(lane<0 || lane>2)return false;
             if(type==CardInventory.REPAIR) {
-                if((mineTargetSide==1 && mineLane==lane) || smokeActive[1][lane])return false;
+                if(smokeActive[1][lane] || (mineTargetSide==1 && mineLane==lane))return false;
                 if(!destroyed(1)[lane] && !cyberDisabled[1][lane])return false;
                 if(!useCard(type))return false;
                 // Cyber-disabled weapons keep their exact progress; only a destroyed
@@ -1804,7 +1804,7 @@ public class MainActivity extends Activity {
             // الحرب السيبرانية تستهدف سلاح اللاعب المتقدم أو الأخطر.
             if(generalHasCard(CardInventory.CYBER_WARFARE)) {
                 int target=-1,best=-1;
-                for(int lane=0;lane<3;lane++) if(!dead1[lane] && !cyberDisabled[1][lane]) {
+                for(int lane=0;lane<3;lane++) if(!dead1[lane] && !cyberDisabled[1][lane] && !smokeActive[1][lane]) {
                     int score=pos1[lane]+(shieldActive[1][lane]?18:0);
                     if(score>best){best=score;target=lane;}
                 }
@@ -2160,6 +2160,9 @@ public class MainActivity extends Activity {
         }
         private void drawWeaponCardEffect(Canvas c,int side,int lane,float cx,float cy) {
             long now=System.currentTimeMillis();
+            if(mineTargetSide==side && mineLane==lane && mineOwnerSide==side) {
+                txt(c,"💣",cx,cy-h*.065f,h*.045f,Color.rgb(255,215,80),true);
+            }
             if(smokeActive[side][lane]) {
                 txt(c,"🌫",cx,cy-h*.065f,h*.050f,Color.WHITE,true);
             } else if(repairEffectUntil[side][lane]>now) drawCardImage(c,repairCardImage,cx,cy);
