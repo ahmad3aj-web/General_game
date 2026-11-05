@@ -534,6 +534,7 @@ public class MainActivity extends Activity {
             p.setShader(new LinearGradient(0,h*.68f,0,h,Color.TRANSPARENT,Color.argb(205,5,10,10),Shader.TileMode.CLAMP));
             c.drawRect(0,h*.68f,w,h,p);p.setShader(null);
             txt(c,"انقر للاستمرار",w*.5f,h*.88f,h*.038f,Color.WHITE,true);
+            txt(c,"الإصدار "+BuildConfig.VERSION_NAME,w*.5f,h*.965f,h*.022f,Color.rgb(245,190,65),true);
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.003f));p.setColor(Color.argb(220,245,190,65));
             c.drawRoundRect(new RectF(w*.34f,h*.82f,w*.66f,h*.92f),h*.025f,h*.025f,p);p.setStyle(Paint.Style.FILL);
         }
