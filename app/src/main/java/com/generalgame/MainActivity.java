@@ -68,7 +68,7 @@ public class MainActivity extends Activity {
         private Movie winMovie;
         private Movie shieldCardMovie, cyberCardMovie, repairCardMovie;
         private Bitmap shieldCardImage, cyberCardImage, repairCardImage;
-        private Bitmap airstrikeCardImage, smokeCardImage, supplyCardImage;
+        private Bitmap airstrikeCardImage, smokeCardImage, supplyCardImage, doubleDiceCardImage;
         private Bitmap radarCardImage, minefieldCardImage, mineDetectorCardImage;
         private final long[][] repairEffectUntil = new long[3][3];
         private final boolean[] blueWinEffect = {false,false,false};
@@ -202,6 +202,7 @@ public class MainActivity extends Activity {
             shieldCardImage=loadCardImage("ui/card_shield_transparent.png");
             airstrikeCardImage=loadCardImage("ui/card_airstrike.png");
             smokeCardImage=loadCardImage("ui/card_smoke.png");
+            doubleDiceCardImage=loadCardImage("ui/card_double_dice.png");
             supplyCardImage=loadCardImage("ui/card_supply.png");
             radarCardImage=loadCardImage("ui/card_radar.png");
             minefieldCardImage=loadCardImage("ui/card_minefield.png");
@@ -215,6 +216,7 @@ public class MainActivity extends Activity {
         private Bitmap cardImageForType(int type) {
             switch(type) {
                 case CardInventory.REPAIR:return repairCardImage;
+                case CardInventory.DOUBLE_DICE:return doubleDiceCardImage;
                 case CardInventory.CYBER_WARFARE:return cyberCardImage;
                 case CardInventory.SHIELD:return shieldCardImage;
                 case CardInventory.AIRSTRIKE:return airstrikeCardImage;
