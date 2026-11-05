@@ -723,7 +723,7 @@ public class MainActivity extends Activity {
         private void confirmImmediateCard(final int type) {
             String title=type==CardInventory.AIRSTRIKE?"تأكيد الضربة الجوية":
                     type==CardInventory.RADAR?"تفعيل الرادار":"تأكيد كشف الألغام";
-            String body=type==CardInventory.AIRSTRIKE?"ستزيد عدّادات أسلحتك الثلاثة طلقة واحدة لكل سلاح. هل تريد المتابعة؟":
+            String body=type==CardInventory.AIRSTRIKE?"ستزيد عدّادات أسلحتك الثلاثة ثلاث طلقات لكل سلاح. هل تريد المتابعة؟":
                     type==CardInventory.RADAR?"سيُراقب الرادار هجوم الخصم القادم ويمنحك 10 ثوانٍ لاستخدام الدرع. هل تريد التفعيل؟":
                     "سيتم فحص معسكرات الخصم الثلاثة وإبطال أي لغم يُكتشف دون إحداث ضرر. هل تريد المتابعة؟";
             new AlertDialog.Builder(MainActivity.this).setTitle(title).setMessage(body)
@@ -733,7 +733,7 @@ public class MainActivity extends Activity {
                     if(type==CardInventory.AIRSTRIKE) {
                         startAirstrikeAnimation(2);
                         for(int laneIndex=0;laneIndex<3;laneIndex++) if(!dead1[laneIndex] && !dead2[laneIndex]) {
-                            pos1[laneIndex]=Math.min(15,pos1[laneIndex]+2);
+                            pos1[laneIndex]=Math.min(15,pos1[laneIndex]+3);
                             if(pos1[laneIndex]>=15) {
                                 dead2[laneIndex]=true;blueWinEffect[laneIndex]=true;
                                 if(mode==2)missionManager.recordGeneralWeaponDestroyed(laneIndex);
@@ -1883,7 +1883,7 @@ public class MainActivity extends Activity {
                 if(useful && generalUseCard(CardInventory.AIRSTRIKE)) {
                     startAirstrikeAnimation(1);
                     for(int lane=0;lane<3;lane++)if(!dead2[lane] && !dead1[lane]) {
-                        pos2[lane]=Math.min(15,pos2[lane]+2);
+                        pos2[lane]=Math.min(15,pos2[lane]+3);
                         if(pos2[lane]>=15) {
                             dead1[lane]=true;redWinEffect[lane]=true;
                             if(mode==2)missionManager.recordPlayerWeaponDestroyed(lane);
