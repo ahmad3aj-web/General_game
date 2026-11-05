@@ -767,12 +767,12 @@ public class MainActivity extends Activity {
                 c.drawBitmap(image,null,new RectF(cx-iw*.5f,cy-ih*.40f,cx+iw*.5f,cy+ih*.60f),p);
                 p.setAlpha(255);
             } else {
-                txt(c,cardIcons[Math.max(0,Math.min(3,cardNoticeType))],cx,cy+h*.10f,h*.30f,Color.WHITE,true);
+                txt(c,cardIcons[Math.max(0,Math.min(CardInventory.CARD_TYPES-1,cardNoticeType))],cx,cy+h*.10f,h*.30f,Color.WHITE,true);
             }
-            String[] labels={"إصلاح السلاح","مضاعفة النرد","الحرب السيبرانية","درع الحماية"};
+            String[] labels={"إصلاح السلاح","مضاعفة النرد","الحرب السيبرانية","درع الحماية","الضربة الجوية","ستار الدخان","الإمداد العسكري","الرادار","حقل الألغام","كشف الألغام"};
             String who=cardNoticeFromGeneral?"جنيرال":"أنت";
             txt(c,who+" استخدم بطاقة",cx,frame.top+h*.055f,h*.032f,Color.rgb(255,220,125),true);
-            txt(c,labels[Math.max(0,Math.min(3,cardNoticeType))],cx,frame.bottom-h*.045f,h*.040f,Color.WHITE,true);
+            txt(c,labels[Math.max(0,Math.min(CardInventory.CARD_TYPES-1,cardNoticeType))],cx,frame.bottom-h*.045f,h*.040f,Color.WHITE,true);
             postInvalidateDelayed(35);
         }
         private void drawGeneralBattleCards(Canvas c) {
