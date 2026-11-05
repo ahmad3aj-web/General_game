@@ -7,6 +7,10 @@ android {
     namespace 'com.generalgame'
     compileSdk 35
 
+    buildFeatures {
+        buildConfig true
+    }
+
     signingConfigs {
         debug {
             storeFile rootProject.file('general-debug.keystore')
