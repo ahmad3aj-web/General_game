@@ -732,14 +732,14 @@ public class MainActivity extends Activity {
                     if(!useCard(type))return;
                     if(type==CardInventory.AIRSTRIKE) {
                         startAirstrikeAnimation(2);
-                        for(int laneIndex=0;laneIndex<3;laneIndex++) if(!dead1[laneIndex]) {
+                        for(int laneIndex=0;laneIndex<3;laneIndex++) if(!dead1[laneIndex] && !dead2[laneIndex]) {
                             pos1[laneIndex]=Math.min(15,pos1[laneIndex]+1);
                             if(pos1[laneIndex]>=15) {
-                                dead1[laneIndex]=true;blueWinEffect[laneIndex]=true;
-                                if(mode==2)missionManager.recordPlayerWeaponDestroyed(laneIndex);
-                                smokeActive[1][laneIndex]=false;smokeTurns[1][laneIndex]=0;
-                                if(mineTargetSide==1&&mineLane==laneIndex){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}
-                                spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[laneIndex]);
+                                dead2[laneIndex]=true;blueWinEffect[laneIndex]=true;
+                                if(mode==2)missionManager.recordGeneralWeaponDestroyed(laneIndex);
+                                smokeActive[2][laneIndex]=false;smokeTurns[2][laneIndex]=0;
+                                if(mineTargetSide==2&&mineLane==laneIndex){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}
+                                spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[laneIndex]);
                                 playGameSound(3);
                             }
                         }
@@ -1879,12 +1879,12 @@ public class MainActivity extends Activity {
             // الضربة الجوية: يستخدمها جنيرال عندما يقترب سلاح اللاعب من التدمير.
             if(generalHasCard(CardInventory.AIRSTRIKE)) {
                 boolean useful=false;
-                for(int lane=0;lane<3;lane++)if(!dead1[lane] && pos1[lane]>=7)useful=true;
+                for(int lane=0;lane<3;lane++)if(!dead2[lane] && !dead1[lane] && pos2[lane]>=7)useful=true;
                 if(useful && generalUseCard(CardInventory.AIRSTRIKE)) {
                     startAirstrikeAnimation(1);
-                    for(int lane=0;lane<3;lane++)if(!dead1[lane]) {
-                        pos1[lane]=Math.min(15,pos1[lane]+1);
-                        if(pos1[lane]>=15) {
+                    for(int lane=0;lane<3;lane++)if(!dead2[lane] && !dead1[lane]) {
+                        pos2[lane]=Math.min(15,pos2[lane]+1);
+                        if(pos2[lane]>=15) {
                             dead1[lane]=true;redWinEffect[lane]=true;
                             if(mode==2)missionManager.recordPlayerWeaponDestroyed(lane);
                             smokeActive[1][lane]=false;smokeTurns[1][lane]=0;
