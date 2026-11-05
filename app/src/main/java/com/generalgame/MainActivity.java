@@ -705,7 +705,7 @@ public class MainActivity extends Activity {
         private void confirmImmediateCard(final int type) {
             String title=type==CardInventory.AIRSTRIKE?"تأكيد الضربة الجوية":
                     type==CardInventory.RADAR?"تفعيل الرادار":"تأكيد كشف الألغام";
-            String body=type==CardInventory.AIRSTRIKE?"ستُصاب الأسلحة الثلاثة لدى الخصم بزيادة طلقة واحدة لكل سلاح. هل تريد المتابعة؟":
+            String body=type==CardInventory.AIRSTRIKE?"ستزيد عدّادات أسلحتك الثلاثة طلقة واحدة لكل سلاح. هل تريد المتابعة؟":
                     type==CardInventory.RADAR?"سيُراقب الرادار هجوم الخصم القادم ويمنحك 10 ثوانٍ لاستخدام الدرع. هل تريد التفعيل؟":
                     "سيتم فحص معسكرات الخصم الثلاثة وإبطال أي لغم يُكتشف دون إحداث ضرر. هل تريد المتابعة؟";
             new AlertDialog.Builder(MainActivity.this).setTitle(title).setMessage(body)
@@ -713,18 +713,18 @@ public class MainActivity extends Activity {
                 .setPositiveButton("تأكيد",(d,wid)->{
                     if(!useCard(type))return;
                     if(type==CardInventory.AIRSTRIKE) {
-                        for(int laneIndex=0;laneIndex<3;laneIndex++) if(!dead2[laneIndex]) {
-                            pos2[laneIndex]=Math.min(15,pos2[laneIndex]+1);
-                            if(pos2[laneIndex]>=15) {
-                                dead2[laneIndex]=true;blueWinEffect[laneIndex]=true;
-                                if(mode==2)missionManager.recordGeneralWeaponDestroyed(laneIndex);
-                                smokeActive[2][laneIndex]=false;smokeTurns[2][laneIndex]=0;
-                                if(mineTargetSide==2&&mineLane==laneIndex){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}
-                                spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[laneIndex]);
+                        for(int laneIndex=0;laneIndex<3;laneIndex++) if(!dead1[laneIndex]) {
+                            pos1[laneIndex]=Math.min(15,pos1[laneIndex]+1);
+                            if(pos1[laneIndex]>=15) {
+                                dead1[laneIndex]=true;blueWinEffect[laneIndex]=true;
+                                if(mode==2)missionManager.recordPlayerWeaponDestroyed(laneIndex);
+                                smokeActive[1][laneIndex]=false;smokeTurns[1][laneIndex]=0;
+                                if(mineTargetSide==1&&mineLane==laneIndex){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}
+                                spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[laneIndex]);
                                 playGameSound(3);
                             }
                         }
-                        message="نفذت الضربة الجوية وأصابت أسلحة الخصم الثلاثة";
+                        message="نفذت الضربة الجوية وزادت عدّادات أسلحتك الثلاثة";
                         finishCheck();
                     } else if(type==CardInventory.RADAR) {
                         radarPending=true;radarOwnerSide=1;
