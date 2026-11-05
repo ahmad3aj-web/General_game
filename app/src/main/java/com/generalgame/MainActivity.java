@@ -102,6 +102,7 @@ public class MainActivity extends Activity {
         private int mineOwnerSide=0, mineTargetSide=0, mineLane=-1;
         private boolean radarPending=false;
         private int radarOwnerSide=0;
+        private boolean radarPauseActive=false;
         private boolean cardTargeting = false;
         private boolean doubleDicePending = false;
         private int doubleDiceLane = -1;
@@ -647,7 +648,7 @@ public class MainActivity extends Activity {
                 smokeActive[side][lane]=false;smokeTurns[side][lane]=0;
             }
             mineOwnerSide=0;mineTargetSide=0;mineLane=-1;
-            radarPending=false;radarOwnerSide=0;
+            radarPending=false;radarOwnerSide=0;radarPauseActive=false;
             selectedBattleCard=-1;cardTargeting=false;
             doubleDicePending=false;doubleDiceLane=-1;
         }
@@ -2003,6 +2004,7 @@ public class MainActivity extends Activity {
                     die*=2;message="جنيرال فعّل بطاقة مضاعفة النرد!";
                 } else message="جنيرال يرمي النرد...";
             } else message="جنيرال يرمي النرد...";
+            generalUseAfterRoll();
             invalidate();
             postDelayed(new Runnable(){ @Override public void run(){
                 if(epoch!=matchEpoch || mode!=2 || winner!=0 || player!=2)return;
@@ -2063,16 +2065,36 @@ public class MainActivity extends Activity {
         }
         private boolean showRadarInterception(final int side,final int lane,final int amount) {
             if(!radarPending || side==radarOwnerSide)return false;
-            radarPending=false;radarOwnerSide=0;
+            final int epoch=matchEpoch;
+            final int radarOwner=radarOwnerSide;
+            radarPending=false;radarOwnerSide=0;radarPauseActive=true;
+            if(radarOwner==2 && side==1) {
+                if(generalHasCard(CardInventory.SHIELD) && !destroyed(2)[lane] && !shieldActive[2][lane]
+                        && generalUseCard(CardInventory.SHIELD)) {
+                    shieldActive[2][lane]=true;shieldTurns[2][lane]=3;
+                    radarPauseActive=false;
+                    message="جنيرال كشف هجومك بالرادار واستخدم الدرع لصدّه";
+                    finishRadarResponseTurn(side);return true;
+                }
+                message="رادار جنيرال كشف السلاح المستهدف — مهلة دفاع 10 ثوانٍ";
+                invalidate();
+                postDelayed(()->{
+                    if(epoch==matchEpoch && radarPauseActive) {
+                        radarPauseActive=false;message="انتهت مهلة الرادار — استكمل هجومك";
+                        animateMove(side,lane,amount);
+                    }
+                },10000L);
+                return true;
+            }
             final boolean[] resolved={false};
             final AlertDialog dialog=new AlertDialog.Builder(MainActivity.this)
                 .setTitle("الرادار كشف الهجوم")
                 .setMessage("الخصم يستهدف "+names[lane]+". لديك 10 ثوانٍ لاستخدام بطاقة الدرع فقط.")
                 .setPositiveButton("استخدام الدرع",(d,which)->{
                     if(resolved[0])return;
-                    resolved[0]=true;
+                    resolved[0]=true;radarPauseActive=false;
                     if(cardAvailable(CardInventory.SHIELD) && useCard(CardInventory.SHIELD)) {
-                        shieldActive[1][lane]=true;shieldTurns[1][lane]=2;
+                        shieldActive[1][lane]=true;shieldTurns[1][lane]=3;
                         message="استخدمت الدرع بعد كشف الرادار وتم صد الهجوم";
                         finishRadarResponseTurn(side);
                     } else {
@@ -2082,14 +2104,14 @@ public class MainActivity extends Activity {
                 })
                 .setNegativeButton("متابعة الهجوم",(d,which)->{
                     if(resolved[0])return;
-                    resolved[0]=true;message="تم تجاوز إنذار الرادار";
+                    resolved[0]=true;radarPauseActive=false;message="تم تجاوز إنذار الرادار";
                     animateMove(side,lane,amount);
                 }).setCancelable(false).create();
             dialog.show();
             if(!cardAvailable(CardInventory.SHIELD))dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
             postDelayed(()->{
                 if(!resolved[0]) {
-                    resolved[0]=true;
+                    resolved[0]=true;radarPauseActive=false;
                     if(dialog.isShowing())dialog.dismiss();
                     message="انتهت مهلة الرادار — استكمل الخصم هجومه";
                     animateMove(side,lane,amount);
@@ -2432,6 +2454,7 @@ public class MainActivity extends Activity {
             }
             if(Math.hypot(x-touchDownX,y-touchDownY)>h*.10f){touchDown=false;return true;}
             touchDown=false;invalidate();
+            if(radarPauseActive)return true;
             if(titleScreen){titleScreen=false;invalidate();return true;}
             if(battleIntro){if(x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f){battleIntro=false;setup=true;setupSide=(mode==1?2:1);}invalidate();return true;}
             float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
