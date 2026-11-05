@@ -82,6 +82,7 @@ public class MainActivity extends Activity {
         private MediaPlayer backgroundMusic;
         private final int[] backgroundMusicTracks = {R.raw.battle_music_1,R.raw.battle_music_2,R.raw.battle_music_3};
         private int selectedBackgroundMusicIndex = -1;
+        private float musicVolume = 0.5f;
         private String battleBackgroundName="1793716501127.jpg";
         private boolean soundEnabled, musicEnabled, vibrationEnabled, screenShakeEnabled;
         private long screenShakeStartedAt=0;
@@ -316,6 +317,8 @@ public class MainActivity extends Activity {
             android.content.SharedPreferences prefs=getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE);
             soundEnabled=prefs.getBoolean("sound",true);
             musicEnabled=prefs.getBoolean("music",true);
+            musicVolume=prefs.getFloat("music_volume",0.5f);
+            musicVolume=Math.max(0f,Math.min(1f,musicVolume));
             vibrationEnabled=prefs.getBoolean("vibration",true);
             screenShakeEnabled=prefs.getBoolean("screen_shake",true);
             AudioAttributes attributes = new AudioAttributes.Builder()
@@ -391,7 +394,7 @@ public class MainActivity extends Activity {
                     if(backgroundMusic!=null) {
                         backgroundMusic.setAudioAttributes(musicAttributes);
                         backgroundMusic.setLooping(true);
-                        backgroundMusic.setVolume(0.20f,0.20f);
+                        backgroundMusic.setVolume(musicVolume,musicVolume);
                     }
                 }
                 if(backgroundMusic!=null && !backgroundMusic.isPlaying()) {
@@ -412,18 +415,50 @@ public class MainActivity extends Activity {
         }
         void resumeMusic(){if(musicEnabled)updateBackgroundMusic();}
         private void showSettingsDialog() {
-            final String[] labels={"المؤثرات الصوتية","الموسيقى","اهتزاز الهاتف عند تدمير السلاح","اهتزاز الشاشة عند تدمير السلاح"};
-            final boolean[] values={soundEnabled,musicEnabled,vibrationEnabled,screenShakeEnabled};
-            new AlertDialog.Builder(MainActivity.this).setTitle("إعدادات اللعبة")
-                .setMultiChoiceItems(labels,values,(dialog,which,checked)->{
-                    if(which==0)soundEnabled=checked;
-                    else if(which==1){musicEnabled=checked;updateBackgroundMusic();}
-                    else if(which==2)vibrationEnabled=checked;
-                    else screenShakeEnabled=checked;
-                    getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE).edit()
-                        .putBoolean("sound",soundEnabled).putBoolean("music",musicEnabled)
-                        .putBoolean("vibration",vibrationEnabled).putBoolean("screen_shake",screenShakeEnabled).apply();
-                }).setPositiveButton("تم",null).show();
+            final android.widget.LinearLayout panel=new android.widget.LinearLayout(MainActivity.this);
+            panel.setOrientation(android.widget.LinearLayout.VERTICAL);
+            int pad=(int)(20*getResources().getDisplayMetrics().density);
+            panel.setPadding(pad,pad/2,pad,pad/2);
+            final android.widget.CheckBox soundBox=new android.widget.CheckBox(MainActivity.this);
+            soundBox.setText("المؤثرات الصوتية");soundBox.setChecked(soundEnabled);
+            final android.widget.CheckBox musicBox=new android.widget.CheckBox(MainActivity.this);
+            musicBox.setText("تشغيل الموسيقى");musicBox.setChecked(musicEnabled);
+            final android.widget.TextView volumeLabel=new android.widget.TextView(MainActivity.this);
+            volumeLabel.setText("مستوى الموسيقى: "+Math.round(musicVolume*100)+"%");
+            volumeLabel.setPadding(0,pad/2,0,0);
+            final android.widget.SeekBar volumeBar=new android.widget.SeekBar(MainActivity.this);
+            volumeBar.setMax(100);volumeBar.setProgress(Math.round(musicVolume*100));
+            final android.widget.CheckBox vibrationBox=new android.widget.CheckBox(MainActivity.this);
+            vibrationBox.setText("اهتزاز الهاتف عند تدمير السلاح");vibrationBox.setChecked(vibrationEnabled);
+            final android.widget.CheckBox shakeBox=new android.widget.CheckBox(MainActivity.this);
+            shakeBox.setText("اهتزاز الشاشة عند تدمير السلاح");shakeBox.setChecked(screenShakeEnabled);
+            panel.addView(soundBox);panel.addView(musicBox);panel.addView(volumeLabel);panel.addView(volumeBar);
+            panel.addView(vibrationBox);panel.addView(shakeBox);
+            volumeBar.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener(){
+                @Override public void onProgressChanged(android.widget.SeekBar bar,int progress,boolean fromUser){
+                    musicVolume=progress/100f;
+                    volumeLabel.setText("مستوى الموسيقى: "+progress+"%");
+                    if(backgroundMusic!=null)backgroundMusic.setVolume(musicVolume,musicVolume);
+                }
+                @Override public void onStartTrackingTouch(android.widget.SeekBar bar){}
+                @Override public void onStopTrackingTouch(android.widget.SeekBar bar){}
+            });
+            AlertDialog dialog=new AlertDialog.Builder(MainActivity.this).setTitle("إعدادات اللعبة")
+                .setView(panel).setPositiveButton("حفظ",null).setNegativeButton("إلغاء",null).create();
+            dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+                soundEnabled=soundBox.isChecked();musicEnabled=musicBox.isChecked();
+                vibrationEnabled=vibrationBox.isChecked();screenShakeEnabled=shakeBox.isChecked();
+                getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE).edit()
+                    .putBoolean("sound",soundEnabled).putBoolean("music",musicEnabled)
+                    .putBoolean("vibration",vibrationEnabled).putBoolean("screen_shake",screenShakeEnabled)
+                    .putFloat("music_volume",musicVolume).apply();
+                updateBackgroundMusic();dialog.dismiss();
+            }));
+            dialog.setOnCancelListener(d->{
+                musicVolume=getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE).getFloat("music_volume",0.5f);
+                if(backgroundMusic!=null)backgroundMusic.setVolume(musicVolume,musicVolume);
+            });
+            dialog.show();
         }
         private void showExitConfirmation() {
             boolean surrender=mode==2 && winner==0 && cardInventory.isMatchActive();
@@ -1218,12 +1253,6 @@ public class MainActivity extends Activity {
                     message=(side==lanLocalSide?"أنت تبدأ":"الخصم يبدأ");
                     lanSession.beginTurn(lanTurnId,side);startBattleIntro();invalidate();
                 });}
-                @Override public void onRadarDecision(int side,int lane,boolean continueAttack){runOnUiThread(()->{
-                    if(mode!=4 || !continueAttack || onlineRadarPendingLane!=lane || onlineRadarPendingAttackerSide==0)return;
-                    int attackSide=onlineRadarPendingAttackerSide,amount=onlineRadarPendingAmount;
-                    onlineRadarPendingLane=-1;onlineRadarPendingAttackerSide=0;radarPauseActive=false;
-                    message="تم تجاوز إنذار الرادار — استكمل الهجوم";animateMove(attackSide,lane,amount);invalidate();
-                });}
                 @Override public void onTurnStarted(int id,int side,boolean local){runOnUiThread(()->{
                     lanTurnId=id;player=side;die=0;choosing=false;lanCountdown=30;
                     message=local?"دورك — اضغط أطلق خلال 30 ثانية":"دور الخصم — بانتظار رمي النرد";
@@ -1409,6 +1438,12 @@ public class MainActivity extends Activity {
                         }},1100);
                         invalidate();
                     }
+                });}
+                @Override public void onRadarDecision(int side,int lane,boolean continueAttack){runOnUiThread(()->{
+                    if(mode!=4 || !continueAttack || onlineRadarPendingLane!=lane || onlineRadarPendingAttackerSide==0)return;
+                    int attackSide=onlineRadarPendingAttackerSide,amount=onlineRadarPendingAmount;
+                    onlineRadarPendingLane=-1;onlineRadarPendingAttackerSide=0;radarPauseActive=false;
+                    message="تم تجاوز إنذار الرادار — استكمل الهجوم";animateMove(attackSide,lane,amount);invalidate();
                 });}
                 @Override public void onDisconnected(String reason){runOnUiThread(()->{
                     onlineWaitingForPeer=false;
@@ -2386,7 +2421,7 @@ public class MainActivity extends Activity {
                     message="رادار الخصم كشف هجومك — بانتظار قرار الدفاع خلال 10 ثوانٍ";invalidate();
                     return true;
                 }
-                boolean shieldReady=onlineCards[onlineLocalSide][CardInventory.SHIELD]
+                boolean shieldReady=onlineCards[CardInventory.SHIELD]
                         && !onlineCardsUsedBySide[onlineLocalSide][CardInventory.SHIELD]
                         && !destroyed(onlineLocalSide)[lane] && !shieldActive[onlineLocalSide][lane];
                 final boolean[] resolved={false};
