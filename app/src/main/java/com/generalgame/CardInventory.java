@@ -56,7 +56,12 @@ public final class CardInventory {
     /** Existing players receive three copies of each newly introduced card once. */
     private synchronized void grantNewCardTypesToExistingInstall() {
         final String key = "new_card_types_bundle_v1";
-        if (!prefs.getBoolean(KEY_TEST_GRANT_V1, false) || prefs.getBoolean(key, false)) return;
+        if (prefs.getBoolean(key, false)) return;
+        if (!prefs.getBoolean(KEY_TEST_GRANT_V1, false)) {
+            // Fresh installs already receive the standard starter bundle below.
+            prefs.edit().putBoolean(key, true).commit();
+            return;
+        }
         SharedPreferences.Editor edit = prefs.edit();
         for (int i = AIRSTRIKE; i < CARD_TYPES; i++) {
             edit.putInt(COUNT_KEYS[i], getCount(i) + 3);
