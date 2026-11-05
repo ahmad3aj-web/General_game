@@ -60,7 +60,7 @@ jobs:
               with urllib.request.urlopen(request, timeout=40) as response:
                   source = response.read().decode("utf-8", "replace")
               audio_url = None
-          scripts = re.findall(r"<script[^>]*type=['\"]application/ld\+json['\"][^>]*>(.*?)</script>", source, re.I | re.S)
+              scripts = re.findall(r"<script[^>]*type=['\"]application/ld\\+json['\"][^>]*>(.*?)</script>", source, re.I | re.S)
               for script in scripts:
                   try:
                       audio_url = find_url(json.loads(html.unescape(script)))
@@ -68,7 +68,7 @@ jobs:
                       pass
                   if audio_url: break
               if not audio_url:
-              urls = re.findall(r'https://cdn\.pixabay\.com/audio/[^"<> ]+?\.mp3', source)
+                  urls = re.findall(r'https://cdn\.pixabay\.com/audio/[^"<> ]+?\.mp3', source)
                   audio_url = next((url for url in urls if track_id in url), urls[0] if urls else None)
               if not audio_url:
                   raise RuntimeError("Could not extract MP3 URL for track " + track_id)
