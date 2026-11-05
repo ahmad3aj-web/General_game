@@ -80,7 +80,7 @@ public class MainActivity extends Activity {
         private boolean titleScreen = true;
         private SoundPool gameSoundPool;
         private MediaPlayer backgroundMusic;
-        private final int[] backgroundMusicTracks = {R.raw.battle_music_1,R.raw.battle_music_2,R.raw.battle_music_3};
+        private final int[] backgroundMusicTracks = {R.raw.battle_music_1,R.raw.battle_music_2,R.raw.battle_music_3,R.raw.battle_music_4};
         private int selectedBackgroundMusicIndex = -1;
         private float musicVolume = 0.5f;
         private String battleBackgroundName="1793716501127.jpg";
