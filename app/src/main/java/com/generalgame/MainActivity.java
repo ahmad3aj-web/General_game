@@ -68,6 +68,8 @@ public class MainActivity extends Activity {
         private Movie winMovie;
         private Movie shieldCardMovie, cyberCardMovie, repairCardMovie;
         private Bitmap shieldCardImage, cyberCardImage, repairCardImage;
+        private Bitmap airstrikeCardImage, smokeCardImage, supplyCardImage;
+        private Bitmap radarCardImage, minefieldCardImage, mineDetectorCardImage;
         private final long[][] repairEffectUntil = new long[3][3];
         private final boolean[] blueWinEffect = {false,false,false};
         private final boolean[] redWinEffect = {false,false,false};
@@ -198,11 +200,31 @@ public class MainActivity extends Activity {
             repairCardImage=loadCardImage("ui/card_repair.png");
             cyberCardImage=loadCardImage("ui/card_cyber.png");
             shieldCardImage=loadCardImage("ui/card_shield_transparent.png");
+            airstrikeCardImage=loadCardImage("ui/card_airstrike.png");
+            smokeCardImage=loadCardImage("ui/card_smoke.png");
+            supplyCardImage=loadCardImage("ui/card_supply.png");
+            radarCardImage=loadCardImage("ui/card_radar.png");
+            minefieldCardImage=loadCardImage("ui/card_minefield.png");
+            mineDetectorCardImage=loadCardImage("ui/card_mine_detector.png");
         }
         // Card images are preprocessed into real RGBA PNG files by the build workflow.
         private Bitmap loadCardImage(String assetPath) {
             try { return BitmapFactory.decodeStream(getAssets().open(assetPath)); }
             catch(Exception ignored) { return null; }
+        }
+        private Bitmap cardImageForType(int type) {
+            switch(type) {
+                case CardInventory.REPAIR:return repairCardImage;
+                case CardInventory.CYBER_WARFARE:return cyberCardImage;
+                case CardInventory.SHIELD:return shieldCardImage;
+                case CardInventory.AIRSTRIKE:return airstrikeCardImage;
+                case CardInventory.SMOKE_SCREEN:return smokeCardImage;
+                case CardInventory.MILITARY_SUPPLY:return supplyCardImage;
+                case CardInventory.RADAR:return radarCardImage;
+                case CardInventory.MINEFIELD:return minefieldCardImage;
+                case CardInventory.MINE_DETECTOR:return mineDetectorCardImage;
+                default:return null;
+            }
         }
         private boolean isCheckerBackground(int color) {
             int r=Color.red(color),g=Color.green(color),b=Color.blue(color);
@@ -840,9 +862,7 @@ public class MainActivity extends Activity {
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(h*.008f);
             p.setColor(Color.argb(Math.max(0,alpha),245,190,65));
             c.drawRoundRect(frame,h*.025f,h*.025f,p);p.setStyle(Paint.Style.FILL);
-            Bitmap image=cardNoticeType==CardInventory.REPAIR?repairCardImage:
-                    cardNoticeType==CardInventory.CYBER_WARFARE?cyberCardImage:
-                    cardNoticeType==CardInventory.SHIELD?shieldCardImage:null;
+            Bitmap image=cardImageForType(cardNoticeType);
             float imageMaxW=cardW*.78f,imageMaxH=cardH*.70f;
             if(image!=null) {
                 float scale=Math.min(imageMaxW/Math.max(1,image.getWidth()),imageMaxH/Math.max(1,image.getHeight()));
@@ -1249,7 +1269,12 @@ public class MainActivity extends Activity {
             c.drawRoundRect(new RectF(l,t,r,b),h*.012f,h*.012f,p);
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.003f));p.setColor(edge);
             c.drawRoundRect(new RectF(l,t,r,b),h*.012f,h*.012f,p);p.setStyle(Paint.Style.FILL);
-            txt(c,cardIcons[type],(l+r)*.5f,t+(b-t)*.48f,(b-t)*.47f,Color.WHITE,true);
+            Bitmap image=cardImageForType(type);
+            if(image!=null) {
+                RectF dst=new RectF(l+(r-l)*.10f,t+(b-t)*.07f,r-(r-l)*.10f,b-(b-t)*.18f);
+                p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
+                c.drawBitmap(image,null,dst,p);
+            } else txt(c,cardIcons[type],(l+r)*.5f,t+(b-t)*.48f,(b-t)*.47f,Color.WHITE,true);
             txt(c,String.valueOf(count),(l+r)*.5f,b-h*.008f,h*.018f,Color.WHITE,true);
         }
         private void drawInventory(Canvas c) {
@@ -1320,9 +1345,7 @@ public class MainActivity extends Activity {
         }
         private void drawRewardCard(Canvas c,int type,float l,float t,float r,float b,int count) {
             box(c,l,t,r,b,Color.rgb(28,47,38));
-            Bitmap image=type==CardInventory.REPAIR?repairCardImage:
-                type==CardInventory.CYBER_WARFARE?cyberCardImage:
-                type==CardInventory.SHIELD?shieldCardImage:null;
+            Bitmap image=cardImageForType(type);
             if(image!=null) {
                 RectF dst=new RectF(l+(r-l)*.12f,t+(b-t)*.08f,r-(r-l)*.12f,b-(b-t)*.22f);
                 p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
@@ -2260,7 +2283,8 @@ public class MainActivity extends Activity {
                 txt(c,"💣",cx,cy-h*.065f,h*.045f,Color.rgb(255,215,80),true);
             }
             if(smokeActive[side][lane]) {
-                txt(c,"🌫",cx,cy-h*.065f,h*.050f,Color.WHITE,true);
+                if(smokeCardImage!=null)drawCardImage(c,smokeCardImage,cx,cy);
+                else txt(c,"🌫",cx,cy-h*.065f,h*.050f,Color.WHITE,true);
             } else if(repairEffectUntil[side][lane]>now) drawCardImage(c,repairCardImage,cx,cy);
             else if(cyberDisabled[side][lane]) drawCardImage(c,cyberCardImage,cx,cy);
             else if(shieldActive[side][lane]) drawCardImage(c,shieldCardImage,cx,cy);
