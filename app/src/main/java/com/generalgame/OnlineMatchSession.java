@@ -767,7 +767,7 @@ public final class OnlineMatchSession {
         } else if ("radar_decision".equals(type)) {
             int lane = intValue(snapshot.child("lane"), -1);
             if (turn == expectedTurn && activeSide != side && lane >= 0 && lane <= 2 && (value == 0 || value == 1)) {
-                listener.onRadarDecision(side, lane, value == 0);
+                listener.onRadarDecision(side, lane, value == 1);
             }
         } else if ("roll".equals(type)) {
             if (turn != expectedTurn || activeSide != side || rollReceived || rolledValue != 0
