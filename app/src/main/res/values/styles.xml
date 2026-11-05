@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="GeneralDialogTheme" parent="@android:style/Theme.Material.Light.Dialog.Alert">
+        <item name="android:colorAccent">#E8B84A</item>
+        <item name="android:textColorPrimary">#F5E9CC</item>
+        <item name="android:textColorSecondary">#C8B98F</item>
+        <item name="android:windowBackground">@drawable/bg_general_dialog</item>
+        <item name="android:windowMinWidthMajor">78%</item>
+        <item name="android:windowMinWidthMinor">88%</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.78</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/GeneralDialogButton</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/GeneralDialogButton</item>
+        <item name="android:buttonBarNeutralButtonStyle">@style/GeneralDialogButton</item>
+    </style>
+
+    <style name="GeneralDialogButton" parent="@android:style/Widget.Material.Button.Borderless">
+        <item name="android:textColor">#F2C45E</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">44dp</item>
+    </style>
+</resources>
