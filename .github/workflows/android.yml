@@ -30,18 +30,61 @@ jobs:
           gradle-version: "8.9"
       - name: Restore stable debug signing key
         run: base64 --decode general-debug.keystore.b64 > general-debug.keystore
-      - name: Generate three original calm cinematic battle soundtracks
+      - name: Download recorded military music from Pixabay
         run: |
-          python3 -m pip install --user numpy
-          python3 scripts/generate_battle_music.py
-          if command -v ffmpeg >/dev/null 2>&1; then
-            for track in app/src/main/res/raw/battle_music_1.wav app/src/main/res/raw/battle_music_2.wav app/src/main/res/raw/battle_music_3.wav; do
-              ffmpeg -y -loglevel error -i "$track" -vn -ac 2 -ar 44100 -c:a libmp3lame -b:a 96k "${track%.wav}.mp3"
-              rm "$track"
-            done
-          else
-            echo "ffmpeg unavailable; using the generated WAV soundtracks"
-          fi
+          python3 - <<'PY'
+          import json, re, urllib.request, urllib.parse, pathlib, html
+          tracks = [
+              ("269842", "https://pixabay.com/music/main-title-army-military-war-music-269842/", "battle_music_1.mp3"),
+              ("160359", "https://pixabay.com/music/main-title-song-of-war-160359/", "battle_music_2.mp3"),
+              ("314656", "https://pixabay.com/music/main-title-war-army-military-music-314656/", "battle_music_3.mp3"),
+              ("338668", "https://pixabay.com/music/main-title-war-battle-military-music-338668/", "battle_music_4.mp3"),
+          ]
+          out = pathlib.Path("app/src/main/res/raw")
+          out.mkdir(parents=True, exist_ok=True)
+          def find_content_url(obj):
+              if isinstance(obj, dict):
+                  val = obj.get("contentUrl")
+                  if isinstance(val, str) and "cdn.pixabay.com/audio/" in val and val.lower().endswith(".mp3"):
+                      return val
+                  for v in obj.values():
+                      got = find_content_url(v)
+                      if got: return got
+              elif isinstance(obj, list):
+                  for v in obj:
+                      got = find_content_url(v)
+                      if got: return got
+              return None
+          for track_id, page, filename in tracks:
+              req = urllib.request.Request(page, headers={
+                  "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/130 Safari/537.36",
+                  "Accept": "text/html,application/xhtml+xml"
+              })
+              with urllib.request.urlopen(req, timeout=40) as response:
+                  page_html = response.read().decode("utf-8", "replace")
+              audio_url = None
+              for block in re.findall(r'<script[^>]*type=["\\']application/ld\\+json["\\'][^>]*>(.*?)</script>', page_html, re.I | re.S):
+                  try:
+                      audio_url = find_content_url(json.loads(html.unescape(block)))
+                  except Exception:
+                      pass
+                  if audio_url: break
+              if not audio_url:
+                  urls = re.findall(r'https?://cdn\\.pixabay\\.com/audio/[^\\s"\\'<>]+?\\.mp3', page_html)
+                  audio_url = next((u for u in urls if track_id in u or urls), None)
+              if not audio_url:
+                  raise RuntimeError(f"Could not extract direct MP3 URL for Pixabay track {track_id}")
+              audio_req = urllib.request.Request(audio_url, headers={
+                  "User-Agent": "Mozilla/5.0",
+                  "Referer": "https://pixabay.com/music/"
+              })
+              with urllib.request.urlopen(audio_req, timeout=90) as response:
+                  data = response.read()
+              if len(data) < 100000 or not (data[:3] == b"ID3" or data[:2] in (b"\\xff\\xfb", b"\\xff\\xf3", b"\\xff\\xf2")):
+                  raise RuntimeError(f"Downloaded file {filename} is not a valid MP3 (size={len(data)})")
+              (out / filename).write_bytes(data)
+              print(f"Downloaded and verified {filename}: {len(data)} bytes")
+          PY
       - name: Prepare transparent card artwork
         run: |
           python3 -m pip install --user pillow
