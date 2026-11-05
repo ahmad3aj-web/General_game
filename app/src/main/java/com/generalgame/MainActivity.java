@@ -578,6 +578,33 @@ public class MainActivity extends Activity {
             return Math.max(1900L, battleDialogueText.codePointCount(0,battleDialogueText.length())*72L);
         }
 
+        private void setCardBattleDialogue(int type,int speaker,boolean success) {
+            if(type<0 || type>=CardInventory.CARD_TYPES || stage<2 || winner!=0 || bonusAttempt)return;
+            String[][] lines=success?cardDialogueSuccess:cardDialogueFailure;
+            int other=speaker==1?2:1;
+            battleDialogueSpeaker=speaker;
+            battleDialogueReplySpeaker=other;
+            battleDialogueText=lines[speaker==1?0:1][type];
+            battleDialogueReplyText=lines[speaker==1?2:3][type];
+            battleDialogueStartedAt=System.currentTimeMillis();
+            invalidate();
+            postInvalidateDelayed(70);
+        }
+
+        // Four rows: player announces, General announces, General replies, player replies.
+        private final String[][] cardDialogueSuccess = {
+            {"رجّعت سلاحي للخدمة، المعركة لسه إلي!","ضاعفت النرد، جهّز حالك للاندفاع!","عطّلت سلاحك بالحرب السيبرانية!","درعي شغّال، جرّب تخترق دفاعي!","ضربتي الجوية رفعت جاهزية أسلحتي!","اختفيت خلف الدخان، دورك تخمّن!","وصلني الإمداد، والنتيجة صارت أقوى!","الرادار كشف خطوتك القادمة!","زرعت لك حقل ألغام، انتبه وين بتتحرك!","كشفت الألغام وأمّنت المعسكر!"},
+            {"جنيرال أصلح سلاحه، لكنه لن ينجو من المواجهة!","جنيرال ضاعف النرد، استعد لهجوم أقوى!","جنيرال عطّل سلاحك سيبرانياً!","جنيرال حصّن سلاحه، ابحث عن ثغرة!","جنيرال نفّذ ضربة جوية ورفع جاهزية أسلحته!","جنيرال أخفى سلاحه بستار الدخان!","جنيرال حصل على إمداد إضافي!","جنيرال فعّل الرادار لمراقبة هجومك!","جنيرال زرع ألغاماً في معسكرك!","جنيرال كشف الألغام وأبطل مفعولها!"},
+            {"الإصلاح يؤجل خسارتك، ولن يغيّر نتيجة الحرب!","ضاعف كما تشاء، سأوقف تقدمك!","تعطيلك لن يمنعني من إيجاد طريق للنصر!","درعك لن يحميك طوال المعركة!","ضربتك الجوية لن تحسم المواجهة وحدها!","الدخان يخفي السلاح، لكنه لا يخفي ضعفك!","الإمداد لن ينقذك من خطتي!","سأغيّر مساري حتى لا يفيدك الرادار!","سأتعامل مع الألغام بحذر!","كشفت الألغام، لكن المعركة مستمرة!"},
+            {"إصلاحك لن يوقف تقدمي!","ضاعف النرد، وأنا جاهز للدفاع!","سأعيد تشغيل سلاحي وأرد عليك!","درعك لن يدوم، سأنتظر فرصتي!","سأصمد أمام ضربتك الجوية!","لن تعرف أين أتمركز بسهولة!","حتى مع الإمداد، النصر مش مضمون!","سأغيّر خطتي وأفاجئك!","سأنتبه لكل خطوة في المعسكر!","لن تنجح الألغام في إيقافي!"}
+        };
+        private final String[][] cardDialogueFailure = {
+            {"البطاقة ما اشتغلت، لازم أراجع هدفي!","ما قدرت أضاعف النرد على هذا السلاح!","الهجوم السيبراني ما وصل لهدفه!","ما قدرت أفعّل الدرع على هذا السلاح!","الضربة الجوية ما انطلقت كما خططت!","ما قدرت أخفي السلاح بستار الدخان!","الإمداد ما أعطاني النتيجة المطلوبة!","الرادار ما قدر يحدد الهجوم!","زرع الألغام ما تم بنجاح!","ما لقيت ألغاماً لأفككها!"},
+            {"حتى بطاقة جنيرال لم تحقق هدفها!","تعذّر على جنيرال مضاعفة النرد!","فشلت محاولة جنيرال السيبرانية!","لم يتمكن جنيرال من تفعيل الدرع!","تعذّر تنفيذ الضربة الجوية لجنيرال!","لم ينجح جنيرال في إخفاء السلاح!","لم يحصل جنيرال على الإمداد المطلوب!","الرادار لم يكشف الهجوم كما أراد جنيرال!","فشلت محاولة جنيرال لزرع الألغام!","لم يعثر جنيرال على ألغام لإبطالها!"},
+            {"فرصتك محدودة، ولن أضيّعها!","لن تنجح كل محاولاتك في الميدان!","دفاعي أقوى من خطتك السيبرانية!","سلاحي سيبقى مكشوفاً، وسأستغل ذلك!","سأستفيد من فشل ضربتك!","سأراك بوضوح الآن!","خطتك تحتاج إلى إمداد أفضل!","سأهاجم قبل أن تعيد المحاولة!","سأواصل التقدم دون خوف!","إذن لا ألغام تعيق طريقي!"},
+            {"مش كل بطاقة بتنجح، ولسه عندي خطة!","فشل محاولتك أعطاني فرصة!","حاول مرة ثانية إذا بتقدر!","ما زال سلاحي جاهزاً للمواجهة!","سأستغل فشل الضربة الجوية!","لن يختبئ سلاحك عني طويلاً!","سأكمل المعركة بما لدي!","لن يفيدك الرادار في كل مرة!","سأنتبه لمكان الألغام!","معسكري صار آمناً!"}
+        };
+
         private void setNoMoveDialogue(int speaker) {
             int other=speaker==1?2:1;
             battleDialogueSpeaker=speaker;
@@ -723,6 +750,7 @@ public class MainActivity extends Activity {
             cardNoticeType=type;
             cardNoticeFromGeneral=fromGeneral;
             cardNoticeUntil=System.currentTimeMillis()+2000L;
+            setCardBattleDialogue(type,fromGeneral?2:1,true);
             invalidate();
             postInvalidateDelayed(35);
         }
@@ -819,12 +847,19 @@ public class MainActivity extends Activity {
                             smokeActive[1][lane]=false;smokeTurns[1][lane]=0;
                             message="تم استخدام البطاقة وأُزيل ستار الدخان — أصبح السلاح مكشوفاً";
                             finishSelectedBattleCard(card,lane);
-                        } else { message="لا يمكن استخدام البطاقة على هذا السلاح الآن";invalidate(); }
+                        } else {
+                            message="لا يمكن استخدام البطاقة على هذا السلاح الآن";
+                            setCardBattleDialogue(card,1,false);
+                            invalidate();
+                        }
                     }).show();
                 return;
             }
             if(executeBattleCard(card,lane))finishSelectedBattleCard(card,lane);
-            else message="لا يمكن استخدام البطاقة على هذا السلاح الآن";
+            else {
+                message="لا يمكن استخدام البطاقة على هذا السلاح الآن";
+                setCardBattleDialogue(card,1,false);
+            }
         }
         private boolean executeBattleCard(int type,int lane) {
             if(type==CardInventory.DOUBLE_DICE) {
