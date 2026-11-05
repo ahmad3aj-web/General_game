@@ -19,12 +19,20 @@ public final class CardInventory {
     public static final int DOUBLE_DICE = 1;
     public static final int CYBER_WARFARE = 2;
     public static final int SHIELD = 3;
-    public static final int CARD_TYPES = 4;
+    public static final int AIRSTRIKE = 4;
+    public static final int SMOKE_SCREEN = 5;
+    public static final int MILITARY_SUPPLY = 6;
+    public static final int RADAR = 7;
+    public static final int MINEFIELD = 8;
+    public static final int MINE_DETECTOR = 9;
+    public static final int CARD_TYPES = 10;
     public static final int MAX_MATCH_CARDS = 3;
 
     private static final String PREFS = "GENERAL_CARD_INVENTORY";
     private static final String[] COUNT_KEYS = {
-        "count_repair", "count_double_dice", "count_cyber_warfare", "count_shield"
+        "count_repair", "count_double_dice", "count_cyber_warfare", "count_shield",
+        "count_airstrike", "count_smoke_screen", "count_military_supply",
+        "count_radar", "count_minefield", "count_mine_detector"
     };
     private static final String KEY_PENDING = "pending_selection";
     private static final String KEY_ACTIVE = "active_match_cards";
@@ -130,7 +138,8 @@ public final class CardInventory {
         int[] awarded = new int[CARD_TYPES];
         // The first three rewards (and the first four when applicable) are
         // guaranteed to be different card types. Only extra rewards may repeat.
-        int[] pool = {0, 1, 2, 3};
+        int[] pool = new int[CARD_TYPES];
+        for (int i = 0; i < CARD_TYPES; i++) pool[i] = i;
         for (int i = pool.length - 1; i > 0; i--) {
             int j = random.nextInt(i + 1);
             int swap = pool[i]; pool[i] = pool[j]; pool[j] = swap;
