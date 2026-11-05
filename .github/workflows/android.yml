@@ -33,13 +33,15 @@ jobs:
       - name: Generate three original calm cinematic battle soundtracks
         run: |
           python3 -m pip install --user numpy
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
           python3 scripts/generate_battle_music.py
-          for track in app/src/main/res/raw/battle_music_1.wav app/src/main/res/raw/battle_music_2.wav app/src/main/res/raw/battle_music_3.wav; do
-            ffmpeg -y -loglevel error -i "$track" -vn -ac 2 -ar 44100 -c:a libmp3lame -b:a 96k "${track%.wav}.mp3"
-            rm "$track"
-          done
+          if command -v ffmpeg >/dev/null 2>&1; then
+            for track in app/src/main/res/raw/battle_music_1.wav app/src/main/res/raw/battle_music_2.wav app/src/main/res/raw/battle_music_3.wav; do
+              ffmpeg -y -loglevel error -i "$track" -vn -ac 2 -ar 44100 -c:a libmp3lame -b:a 96k "${track%.wav}.mp3"
+              rm "$track"
+            done
+          else
+            echo "ffmpeg unavailable; using the generated WAV soundtracks"
+          fi
       - name: Prepare transparent card artwork
         run: |
           python3 -m pip install --user pillow
