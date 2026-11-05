@@ -2160,7 +2160,7 @@ public class MainActivity extends Activity {
         }
         private void drawWeaponCardEffect(Canvas c,int side,int lane,float cx,float cy) {
             long now=System.currentTimeMillis();
-            if(mineTargetSide==side && mineLane==lane && mineOwnerSide==side) {
+            if(mineTargetSide==side && mineLane==lane && mineOwnerSide==1 && side==2) {
                 txt(c,"💣",cx,cy-h*.065f,h*.045f,Color.rgb(255,215,80),true);
             }
             if(smokeActive[side][lane]) {
