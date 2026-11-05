@@ -70,7 +70,7 @@ public class MainActivity extends Activity {
         private Bitmap shieldCardImage, cyberCardImage, repairCardImage;
         private Bitmap airstrikeCardImage, smokeCardImage, supplyCardImage, doubleDiceCardImage;
         private Bitmap radarCardImage, minefieldCardImage, mineDetectorCardImage;
-        private Bitmap airstrikePlaneImage, landMineImage;
+        private Bitmap airstrikePlaneImage, landMineImage, smokeEffectImage;
         private long airstrikeStartedAt=0;
         private int airstrikeTargetSide=2;
         private final long[][] repairEffectUntil = new long[3][3];
@@ -82,6 +82,7 @@ public class MainActivity extends Activity {
         private MediaPlayer backgroundMusic;
         private final int[] backgroundMusicTracks = {R.raw.battle_music_1,R.raw.battle_music_2,R.raw.battle_music_3};
         private int selectedBackgroundMusicIndex = -1;
+        private String battleBackgroundName="1793716501127.jpg";
         private boolean soundEnabled, musicEnabled, vibrationEnabled, screenShakeEnabled;
         private long screenShakeStartedAt=0;
         private int helpScrollY=0;
@@ -198,7 +199,7 @@ public class MainActivity extends Activity {
             for(String name:generals)try{art.put(name,BitmapFactory.decodeStream(getAssets().open("characters/"+name)));}catch(Exception ignored){}
             String[] uiButtons={"blue_button_01.png","blue_button_02.png","red_button_01.png","red_button_02.png","vs_emblem.png"};
             for(String name:uiButtons)try{art.put(name,BitmapFactory.decodeStream(getAssets().open("ui/"+name)));}catch(Exception ignored){}
-            String[] scenes={"2112.w023.n001.1491B.p1.1491.jpg","2207_w023_n003_2757b_p1_2757.jpg","png.png","war-zone-landscape-with-apocalyptic-destruction.jpg","1793716501127.jpg","Intro.jpg"};
+            String[] scenes={"2112.w023.n001.1491B.p1.1491.jpg","2207_w023_n003_2757b_p1_2757.jpg","png.png","war-zone-landscape-with-apocalyptic-destruction.jpg","1793716501127.jpg","1793905666116.jpg","Intro.jpg"};
             for(String name:scenes)try{art.put(name,BitmapFactory.decodeStream(getAssets().open("backgrounds/"+name)));}catch(Exception ignored){}
             try { fireMovie=Movie.decodeStream(getAssets().open("vehicles/Flame_GIF_2.gif")); } catch(Exception ignored) {}
             try { winMovie=Movie.decodeStream(getAssets().open("vehicles/Win.gif")); } catch(Exception ignored) {}
@@ -207,6 +208,7 @@ public class MainActivity extends Activity {
             shieldCardImage=loadCardImage("ui/card_shield_transparent.png");
             airstrikeCardImage=loadCardImage("ui/card_airstrike.png");
             smokeCardImage=loadCardImage("ui/card_smoke.png");
+            smokeEffectImage=loadCardImage("ui/smoke_effect.png");
             doubleDiceCardImage=loadCardImage("ui/card_double_dice.png");
             supplyCardImage=loadCardImage("ui/card_supply.png");
             radarCardImage=loadCardImage("ui/card_radar.png");
@@ -632,7 +634,8 @@ public class MainActivity extends Activity {
         }
 
         private void drawBattlefield(Canvas c) {
-            Bitmap image=art.get("1793716501127.jpg");
+            Bitmap image=art.get(battleBackgroundName);
+            if(image==null)image=art.get("1793716501127.jpg");
             if(image!=null){p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);c.drawBitmap(image,null,new RectF(0,0,w,h),p);}else c.drawColor(Color.rgb(115,145,105));
             p.setColor(Color.argb(42,18,25,24));p.setStyle(Paint.Style.FILL);c.drawRect(0,0,w,h,p);
         }
@@ -792,6 +795,37 @@ public class MainActivity extends Activity {
             message="انفجر اللغم في معسكر "+names[lane]+" وخسر السلاح حتى 3 طلقات";
             invalidate();return true;
         }
+        private void finishSelectedBattleCard(int card,int lane) {
+            selectedBattleCard=-1;cardTargeting=false;
+            if(card==CardInventory.DOUBLE_DICE && die>0) {
+                boolean laneReady=!destroyed(1)[lane] && !destroyed(2)[lane]
+                        && !cyberDisabled[1][lane] && !shieldActive[2][lane]
+                        && positions(1)[lane]<15;
+                if(laneReady) animateMove(player,lane,die);
+                else message="لا يمكن تنفيذ الحركة المضاعفة بهذا السلاح";
+            }
+            invalidate();
+        }
+        private void applySelectedBattleCardToLane(final int card,final int lane) {
+            boolean revealsSmoke=smokeActive[1][lane]
+                    && (card==CardInventory.REPAIR || card==CardInventory.SHIELD || card==CardInventory.DOUBLE_DICE);
+            if(revealsSmoke) {
+                new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("تنبيه: كشف السلاح")
+                    .setMessage("هذا السلاح مختبئ بستار دخان. استخدام البطاقة عليه سيزيل الدخان ويكشف موقعه للخصم. هل تريد المتابعة؟")
+                    .setNegativeButton("إلغاء",null)
+                    .setPositiveButton("متابعة",(dialog,which)->{
+                        if(executeBattleCard(card,lane)) {
+                            smokeActive[1][lane]=false;smokeTurns[1][lane]=0;
+                            message="تم استخدام البطاقة وأُزيل ستار الدخان — أصبح السلاح مكشوفاً";
+                            finishSelectedBattleCard(card,lane);
+                        } else { message="لا يمكن استخدام البطاقة على هذا السلاح الآن";invalidate(); }
+                    }).show();
+                return;
+            }
+            if(executeBattleCard(card,lane))finishSelectedBattleCard(card,lane);
+            else message="لا يمكن استخدام البطاقة على هذا السلاح الآن";
+        }
         private boolean executeBattleCard(int type,int lane) {
             if(type==CardInventory.DOUBLE_DICE) {
                 if(lane>=0 && lane<3 && triggerMineByCardAttempt(1,lane))return false;
@@ -812,7 +846,7 @@ public class MainActivity extends Activity {
             }
             if(lane<0 || lane>2)return false;
             if(type==CardInventory.REPAIR) {
-                if(smokeActive[1][lane] || (mineTargetSide==1 && mineLane==lane))return false;
+                if(mineTargetSide==1 && mineLane==lane)return false;
                 if(!destroyed(1)[lane] && !cyberDisabled[1][lane])return false;
                 if(!useCard(type))return false;
                 // Cyber-disabled weapons keep their exact progress; only a destroyed
@@ -1295,7 +1329,7 @@ public class MainActivity extends Activity {
             "تختار السلاح أولاً، ثم تضاعف رمية النرد التالية وتنفذ الحركة عليه.",
             "يعطّل سلاحاً واحداً لدى الخصم لدورين كاملين، ويخترق الدرع دون إلغائه.",
             "يحمي سلاحاً واحداً من الطلقات العادية لمدة دورين كاملين للخصم.",
-            "تزيد عداد الطلقات على أسلحة الخصم الثلاثة بمقدار طلقة واحدة.",
+            "تزيد عداد الطلقات على أسلحة الخصم الثلاثة 3 طلقات لكل سلاح.",
             "يخفي سلاحاً واحداً ويحميه 3 أدوار للخصم، باستثناء الضربة الجوية.",
             "بعد النرد، اختر إضافة 0 أو 1 أو 2 أو 3 إلى النتيجة.",
             "يكشف السلاح المستهدف بعد رمية الخصم ويمنحك 10 ثوانٍ لاستخدام الدرع.",
@@ -1318,17 +1352,21 @@ public class MainActivity extends Activity {
             txt(c,String.valueOf(count),(l+r)*.5f,b-h*.008f,h*.018f,Color.WHITE,true);
         }
         private void drawInventory(Canvas c) {
-            txt(c,"مخزن البطاقات",w*.5f,h*.115f,h*.045f,Color.rgb(245,190,65),true);
-            txt(c,"إجمالي البطاقات: "+cardInventory.getTotalCount(),w*.5f,h*.165f,h*.024f,Color.WHITE,true);
+            txt(c,"مخزن البطاقات",w*.5f,h*.115f,h*.052f,Color.rgb(245,190,65),true);
+            txt(c,"إجمالي البطاقات: "+cardInventory.getTotalCount(),w*.5f,h*.165f,h*.029f,Color.WHITE,true);
             int[] counts=cardInventory.getCounts();
             float left=w*.055f,gap=w*.018f,cardW=(w*.872f-gap)/2f,top=h*.205f,cardH=h*.128f,rowGap=h*.012f;
             for(int i=0;i<CardInventory.CARD_TYPES;i++) {
                 int col=i%2,row=i/2;float l=left+col*(cardW+gap),t=top+row*(cardH+rowGap);
                 box(c,l,t,l+cardW,t+cardH,Color.rgb(27,43,36));
                 drawCardTile(c,i,l+w*.012f,t+h*.012f,l+w*.075f,t+h*.078f,false,counts[i]>0,counts[i]);
-                txt(c,cardNames[i],l+cardW*.60f,t+h*.038f,h*.026f,Color.WHITE,true);
-                txt(c,"العدد: "+counts[i],l+cardW*.60f,t+h*.078f,h*.020f,Color.rgb(245,190,65),true);
-                txt(c,cardDescriptions[i],l+cardW*.60f,t+h*.108f,h*.014f,Color.rgb(220,229,216),false);
+                float titleSize=h*.030f;p.setTextSize(titleSize);p.setFakeBoldText(true);
+                while(p.measureText(cardNames[i])>cardW*.76f && titleSize>h*.021f){titleSize*=.94f;p.setTextSize(titleSize);}
+                txt(c,cardNames[i],l+cardW*.60f,t+h*.038f,titleSize,Color.WHITE,true);
+                txt(c,"العدد: "+counts[i],l+cardW*.60f,t+h*.078f,h*.024f,Color.rgb(245,190,65),true);
+                float descSize=h*.018f;p.setTextSize(descSize);p.setFakeBoldText(false);
+                while(p.measureText(cardDescriptions[i])>cardW*.78f && descSize>h*.013f){descSize*=.94f;p.setTextSize(descSize);}
+                txt(c,cardDescriptions[i],l+cardW*.60f,t+h*.108f,descSize,Color.rgb(220,229,216),false);
             }
             btn(c,"عودة",w*.41f,h*.91f,w*.59f,h*.985f,dark);
         }
@@ -1343,31 +1381,31 @@ public class MainActivity extends Activity {
             box(c,left,headerTop,right,headerBottom,Color.rgb(25,43,35));
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.003f));p.setColor(accent);
             c.drawRoundRect(new RectF(left,headerTop,right,headerBottom),h*.014f,h*.014f,p);p.setStyle(Paint.Style.FILL);
-            txt(c,weekly?"المهمات الأسبوعية":"المهمات اليومية",(left+right)*.5f,h*.224f,h*.027f,Color.WHITE,true);
-            txt(c,"التجديد خلال: "+missionManager.getCountdown(weekly),(left+right)*.5f,h*.264f,h*.016f,Color.rgb(240,211,145),true);
+            txt(c,weekly?"المهمات الأسبوعية":"المهمات اليومية",(left+right)*.5f,h*.224f,h*.032f,Color.WHITE,true);
+            txt(c,"التجديد خلال: "+missionManager.getCountdown(weekly),(left+right)*.5f,h*.264f,h*.020f,Color.rgb(240,211,145),true);
             float top=h*.285f,rowH=h*.122f;
             for(int i=0;i<tasks.size();i++) {
                 MissionManager.MissionTask task=tasks.get(i);
                 float y=top+i*rowH;
                 box(c,left,y,right,y+rowH-h*.008f,Color.rgb(238,244,232));
-                float titleSize=h*.019f;
+                float titleSize=h*.024f;
                 p.setTextSize(titleSize);p.setFakeBoldText(true);
                 float maxTextWidth=(right-left)*.88f;
-                while(p.measureText(task.title)>maxTextWidth && titleSize>h*.013f){titleSize*=.94f;p.setTextSize(titleSize);}
+                while(p.measureText(task.title)>maxTextWidth && titleSize>h*.017f){titleSize*=.94f;p.setTextSize(titleSize);}
                 txt(c,task.title,(left+right)*.5f,y+h*.027f,titleSize,Color.rgb(35,55,42),true);
                 String meta=missionDifficultyName(task.difficulty)+"  •  "+task.reward+" "+(task.reward==1?"بطاقة":"بطاقات");
-                txt(c,meta,(left+right)*.5f,y+h*.052f,h*.015f,Color.rgb(130,91,29),false);
+                txt(c,meta,(left+right)*.5f,y+h*.052f,h*.018f,Color.rgb(130,91,29),false);
                 float barWidth=(right-left)*.52f,l=(left+right-barWidth)*.5f,r=l+barWidth;
                 float barY=y+h*.071f,barH=h*.012f;
                 box(c,l,barY,r,barY+barH,Color.rgb(205,215,202));
                 float ratio=Math.min(1f,(float)task.progress/Math.max(1,task.target));
                 if(ratio>0)box(c,l,barY,l+(r-l)*ratio,barY+barH,task.completed?Color.rgb(35,155,83):Color.rgb(65,130,180));
-                txt(c,task.progress+"/"+task.target,(left+right)*.5f,y+h*.108f,h*.014f,Color.rgb(45,65,48),true);
+                txt(c,task.progress+"/"+task.target,(left+right)*.5f,y+h*.108f,h*.018f,Color.rgb(45,65,48),true);
                 if(task.completed)txt(c,"✓",right-h*.025f,y+h*.030f,h*.030f,Color.rgb(25,155,75),true);
             }
         }
         private void drawMissions(Canvas c) {
-            txt(c,"المهمات العسكرية",w*.5f,h*.115f,h*.052f,Color.rgb(245,190,65),true);
+            txt(c,"المهمات العسكرية",w*.5f,h*.115f,h*.058f,Color.rgb(245,190,65),true);
             // عمودان متجاوران: اليومية على اليمين والأسبوعية على اليسار.
             drawMissionColumn(c,true,w*.035f,w*.485f,Color.rgb(155,105,28));
             drawMissionColumn(c,false,w*.515f,w*.965f,Color.rgb(55,125,175));
@@ -1595,20 +1633,20 @@ public class MainActivity extends Activity {
         }
         private float drawHelpLine(Canvas c,String text,float y,int color,float size,boolean bold) {
             p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);
-            p.setTextSize(size);p.setFakeBoldText(bold);
-            while(p.measureText(text)>w*.82f && p.getTextSize()>h*.014f)p.setTextSize(p.getTextSize()*.94f);
+            p.setTextSize(Math.max(size,h*.024f));p.setFakeBoldText(bold);
+            while(p.measureText(text)>w*.82f && p.getTextSize()>h*.017f)p.setTextSize(p.getTextSize()*.94f);
             p.setColor(color);c.drawText(text,w*.5f,y,p);
             p.setFakeBoldText(false);
             return y+h*.043f;
         }
         private float drawHelpHeading(Canvas c,String text,float y) {
             y+=h*.012f;
-            txt(c,text,w*.5f,y,h*.027f,Color.rgb(155,105,28),true);
+            txt(c,text,w*.5f,y,h*.034f,Color.rgb(155,105,28),true);
             return y+h*.052f;
         }
         private void drawHelp(Canvas c) {
             box(c,w*.055f,h*.105f,w*.945f,h*.895f,Color.rgb(244,248,235));
-            txt(c,"دليل لعبة جنيرال",w*.5f,h*.15f,h*.045f,dark,true);
+            txt(c,"دليل لعبة جنيرال",w*.5f,h*.15f,h*.052f,dark,true);
             c.save();
             c.clipRect(w*.075f,h*.185f,w*.925f,h*.875f);
             c.translate(0,-helpScrollY);
@@ -1629,18 +1667,21 @@ public class MainActivity extends Activity {
             y=drawHelpLine(c,"يمكن اللعب بلاعبين على الجهاز نفسه، أو ضد جنيرال الكمبيوتر.",y,dark,h*.021f,false);
             y=drawHelpLine(c,"اختر مستوى جنيرال: مبتدئ، متوسط، محترف أو أسطوري.",y,dark,h*.021f,false);
             y=drawHelpLine(c,"تتوفر أيضاً خيارات اللعب عبر Wi-Fi والإنترنت.",y,dark,h*.021f,false);
-            y=drawHelpHeading(c,"البطاقات الأربع",y);
-            y=drawHelpLine(c,"قبل مباراة جنيرال اختر حتى 3 أنواع مختلفة من البطاقات.",y,dark,h*.021f,true);
-            y=drawHelpLine(c,"إصلاح السلاح: يعيد السلاح المدمّر للعمل ويعيده إلى بداية مساره،",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"وعند إزالة التعطيل السيبراني تبقى الطلقات كما هي.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"مضاعفة النرد: اختر السلاح أولاً؛ تتضاعف رمية النرد التالية وتتحرك به تلقائياً.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"الحرب السيبرانية: تعطل سلاح جنيرال لدورين كاملين.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"درع الحماية: يحمي سلاحاً واحداً من الهجمات العادية لدورين.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"الهجوم السيبراني يستطيع اختراق الدرع.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"البطاقات متاحة في اللعب ضد جنيرال فقط، وبطاقة واحدة في الدور.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"البطاقة المستخدمة تُستهلك؛ وغير المستخدمة تعود بعد المباراة الطبيعية.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"عند الاستسلام تُفقد كل البطاقات التي دخلت بها المباراة.",y,dark,h*.020f,false);
-            y=drawHelpHeading(c,"المهمات والمكافآت",y);
+            y=drawHelpHeading(c,"البطاقات العشر وطريقة استخدامها",y);
+            y=drawHelpLine(c,"قبل مباراة جنيرال اختر حتى 3 أنواع مختلفة من مخزنك؛ لكل بطاقة استخدام واحد في المباراة.",y,dark,h*.024f,true);
+            y=drawHelpLine(c,"إصلاح السلاح: يعيد السلاح المدمّر إلى بداية المسار، أو يزيل التعطيل السيبراني مع إبقاء الطلقات.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"مضاعفة النرد: اختر سلاحك أولاً؛ تضاعف رمية النرد الحالية أو تنتظر الرمية التالية إذا لم ترمِ بعد.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"الحرب السيبرانية: تعطل سلاح جنيرال لدورين كاملين، ويمكنها اختراق درع الحماية.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"درع الحماية: يحمي سلاحك من الهجمات العادية لدورين كاملين للخصم.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"الضربة الجوية: تضيف 3 طلقات إلى عداد كل سلاح من أسلحة جنيرال الثلاثة.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"ستار الدخان: يخفي سلاحاً ويحميه من استهداف الخصم لمدة 3 أدوار؛ استخدام بطاقة عليه يزيل الدخان ويكشفه بعد التنبيه.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"الإمداد العسكري: بعد رمية النرد تختار إضافة 1 أو 2 أو 3 إلى النتيجة، أو تلغي دون استهلاك البطاقة.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"الرادار: يراقب هجوم الخصم القادم، ويكشف السلاح المستهدف ويمنحك 10 ثوانٍ لتفعيل الدرع.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"حقل الألغام: يزرع لغماً مخفياً في سلاح من أسلحة جنيرال؛ أول محاولة استخدام تخصم حتى 3 طلقات.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"كاشف الألغام: يفحص معسكرات الخصم الثلاثة ويكشف اللغم ويبطل مفعوله دون ضرر.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"البطاقات متاحة في اللعب ضد جنيرال فقط، ولا تستخدم أكثر من بطاقة واحدة في الدور.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"البطاقة المستخدمة تُستهلك؛ وغير المستخدمة تعود بعد المباراة الطبيعية. عند الاستسلام تُفقد بطاقات المباراة كلها.",y,dark,h*.024f,false);
+            y=drawHelpHeading(c,"المهمات والمكافآت والرتب",y);
             y=drawHelpLine(c,"تظهر 3 مهمات يومية و5 مهمات أسبوعية، ضد جنيرال فقط.",y,dark,h*.021f,false);
             y=drawHelpLine(c,"لا تحتسب المهمات في اللعب المحلي بين لاعبين أو عبر الإنترنت.",y,dark,h*.021f,false);
             y=drawHelpLine(c,"اليومية: سهلة واحدة ومتوسطة واحدة وصعبة واحدة.",y,dark,h*.021f,false);
@@ -1662,6 +1703,13 @@ public class MainActivity extends Activity {
             y=drawHelpLine(c,"يمكنك التحكم بالمؤثرات الصوتية والموسيقى واهتزاز الهاتف",y,dark,h*.021f,false);
             y=drawHelpLine(c,"واهتزاز الشاشة عند تدمير أي سلاح من الإعدادات.",y,dark,h*.021f,false);
             y=drawHelpLine(c,"المهمات ومخزن البطاقات محفوظان محلياً على الجهاز.",y,dark,h*.021f,false);
+            y=drawHelpLine(c,"نقاط الرتب تُكتسب من الفوز على جنيرال، وتزداد مع ارتفاع مستوى الصعوبة؛ الفوز المثالي يمنح مكافأة إضافية.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"سجل المواجهات ولوحة التقدم يعرضان نتائجك وتقدمك العسكري، وتُحفظ بيانات المخزن والمهمات على الجهاز.",y,dark,h*.024f,false);
+            y=drawHelpHeading(c,"اللعب الجماعي والإعدادات",y);
+            y=drawHelpLine(c,"اللعب المحلي: لاعبان على الهاتف نفسه، ويتناوب اللاعبان على رمي النرد واختيار السلاح.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"اللعب عبر Wi-Fi: يتصل جهازان على الشبكة المحلية نفسها؛ يتولى أحدهما إنشاء المباراة والآخر الانضمام.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"اللعب عبر الإنترنت: أنشئ مباراة أو انضم إلى مباراة لاعب آخر عند توفر الاتصال.",y,dark,h*.024f,false);
+            y=drawHelpLine(c,"من الإعدادات تستطيع تشغيل أو إيقاف المؤثرات الصوتية والموسيقى والاهتزاز واهتزاز الشاشة.",y,dark,h*.024f,false);
             y=drawHelpHeading(c,"معلومات المطور وحقوق الموسيقى",y);
             y=drawHelpLine(c,"لبناء APK: افتح Actions ثم Build GENERAL Android APK،",y,dark,h*.020f,false);
             y=drawHelpLine(c,"اختر Build GENERAL Android APK ثم Run workflow وانتظر نجاح البناء.",y,dark,h*.020f,false);
@@ -1671,7 +1719,7 @@ public class MainActivity extends Activity {
             y=drawHelpLine(c,"peritune.com/dramatic2/ — رخصة Creative Commons Attribution (CC BY).",y,dark,h*.018f,false);
             helpContentHeight=(int)(y+h*.04f);
             c.restore();
-            txt(c,"اسحب للأعلى والأسفل لقراءة الدليل كاملاً",w*.5f,h*.888f,h*.016f,Color.rgb(85,105,88),false);
+            txt(c,"اسحب للأعلى والأسفل لقراءة الدليل كاملاً",w*.5f,h*.888f,h*.019f,Color.rgb(85,105,88),false);
             btn(c,"العودة إلى الرئيسية",w*.38f,h*.91f,w*.62f,h*.985f,dark);
         }
 
@@ -1974,6 +2022,7 @@ public class MainActivity extends Activity {
             return false;
         }
         private void resetMatch() {
+            battleBackgroundName=random.nextBoolean()?"1793716501127.jpg":"1793905666116.jpg";
             matchEpoch++;
             for(int i=0;i<CardInventory.CARD_TYPES;i++)matchRewardCounts[i]=0;
             for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}clearWinEffects();
@@ -2367,24 +2416,34 @@ public class MainActivity extends Activity {
             p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
             c.drawBitmap(bitmap,null,dst,p);
         }
+        private void drawScaledWeaponEffect(Canvas c,Bitmap bitmap,float cx,float cy,float scale,int alpha) {
+            if(bitmap==null)return;
+            float fw=w*.105f*scale,fh=h*.105f*scale;
+            int oldAlpha=p.getAlpha();
+            p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(alpha);p.setFilterBitmap(true);
+            c.drawBitmap(bitmap,null,new RectF(cx-fw*.5f,cy-fh*.5f,cx+fw*.5f,cy+fh*.5f),p);
+            p.setAlpha(oldAlpha);
+        }
+        // Effects are drawn behind the vehicle so the weapon stays fully visible.
         private void drawWeaponCardEffect(Canvas c,int side,int lane,float cx,float cy) {
             long now=System.currentTimeMillis();
             if(smokeActive[side][lane]) {
-                if(smokeCardImage!=null)drawCardImage(c,smokeCardImage,cx,cy);
+                if(smokeEffectImage!=null)drawScaledWeaponEffect(c,smokeEffectImage,cx,cy,1.58f,230);
                 else txt(c,"🌫",cx,cy-h*.065f,h*.050f,Color.WHITE,true);
-            } else if(repairEffectUntil[side][lane]>now) drawCardImage(c,repairCardImage,cx,cy);
-            else if(cyberDisabled[side][lane]) drawCardImage(c,cyberCardImage,cx,cy);
-            else if(shieldActive[side][lane]) drawCardImage(c,shieldCardImage,cx,cy);
-            // Actual landmine artwork sits in front of the targeted weapon.
-            if(mineTargetSide==side && mineLane==lane) {
-                float mineX=cx+(side==1?-1f:1f)*w*.034f;
-                float mineY=cy+h*.022f;
-                float mineW=w*.038f,mineH=h*.050f;
-                if(landMineImage!=null) {
-                    p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
-                    c.drawBitmap(landMineImage,null,new RectF(mineX-mineW*.5f,mineY-mineH*.5f,mineX+mineW*.5f,mineY+mineH*.5f),p);
-                } else txt(c,"💣",mineX,mineY+h*.012f,h*.045f,Color.rgb(255,215,80),true);
-            }
+            } else if(repairEffectUntil[side][lane]>now) drawScaledWeaponEffect(c,repairCardImage,cx,cy,1.32f,225);
+            else if(cyberDisabled[side][lane]) drawScaledWeaponEffect(c,cyberCardImage,cx,cy,1.32f,225);
+            else if(shieldActive[side][lane]) drawScaledWeaponEffect(c,shieldCardImage,cx,cy,1.32f,225);
+        }
+        // Mines remain in front of the weapon, separate from the background effects.
+        private void drawWeaponMineEffect(Canvas c,int side,int lane,float cx,float cy) {
+            if(mineTargetSide!=side || mineLane!=lane)return;
+            float mineX=cx+(side==1?-1f:1f)*w*.034f;
+            float mineY=cy+h*.022f;
+            float mineW=w*.038f,mineH=h*.050f;
+            if(landMineImage!=null) {
+                p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
+                c.drawBitmap(landMineImage,null,new RectF(mineX-mineW*.5f,mineY-mineH*.5f,mineX+mineW*.5f,mineY+mineH*.5f),p);
+            } else txt(c,"💣",mineX,mineY+h*.012f,h*.045f,Color.rgb(255,215,80),true);
         }
 
         @Override protected void onDraw(Canvas c) {
@@ -2523,10 +2582,12 @@ public class MainActivity extends Activity {
                 // Draw the GIF behind the weapon so the weapon remains unobstructed.
                 if(blueWinEffect[lane]) drawWinEffect(c,w*.925f,y-h*.025f);
                 if(redWinEffect[lane]) drawWinEffect(c,w*.075f,y-h*.025f);
-                drawWeapon(c,lane,w*.925f,y,blue,false);
-                drawWeapon(c,lane,w*.075f,y,red,true);
                 drawWeaponCardEffect(c,1,lane,w*.925f,y);
                 drawWeaponCardEffect(c,2,lane,w*.075f,y);
+                drawWeapon(c,lane,w*.925f,y,blue,false);
+                drawWeapon(c,lane,w*.075f,y,red,true);
+                drawWeaponMineEffect(c,1,lane,w*.925f,y);
+                drawWeaponMineEffect(c,2,lane,w*.075f,y);
                 if(dead1[lane]) drawFire(c,w*.925f,y);
                 if(dead2[lane]) drawFire(c,w*.075f,y);
                 if(choosing && winner==0) {
@@ -2760,17 +2821,7 @@ public class MainActivity extends Activity {
                     for(int i=0;i<3;i++) if(Math.abs(y-weaponRows[i])<h*.045f) lane=i;
                 }
                 if(lane>=0 && mode==2 && player==1 && selectedBattleCard>=0) {
-                    int card=selectedBattleCard;
-                    if(executeBattleCard(card,lane)) {
-                        selectedBattleCard=-1;cardTargeting=false;
-                        if(card==CardInventory.DOUBLE_DICE && die>0) {
-                            boolean laneReady=!destroyed(1)[lane] && !destroyed(2)[lane]
-                                    && !cyberDisabled[1][lane] && !shieldActive[2][lane]
-                                    && positions(1)[lane]<15;
-                            if(laneReady) animateMove(player,lane,die);
-                            else message="لا يمكن تنفيذ الحركة المضاعفة بهذا السلاح";
-                        }
-                    } else message="لا يمكن استخدام البطاقة على هذا السلاح الآن";
+                    applySelectedBattleCardToLane(selectedBattleCard,lane);
                 } else if(lane>=0) {
                     if(mineTargetSide==player && mineLane==lane)animateMove(player,lane,die);
                     else if(!canMove(player,lane))message="هذه الحركة غير ممكنة — اختر سلاحاً آخر";

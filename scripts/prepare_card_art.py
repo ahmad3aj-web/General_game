@@ -51,6 +51,7 @@ def make_transparent(src_name, dst_name, min_luma=78, max_chroma=72):
 make_transparent("card_repair.jpg", "card_repair.png")
 make_transparent("card_cyber.jpg", "card_cyber.png")
 make_transparent("card_shield.png", "card_shield_transparent.png")
+make_transparent("Smoke.png", "smoke_effect.png", min_luma=238, max_chroma=24)
 
 # The newly uploaded aircraft and mine are stored as base64 text so GitHub's
 # text-only file uploader can preserve the original JPEG bytes. Decode them
