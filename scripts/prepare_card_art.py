@@ -5,7 +5,7 @@ import numpy as np
 
 ROOT = Path("app/src/main/assets/ui")
 
-def make_transparent(src_name, dst_name):
+def make_transparent(src_name, dst_name, min_luma=78, max_chroma=72):
     path = ROOT / src_name
     image = Image.open(path).convert("RGBA")
     pixels = np.array(image, dtype=np.uint8)
@@ -66,7 +66,7 @@ def make_transparent_encoded(encoded_name, dst_name, min_luma=78, max_chroma=72)
     rgb = pixels[:, :, :3].astype(np.int16)
     lo = rgb.min(axis=2)
     hi = rgb.max(axis=2)
-    neutral = ((hi - lo) <= 72) & (lo >= 78)
+    neutral = ((hi - lo) <= max_chroma) & (lo >= min_luma)
     h, w = neutral.shape
     seen = np.zeros((h, w), dtype=np.bool_)
     q = deque()
