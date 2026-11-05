@@ -732,10 +732,12 @@ public class MainActivity extends Activity {
         private void drawBattleCards(Canvas c) {
             if(mode!=2 || !cardInventory.isMatchActive())return;
             boolean[] active=cardInventory.getActiveCards(),used=cardInventory.getUsedCards();
-            float cx=w*.835f, top=h*.145f, width=w*.052f, gap=w*.012f;
-            for(int type=0;type<4;type++) if(active[type]&&!used[type]) {
-                float left=cx-(width*2+gap*1.5f)+(type%4)*(width+gap);
-                drawCardTile(c,type,left,top,left+width,top+h*.075f,selectedBattleCard==type,true,1);
+            float width=w*.048f,gap=w*.006f,top=h*.145f,rowGap=h*.008f;
+            float left=w*.704f;
+            for(int type=0;type<CardInventory.CARD_TYPES;type++) if(active[type]&&!used[type]) {
+                int row=type/5,col=type%5;
+                float x=left+col*(width+gap),y=top+row*(h*.055f+rowGap);
+                drawCardTile(c,type,x,y,x+width,y+h*.055f,selectedBattleCard==type,true,1);
             }
         }
         private void drawCardUseNotice(Canvas c) {
@@ -775,16 +777,14 @@ public class MainActivity extends Activity {
         }
         private void drawGeneralBattleCards(Canvas c) {
             if(mode!=2 || winner!=0 || battleIntro)return;
-            int count=0;
-            for(int type=0;type<CardInventory.CARD_TYPES;type++) if(generalCards[type])count++;
-            if(count==0)return;
-            float width=w*.043f,gap=w*.008f,left=w*.035f,top=h*.145f;
-            txt(c,"بطاقات جنيرال",left+w*.095f,top-h*.012f,h*.018f,Color.rgb(235,194,105),true);
+            float width=w*.043f,gap=w*.006f,left=w*.035f,top=h*.145f,rowGap=h*.008f;
+            txt(c,"بطاقات جنيرال",left+w*.11f,top-h*.012f,h*.018f,Color.rgb(235,194,105),true);
             int slot=0;
             for(int type=0;type<CardInventory.CARD_TYPES;type++) if(generalCards[type]) {
-                float l=left+slot*(width+gap);
+                int row=slot/5,col=slot%5;
+                float x=left+col*(width+gap),y=top+row*(h*.055f+rowGap);
                 boolean available=!generalCardsUsed[type];
-                drawCardTile(c,type,l,top,l+width,top+h*.065f,false,available,available?1:0);
+                drawCardTile(c,type,x,y,x+width,y+h*.055f,false,available,available?1:0);
                 slot++;
             }
         }
@@ -1144,13 +1144,19 @@ public class MainActivity extends Activity {
             if(left){a.moveTo(cx+d*.55f,cy-d);a.lineTo(cx-d*.55f,cy);a.lineTo(cx+d*.55f,cy+d);}else{a.moveTo(cx-d*.55f,cy-d);a.lineTo(cx+d*.55f,cy);a.lineTo(cx-d*.55f,cy+d);}
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.007f));p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeJoin(Paint.Join.ROUND);p.setColor(Color.WHITE);c.drawPath(a,p);p.setStrokeCap(Paint.Cap.BUTT);p.setStrokeJoin(Paint.Join.MITER);p.setStyle(Paint.Style.FILL);
         }
-        private final String[] cardNames = {"إصلاح السلاح","مضاعفة النرد","الحرب السيبرانية","درع الحماية"};
-        private final String[] cardIcons = {"🔧","🎲","💻","🛡"};
+        private final String[] cardNames = {"إصلاح السلاح","مضاعفة النرد","الحرب السيبرانية","درع الحماية","الضربة الجوية","ستار الدخان","الإمداد العسكري","الرادار","حقل الألغام","كشف الألغام"};
+        private final String[] cardIcons = {"🔧","🎲","💻","🛡","✈","🌫","📦","📡","💣","🔎"};
         private final String[] cardDescriptions = {
             "يعيد السلاح المدمّر مع طلقاته كاملة، أو يزيل التعطيل السيبراني دون تغيير الطلقات.",
             "تختار السلاح أولاً، ثم تضاعف رمية النرد التالية وتنفذ الحركة عليه.",
             "يعطّل سلاحاً واحداً لدى الخصم لدورين كاملين، ويخترق الدرع دون إلغائه.",
-            "يحمي سلاحاً واحداً من الطلقات العادية لمدة دورين كاملين للخصم."
+            "يحمي سلاحاً واحداً من الطلقات العادية لمدة دورين كاملين للخصم.",
+            "تزيد عداد الطلقات على أسلحة الخصم الثلاثة بمقدار طلقة واحدة.",
+            "يخفي سلاحاً واحداً ويحميه 3 أدوار للخصم، باستثناء الضربة الجوية.",
+            "بعد النرد، اختر إضافة 0 أو 1 أو 2 أو 3 إلى النتيجة.",
+            "يكشف السلاح المستهدف بعد رمية الخصم ويمنحك 10 ثوانٍ لاستخدام الدرع.",
+            "يزرع لغماً مخفياً في سلاح واحد؛ أول محاولة استخدام تفجّره وتخصم حتى 3 طلقات.",
+            "يكشف اللغم في معسكر الخصم ويبطل مفعوله دون ضرر."
         };
         private void drawCardTile(Canvas c,int type,float l,float t,float r,float b,boolean selected,boolean enabled,int count) {
             int edge=selected?Color.rgb(245,190,65):Color.rgb(125,145,130);
@@ -1163,17 +1169,17 @@ public class MainActivity extends Activity {
             txt(c,String.valueOf(count),(l+r)*.5f,b-h*.008f,h*.018f,Color.WHITE,true);
         }
         private void drawInventory(Canvas c) {
-            txt(c,"مخزن البطاقات",w*.5f,h*.16f,h*.055f,Color.rgb(245,190,65),true);
-            txt(c,"إجمالي البطاقات: "+cardInventory.getTotalCount(),w*.5f,h*.215f,h*.028f,Color.WHITE,true);
+            txt(c,"مخزن البطاقات",w*.5f,h*.115f,h*.045f,Color.rgb(245,190,65),true);
+            txt(c,"إجمالي البطاقات: "+cardInventory.getTotalCount(),w*.5f,h*.165f,h*.024f,Color.WHITE,true);
             int[] counts=cardInventory.getCounts();
-            float left=w*.10f,gap=w*.025f,cardW=(w*.80f-gap)/2f,top=h*.29f,cardH=h*.235f;
-            for(int i=0;i<4;i++) {
-                int col=i%2,row=i/2;float l=left+col*(cardW+gap),t=top+row*(cardH+h*.045f);
+            float left=w*.055f,gap=w*.018f,cardW=(w*.872f-gap)/2f,top=h*.205f,cardH=h*.128f,rowGap=h*.012f;
+            for(int i=0;i<CardInventory.CARD_TYPES;i++) {
+                int col=i%2,row=i/2;float l=left+col*(cardW+gap),t=top+row*(cardH+rowGap);
                 box(c,l,t,l+cardW,t+cardH,Color.rgb(27,43,36));
-                drawCardTile(c,i,l+w*.015f,t+h*.018f,l+w*.105f,t+h*.105f,false,counts[i]>0,counts[i]);
-                txt(c,cardNames[i],l+cardW*.58f,t+h*.075f,h*.033f,Color.WHITE,true);
-                txt(c,"العدد: "+counts[i],l+cardW*.58f,t+h*.135f,h*.027f,Color.rgb(245,190,65),true);
-                txt(c,cardDescriptions[i],l+cardW*.58f,t+h*.185f,h*.019f,Color.rgb(220,229,216),false);
+                drawCardTile(c,i,l+w*.012f,t+h*.012f,l+w*.075f,t+h*.078f,false,counts[i]>0,counts[i]);
+                txt(c,cardNames[i],l+cardW*.60f,t+h*.038f,h*.026f,Color.WHITE,true);
+                txt(c,"العدد: "+counts[i],l+cardW*.60f,t+h*.078f,h*.020f,Color.rgb(245,190,65),true);
+                txt(c,cardDescriptions[i],l+cardW*.60f,t+h*.108f,h*.014f,Color.rgb(220,229,216),false);
             }
             btn(c,"عودة",w*.41f,h*.91f,w*.59f,h*.985f,dark);
         }
@@ -1294,8 +1300,12 @@ public class MainActivity extends Activity {
                 drawAvatar(c,avatars[0],w*.765f,h*.405f,h*.135f,true);arrowButton(c,w*.64f,h*.405f,true);arrowButton(c,w*.89f,h*.405f,false);
                 txt(c,"الشخصية "+(avatars[0]+1)+" من 17",w*.765f,h*.565f,h*.027f,dark,true);
                 box(c,w*.585f,h*.615f,w*.945f,h*.685f,Color.rgb(27,48,39));txt(c,playerNames[0],w*.765f,h*.655f,h*.034f,Color.WHITE,true);txt(c,"اضغط لتعديل الاسم",w*.765f,h*.678f,h*.018f,Color.rgb(221,229,215),false);
-                txt(c,"بطاقاتك للمباراة — اختر حتى 3",w*.765f,h*.725f,h*.020f,dark,true);
-                int[] counts=cardInventory.getCounts();for(int i=0;i<4;i++){float l=w*(.592f+i*.087f),r=l+w*.078f;drawCardTile(c,i,l,h*.745f,r,h*.865f,cardInventory.isSelected(i),counts[i]>0,counts[i]);}
+                txt(c,"بطاقاتك للمباراة — اختر حتى 3",w*.765f,h*.715f,h*.020f,dark,true);
+                int[] counts=cardInventory.getCounts();
+                for(int i=0;i<CardInventory.CARD_TYPES;i++){
+                    int row=i/5,col=i%5;float l=w*(.585f+col*.071f),t=h*(.735f+row*.067f);
+                    drawCardTile(c,i,l,t,l+w*.064f,t+h*.058f,cardInventory.isSelected(i),counts[i]>0,counts[i]);
+                }
             } else {
                 txt(c,setupSide==1?"اللاعب الأول — الأزرق":"اللاعب الثاني — الأحمر",w*.5f,h*.20f,h*.040f,setupSide==1?blue:red,true);
                 float portraitY=h*.43f;drawAvatar(c,avatars[idx],w*.5f,portraitY,h*.125f,true);arrowButton(c,w*.39f,portraitY,true);arrowButton(c,w*.61f,portraitY,false);
@@ -2253,10 +2263,10 @@ public class MainActivity extends Activity {
                     }
                 }
                 if(mode==2 && x>=w*.585f && x<=w*.945f && y>=h*.615f && y<=h*.70f) { showNameDialog(); return true; }
-                if(mode==2 && y>=h*.745f && y<=h*.865f) {
+                if(mode==2 && y>=h*.735f && y<=h*.865f && x>=w*.585f && x<=w*.933f) {
                     for(int type=0;type<CardInventory.CARD_TYPES;type++) {
-                        float left=w*(.592f+type*.087f), right=left+w*.078f;
-                        if(x>=left && x<=right) {
+                        int row=type/5,col=type%5;float left=w*(.585f+col*.071f),top=h*(.735f+row*.067f);
+                        if(x>=left && x<=left+w*.064f && y>=top && y<=top+h*.058f) {
                             boolean changed=cardInventory.toggleSelection(type);
                             if(!changed) message=cardInventory.getCount(type)<=0?"لا توجد نسخ من هذه البطاقة في المخزن":"تعذر اختيار البطاقة — أعد فتح إعداد المباراة";
                             else message=cardInventory.isSelected(type)?"تم اختيار البطاقة":"تم إلغاء اختيار البطاقة";
@@ -2289,14 +2299,17 @@ public class MainActivity extends Activity {
             }
             if(openingToss)return true;
             if(mode==2 && player==1 && winner==0 && !bonusAttempt
-                    && y>=h*.145f && y<=h*.220f && x>=w*.70f && x<=w*.99f) {
+                    && y>=h*.145f && y<=h*.270f && x>=w*.70f && x<=w*.99f) {
                 boolean[] active=cardInventory.getActiveCards(),used=cardInventory.getUsedCards();
-                float width=w*.052f,gap=w*.012f,cx=w*.835f;int slot=(int)Math.floor((x-(cx-(width*2+gap*1.5f)))/(width+gap));
-                if(slot>=0&&slot<4&&active[slot]&&!used[slot]) {
-                    if(slot==CardInventory.DOUBLE_DICE && doubleDicePending)message="تم تفعيل مضاعفة النرد بالفعل";
-                    else {selectedBattleCard=selectedBattleCard==slot?-1:slot;cardTargeting=selectedBattleCard>=0;message=selectedBattleCard<0?"تم إلغاء اختيار البطاقة":"اختر الهدف على ساحة المعركة";}
+                float width=w*.048f,gap=w*.006f,top=h*.145f,rowGap=h*.008f,left=w*.704f;
+                for(int type=0;type<CardInventory.CARD_TYPES;type++) {
+                    int row=type/5,col=type%5;float l=left+col*(width+gap),t=top+row*(h*.055f+rowGap);
+                    if(x>=l&&x<=l+width&&y>=t&&y<=t+h*.055f&&active[type]&&!used[type]) {
+                        if(type==CardInventory.DOUBLE_DICE && doubleDicePending)message="تم تفعيل مضاعفة النرد بالفعل";
+                        else {selectedBattleCard=selectedBattleCard==type?-1:type;cardTargeting=selectedBattleCard>=0;message=selectedBattleCard<0?"تم إلغاء اختيار البطاقة":"اختر الهدف على ساحة المعركة";}
+                        invalidate();return true;
+                    }
                 }
-                invalidate();return true;
             }
             if((mode==3 && (lanSession==null || !lanSession.isConnected()))
                     || (mode==4 && (onlineSession==null || !onlineSession.isConnected()))) {
