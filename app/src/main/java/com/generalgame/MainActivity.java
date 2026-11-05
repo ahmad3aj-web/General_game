@@ -670,7 +670,6 @@ public class MainActivity extends Activity {
                 if(lane<0 || lane>2 || destroyed(1)[lane] || destroyed(2)[lane]
                         || cyberDisabled[1][lane] || shieldActive[2][lane] || positions(1)[lane]>=15
                         || doubleDicePending)return false;
-                if(die>0 && positions(1)[lane]+die*2>15)return false;
                 if(!useCard(type))return false;
                 if(die>0) {
                     die*=2;
@@ -1148,8 +1147,8 @@ public class MainActivity extends Activity {
         private final String[] cardNames = {"إصلاح السلاح","مضاعفة النرد","الحرب السيبرانية","درع الحماية"};
         private final String[] cardIcons = {"🔧","🎲","💻","🛡"};
         private final String[] cardDescriptions = {
-            "يعيد السلاح المدمّر أو المعطّل إلى العمل ويعيد طلقاته الأصلية.",
-            "يضاعف طلقات رمية النرد إذا استوعبها سلاح واحد بالكامل.",
+            "يعيد السلاح المدمّر مع طلقاته كاملة، أو يزيل التعطيل السيبراني دون تغيير الطلقات.",
+            "تختار السلاح أولاً، ثم تضاعف رمية النرد التالية وتنفذ الحركة عليه.",
             "يعطّل سلاحاً واحداً لدى الخصم لدورين كاملين، ويخترق الدرع دون إلغائه.",
             "يحمي سلاحاً واحداً من الطلقات العادية لمدة دورين كاملين للخصم."
         };
@@ -1475,8 +1474,8 @@ public class MainActivity extends Activity {
             y=drawHelpHeading(c,"البطاقات الأربع",y);
             y=drawHelpLine(c,"قبل مباراة جنيرال اختر حتى 3 أنواع مختلفة من البطاقات.",y,dark,h*.021f,true);
             y=drawHelpLine(c,"إصلاح السلاح: يعيد السلاح المدمّر للعمل ويعيده إلى بداية مساره،",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"أو يزيل التعطيل السيبراني عن سلاحك.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"مضاعفة النرد: تضاعف نتيجة النرد بعد رميه، ثم تختار السلاح.",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"وعند إزالة التعطيل السيبراني تبقى الطلقات كما هي.",y,dark,h*.020f,false);
+            y=drawHelpLine(c,"مضاعفة النرد: اختر السلاح أولاً؛ تتضاعف رمية النرد التالية وتتحرك به تلقائياً.",y,dark,h*.020f,false);
             y=drawHelpLine(c,"الحرب السيبرانية: تعطل سلاح جنيرال لدورين كاملين.",y,dark,h*.020f,false);
             y=drawHelpLine(c,"درع الحماية: يحمي سلاحاً واحداً من الهجمات العادية لدورين.",y,dark,h*.020f,false);
             y=drawHelpLine(c,"الهجوم السيبراني يستطيع اختراق الدرع.",y,dark,h*.020f,false);
@@ -2377,7 +2376,10 @@ public class MainActivity extends Activity {
                     if(executeBattleCard(card,lane)) {
                         selectedBattleCard=-1;cardTargeting=false;
                         if(card==CardInventory.DOUBLE_DICE && die>0) {
-                            if(canMove(player,lane)) animateMove(player,lane,die);
+                            boolean laneReady=!destroyed(1)[lane] && !destroyed(2)[lane]
+                                    && !cyberDisabled[1][lane] && !shieldActive[2][lane]
+                                    && positions(1)[lane]<15;
+                            if(laneReady) animateMove(player,lane,die);
                             else message="لا يمكن تنفيذ الحركة المضاعفة بهذا السلاح";
                         }
                     } else message="لا يمكن استخدام البطاقة على هذا السلاح الآن";
