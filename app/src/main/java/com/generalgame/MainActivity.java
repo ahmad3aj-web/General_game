@@ -1264,7 +1264,7 @@ public class MainActivity extends Activity {
                 int count=0;for(int n:rewards)if(n>0)count++;
                 float tw=Math.min(w*.12f,w*.62f/Math.max(1,count)),th=h*.23f,gap=w*.018f;
                 float total=count*tw+Math.max(0,count-1)*gap,left=(w-total)*.5f;int slot=0;
-                for(int type=0;type<4;type++)if(rewards[type]>0) {
+                for(int type=0;type<CardInventory.CARD_TYPES;type++)if(rewards[type]>0) {
                     float x=left+slot*(tw+gap);
                     drawRewardCard(c,type,x,h*.43f,x+tw,h*.43f+th,rewards[type]);slot++;
                 }
