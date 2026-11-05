@@ -84,13 +84,13 @@ public final class CardInventory {
         edit.commit();
     }
 
-    /** One-time top-up for the first build that includes the mission system. */
+    /** Temporary one-time test bundle: ensure ten copies of every card on all updated installs. */
     public synchronized void topUpCardsToFiveOnce() {
-        final String key = "mission_feature_topup_v1";
+        final String key = "temporary_test_bundle_ten_v1";
         if (prefs.getBoolean(key, false)) return;
         SharedPreferences.Editor edit = prefs.edit();
         for (int i = 0; i < CARD_TYPES; i++) {
-            edit.putInt(COUNT_KEYS[i], Math.max(getCount(i), 5));
+            edit.putInt(COUNT_KEYS[i], Math.max(getCount(i), 10));
         }
         edit.putBoolean(key, true);
         edit.commit();
