@@ -53,7 +53,7 @@ public final class CardInventory {
         recoverInterruptedSetup();
     }
 
-    /** Existing players receive three copies of each newly introduced card once. */
+    /** Existing players receive three copies of every card type once for this release. */
     private synchronized void grantNewCardTypesToExistingInstall() {
         final String key = "new_card_types_bundle_v1";
         if (prefs.getBoolean(key, false)) return;
