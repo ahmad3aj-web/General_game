@@ -1971,6 +1971,52 @@ public class MainActivity extends Activity {
                 }},850);
             }},850);
         }
+        private void finishRadarResponseTurn(int attackingSide) {
+            finishCardTurnEffects(attackingSide);
+            die=0;choosing=false;
+            if(mode==2 && attackingSide==2) {
+                player=1;message="تم صد الهجوم — دورك الآن";setBattleDialogue(1,1);
+            } else if(mode==2) {
+                player=2;message="انتهى دور الهجوم";postDelayed(()->{if(mode==2&&winner==0&&player==2)computerTurn();},500);
+            }
+            invalidate();
+        }
+        private boolean showRadarInterception(final int side,final int lane,final int amount) {
+            if(!radarPending || side==radarOwnerSide)return false;
+            radarPending=false;radarOwnerSide=0;
+            final boolean[] resolved={false};
+            final AlertDialog dialog=new AlertDialog.Builder(MainActivity.this)
+                .setTitle("الرادار كشف الهجوم")
+                .setMessage("الخصم يستهدف "+names[lane]+". لديك 10 ثوانٍ لاستخدام بطاقة الدرع فقط.")
+                .setPositiveButton("استخدام الدرع",(d,which)->{
+                    if(resolved[0])return;
+                    resolved[0]=true;
+                    if(cardAvailable(CardInventory.SHIELD) && useCard(CardInventory.SHIELD)) {
+                        shieldActive[1][lane]=true;shieldTurns[1][lane]=2;
+                        message="استخدمت الدرع بعد كشف الرادار وتم صد الهجوم";
+                        finishRadarResponseTurn(side);
+                    } else {
+                        message="لا تتوفر بطاقة درع — استمر الهجوم";
+                        invalidate();animateMove(side,lane,amount);
+                    }
+                })
+                .setNegativeButton("متابعة الهجوم",(d,which)->{
+                    if(resolved[0])return;
+                    resolved[0]=true;message="تم تجاوز إنذار الرادار";
+                    animateMove(side,lane,amount);
+                }).setCancelable(false).create();
+            dialog.show();
+            if(!cardAvailable(CardInventory.SHIELD))dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+            postDelayed(()->{
+                if(!resolved[0]) {
+                    resolved[0]=true;
+                    if(dialog.isShowing())dialog.dismiss();
+                    message="انتهت مهلة الرادار — استكمل الخصم هجومه";
+                    animateMove(side,lane,amount);
+                }
+            },10000L);
+            invalidate();return true;
+        }
         private void animateMove(final int side, final int lane, final int amount) {
             if(mineTargetSide==side && mineLane==lane) {
                 positions(side)[lane]=Math.max(0,positions(side)[lane]-3);
@@ -1984,6 +2030,7 @@ public class MainActivity extends Activity {
                 } else afterTurn();
                 invalidate();return;
             }
+            if(showRadarInterception(side,lane,amount))return;
             final int epoch=matchEpoch;
             choosing=false;
             playGameSound(lane);
