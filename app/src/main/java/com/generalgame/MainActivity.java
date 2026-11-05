@@ -2394,7 +2394,7 @@ public class MainActivity extends Activity {
                     .setTitle("الرادار كشف الهجوم")
                     .setMessage("الخصم يستهدف "+names[lane]+". لديك 10 ثوانٍ لاستخدام بطاقة الدرع.")
                     .setPositiveButton("استخدام الدرع",(d,which)->{
-                        if(resolved[0])return;resolved[0]=true;radarPauseActive=false;
+                        if(resolved[0])return;resolved[0]=true;
                         if(shieldReady && applyOnlineCardEffect(onlineLocalSide,CardInventory.SHIELD,lane,-1,true)){
                             message="استخدمت الدرع بعد كشف الرادار وتم صد الهجوم";invalidate();
                         } else {message="لا تتوفر بطاقة درع — استمر الهجوم";invalidate();animateMove(side,lane,amount);}
