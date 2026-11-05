@@ -124,7 +124,7 @@ public final class MissionManager {
             String token=taskKey+"-"+period+"-"+task.optString("id");
             if(pending.contains(token+"|"))continue;
             int[] grant=new int[CardInventory.CARD_TYPES];
-            for(int n=0;n<task.optInt("reward",1);n++)grant[random.nextInt(CardInventory.CARD_TYPES)]++;
+            for(int n=0;n<task.optInt("reward",1);n++)grant[inventory.drawRewardCardType()]++;
             addPendingGrant(token,grant);
             pending=prefs.getString("pending_grants","");
         }catch(Exception ignored){}
@@ -167,7 +167,7 @@ public final class MissionManager {
         refreshPeriods();
         String today=dayKey(trustedNow());
         if(today.equals(prefs.getString("login_reward_day","")))return -1;
-        int type=random.nextInt(CardInventory.CARD_TYPES);
+        int type=inventory.drawRewardCardType();
         String token="daily-login-"+today;
         prefs.edit().putString("login_reward_day",today).putInt("login_reward_type",type).putBoolean("login_reward_pending",true).commit();
         applyPendingLoginGrant();
@@ -260,7 +260,7 @@ public final class MissionManager {
                 o.put("completed",true);
                 prefs.edit().putString(key,tasks.toString()).commit();
                 String token=key+"-"+prefs.getString(key.equals("daily_tasks")?"daily_period":"weekly_period","")+"-"+o.optString("id");
-                int[] grant=new int[4];for(int n=0;n<o.optInt("reward",1);n++)grant[random.nextInt(4)]++;
+                int[] grant=new int[4];for(int n=0;n<o.optInt("reward",1);n++)grant[inventory.drawRewardCardType()]++;
                 addPendingGrant(token,grant);
             } else prefs.edit().putString(key,tasks.toString()).commit();
         }catch(Exception ignored){}
@@ -287,7 +287,7 @@ public final class MissionManager {
             if(completed) {
                 String token=key+"-"+prefs.getString(key.equals("daily_tasks")?"daily_period":"weekly_period","")+"-"+o.optString("id");
                 int[] grant=new int[CardInventory.CARD_TYPES];
-                for(int n=0;n<o.optInt("reward",1);n++)grant[random.nextInt(CardInventory.CARD_TYPES)]++;
+                for(int n=0;n<o.optInt("reward",1);n++)grant[inventory.drawRewardCardType()]++;
                 addPendingGrant(token,grant);
             }
         }catch(Exception ignored){}
