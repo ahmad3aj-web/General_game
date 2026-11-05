@@ -2615,6 +2615,7 @@ public class MainActivity extends Activity {
                         postDelayed(new Runnable(){ @Override public void run(){
                             if(epoch!=matchEpoch || (winner!=0 && !bonusAttempt))return;
                             if(mode==2){
+                                finishCardTurnEffects(1);
                                 die=0;player=2;message="دور جنيرال";invalidate();
                                 postDelayed(new Runnable(){@Override public void run(){
                                     if(epoch==matchEpoch && mode==2 && winner==0 && player==2)computerTurn();
