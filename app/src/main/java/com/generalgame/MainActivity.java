@@ -80,6 +80,8 @@ public class MainActivity extends Activity {
         private boolean titleScreen = true;
         private SoundPool gameSoundPool;
         private MediaPlayer backgroundMusic;
+        private final int[] backgroundMusicTracks = {R.raw.battle_music_1,R.raw.battle_music_2,R.raw.battle_music_3};
+        private int selectedBackgroundMusicIndex = -1;
         private boolean soundEnabled, musicEnabled, vibrationEnabled, screenShakeEnabled;
         private long screenShakeStartedAt=0;
         private int helpScrollY=0;
@@ -327,6 +329,7 @@ public class MainActivity extends Activity {
             gameSoundIds[1] = gameSoundPool.load(MainActivity.this, R.raw.aircraft_fire, 1);
             gameSoundIds[2] = gameSoundPool.load(MainActivity.this, R.raw.cannon_fire, 1);
             gameSoundIds[3] = gameSoundPool.load(MainActivity.this, R.raw.explosion, 1);
+            selectedBackgroundMusicIndex=random.nextInt(backgroundMusicTracks.length);
             updateBackgroundMusic();
         }
         private void playGameSound(int index) {
@@ -346,6 +349,19 @@ public class MainActivity extends Activity {
             if(backgroundMusic!=null){backgroundMusic.release();backgroundMusic=null;}
             super.onDetachedFromWindow();
         }
+        private void playRandomBattleMusic() {
+            if(backgroundMusicTracks.length>1) {
+                int next= random.nextInt(backgroundMusicTracks.length-1);
+                if(next>=selectedBackgroundMusicIndex)next++;
+                selectedBackgroundMusicIndex=next;
+            }
+            if(backgroundMusic!=null) {
+                try { backgroundMusic.stop(); } catch(Exception ignored) {}
+                try { backgroundMusic.release(); } catch(Exception ignored) {}
+                backgroundMusic=null;
+            }
+            updateBackgroundMusic();
+        }
         private void updateBackgroundMusic() {
             if(!musicEnabled) {
                 if(backgroundMusic!=null) {
@@ -361,11 +377,12 @@ public class MainActivity extends Activity {
                         .setUsage(AudioAttributes.USAGE_GAME)
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .build();
-                    backgroundMusic=MediaPlayer.create(MainActivity.this,R.raw.battle_music);
+                    if(selectedBackgroundMusicIndex<0 || selectedBackgroundMusicIndex>=backgroundMusicTracks.length) selectedBackgroundMusicIndex=random.nextInt(backgroundMusicTracks.length);
+                    backgroundMusic=MediaPlayer.create(MainActivity.this,backgroundMusicTracks[selectedBackgroundMusicIndex]);
                     if(backgroundMusic!=null) {
                         backgroundMusic.setAudioAttributes(musicAttributes);
                         backgroundMusic.setLooping(true);
-                        backgroundMusic.setVolume(0.40f,0.40f);
+                        backgroundMusic.setVolume(0.20f,0.20f);
                     }
                 }
                 if(backgroundMusic!=null && !backgroundMusic.isPlaying()) {
@@ -1531,6 +1548,7 @@ public class MainActivity extends Activity {
             invalidate();
         }
         private void startBattleIntro() {
+            playRandomBattleMusic();
             battleIntro=true;introStep=3;
             final int epoch=matchEpoch;invalidate();
             postDelayed(new Runnable(){@Override public void run(){
