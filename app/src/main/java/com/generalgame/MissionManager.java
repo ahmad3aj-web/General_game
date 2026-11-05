@@ -296,9 +296,9 @@ public final class MissionManager {
     private void addPendingGrant(String token,int[] grant) {
         String pending=prefs.getString("pending_grants","");
         if(pending.contains(token+"|"))return;
-        String encoded=token+"|"+grant[0]+","+grant[1]+","+grant[2]+","+grant[3];
+        String encoded=token+"|"+join(grant);
         int[] total=getPendingMissionRewards();
-        for(int i=0;i<4;i++)total[i]+=grant[i];
+        for(int i=0;i<CardInventory.CARD_TYPES;i++)total[i]+=grant[i];
         // The grant ledger and popup totals are committed atomically in one preferences file.
         prefs.edit().putString("pending_grants",pending+(pending.isEmpty()?"":";")+encoded)
             .putString("pending_mission_popup",join(total)).commit();
@@ -311,21 +311,27 @@ public final class MissionManager {
         for(String entry:pending.split(";"))try {
             String[] parts=entry.split("\\|",2);if(parts.length!=2)continue;
             String[] nums=parts[1].split(",");
-            int[] counts=new int[4];for(int i=0;i<4;i++)counts[i]=Integer.parseInt(nums[i]);
+            int[] counts=new int[CardInventory.CARD_TYPES];
+            for(int i=0;i<Math.min(nums.length,counts.length);i++)counts[i]=Integer.parseInt(nums[i]);
             inventory.addCardsOnce(parts[0],counts);
         }catch(Exception ignored){}
     }
 
     public synchronized int[] getPendingMissionRewards() {
-        String[] p=prefs.getString("pending_mission_popup","0,0,0,0").split(",");
-        int[] result=new int[4];for(int i=0;i<4;i++)try{result[i]=Integer.parseInt(p[i]);}catch(Exception ignored){}
+        String[] p=prefs.getString("pending_mission_popup","0,0,0,0,0,0,0,0,0,0").split(",");
+        int[] result=new int[CardInventory.CARD_TYPES];
+        for(int i=0;i<Math.min(p.length,result.length);i++)try{result[i]=Integer.parseInt(p[i]);}catch(Exception ignored){}
         return result;
     }
     public synchronized void acknowledgeMissionRewards() {
-        prefs.edit().putString("pending_mission_popup","0,0,0,0").commit();
+        prefs.edit().putString("pending_mission_popup","0,0,0,0,0,0,0,0,0,0").commit();
     }
 
-    private String join(int[] values){return values[0]+","+values[1]+","+values[2]+","+values[3];}
+    private String join(int[] values){
+        StringBuilder out=new StringBuilder();
+        for(int i=0;i<values.length;i++){if(i>0)out.append(',');out.append(values[i]);}
+        return out.toString();
+    }
 
     public synchronized List<MissionTask> getTasks(boolean weekly) {
         refreshPeriods();
