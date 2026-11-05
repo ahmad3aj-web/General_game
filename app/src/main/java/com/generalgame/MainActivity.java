@@ -194,6 +194,7 @@ public class MainActivity extends Activity {
         private boolean onlineDoubleDicePending=false;
         private int onlineDoubleDiceLane=-1;
         private int onlineRadarBlockedLane=-1, onlineRadarBlockedAttackerSide=0;
+        private int onlineRadarPendingLane=-1, onlineRadarPendingAmount=0, onlineRadarPendingAttackerSide=0;
 
         private void loadGameArt() {
             String[] names={"character_01.png","character_02.png","character_03.png","character_04.png","character_05.png","character_06.png","character_07.png","character_08.png","character_09.png","character_10.png","character_11.png","character_12.png","character_13.png","character_14.png","character_15.png","character_16.png","character_17.png","character_18.png","tank_01.png","cannon_01.png","fighter_01.png","fighter_02.png","fighter_03.png","ammo_round_left_gold.png","ammo_round_right_gold.png","ammo_round_left_white.png","ammo_round_right_white.png"};
@@ -1217,7 +1218,12 @@ public class MainActivity extends Activity {
                     message=(side==lanLocalSide?"أنت تبدأ":"الخصم يبدأ");
                     lanSession.beginTurn(lanTurnId,side);startBattleIntro();invalidate();
                 });}
-                @Override public void onRadarDecision(int side,int lane,boolean continueAttack){runOnUiThread(()->{});}
+                @Override public void onRadarDecision(int side,int lane,boolean continueAttack){runOnUiThread(()->{
+                    if(mode!=4 || !continueAttack || onlineRadarPendingLane!=lane || onlineRadarPendingAttackerSide==0)return;
+                    int attackSide=onlineRadarPendingAttackerSide,amount=onlineRadarPendingAmount;
+                    onlineRadarPendingLane=-1;onlineRadarPendingAttackerSide=0;radarPauseActive=false;
+                    message="تم تجاوز إنذار الرادار — استكمل الهجوم";animateMove(attackSide,lane,amount);invalidate();
+                });}
                 @Override public void onTurnStarted(int id,int side,boolean local){runOnUiThread(()->{
                     lanTurnId=id;player=side;die=0;choosing=false;lanCountdown=30;
                     message=local?"دورك — اضغط أطلق خلال 30 ثانية":"دور الخصم — بانتظار رمي النرد";
