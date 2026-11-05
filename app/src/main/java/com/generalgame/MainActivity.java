@@ -97,6 +97,11 @@ public class MainActivity extends Activity {
         private final int[][] cyberTurns = new int[3][3];
         private final boolean[][] shieldActive = new boolean[3][3];
         private final int[][] shieldTurns = new int[3][3];
+        private final boolean[][] smokeActive = new boolean[3][3];
+        private final int[][] smokeTurns = new int[3][3];
+        private int mineOwnerSide=0, mineTargetSide=0, mineLane=-1;
+        private boolean radarPending=false;
+        private int radarOwnerSide=0;
         private boolean cardTargeting = false;
         private boolean doubleDicePending = false;
         private int doubleDiceLane = -1;
@@ -638,7 +643,10 @@ public class MainActivity extends Activity {
             for(int side=1;side<=2;side++) for(int lane=0;lane<3;lane++) {
                 cyberDisabled[side][lane]=false;cyberTurns[side][lane]=0;
                 shieldActive[side][lane]=false;shieldTurns[side][lane]=0;
+                smokeActive[side][lane]=false;smokeTurns[side][lane]=0;
             }
+            mineOwnerSide=0;mineTargetSide=0;mineLane=-1;
+            radarPending=false;radarOwnerSide=0;
             selectedBattleCard=-1;cardTargeting=false;
             doubleDicePending=false;doubleDiceLane=-1;
         }
@@ -663,7 +671,53 @@ public class MainActivity extends Activity {
             for(int lane=0;lane<3;lane++) {
                 if(cyberDisabled[side][lane] && --cyberTurns[side][lane]<=0) cyberDisabled[side][lane]=false;
                 if(shieldActive[side][lane] && --shieldTurns[side][lane]<=0) shieldActive[side][lane]=false;
+                int owner=side==1?2:1;
+                if(smokeActive[owner][lane] && --smokeTurns[owner][lane]<=0) smokeActive[owner][lane]=false;
             }
+            if(radarPending && side!=radarOwnerSide) { radarPending=false;radarOwnerSide=0; }
+        }
+        private void confirmImmediateCard(final int type) {
+            String title=type==CardInventory.AIRSTRIKE?"تأكيد الضربة الجوية":
+                    type==CardInventory.RADAR?"تفعيل الرادار":"تأكيد كشف الألغام";
+            String body=type==CardInventory.AIRSTRIKE?"ستُصاب الأسلحة الثلاثة لدى الخصم بزيادة طلقة واحدة لكل سلاح. هل تريد المتابعة؟":
+                    type==CardInventory.RADAR?"سيُراقب الرادار هجوم الخصم القادم ويمنحك 10 ثوانٍ لاستخدام الدرع. هل تريد التفعيل؟":
+                    "سيتم فحص معسكرات الخصم الثلاثة وإبطال أي لغم يُكتشف دون إحداث ضرر. هل تريد المتابعة؟";
+            new AlertDialog.Builder(MainActivity.this).setTitle(title).setMessage(body)
+                .setNegativeButton("إلغاء",null)
+                .setPositiveButton("تأكيد",(d,wid)->{
+                    if(!useCard(type))return;
+                    if(type==CardInventory.AIRSTRIKE) {
+                        for(int laneIndex=0;laneIndex<3;laneIndex++) if(!dead2[laneIndex]) {
+                            pos2[laneIndex]=Math.min(15,pos2[laneIndex]+1);
+                            if(pos2[laneIndex]>=15) {
+                                dead2[laneIndex]=true;redWinEffect[laneIndex]=true;
+                                spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[laneIndex]);
+                                playGameSound(3);
+                            }
+                        }
+                        message="نفذت الضربة الجوية وأصابت أسلحة الخصم الثلاثة";
+                        finishCheck();
+                    } else if(type==CardInventory.RADAR) {
+                        radarPending=true;radarOwnerSide=1;
+                        message="الرادار جاهز — سيتم كشف السلاح المستهدف بعد رمية الخصم";
+                    } else {
+                        if(mineTargetSide==1 && mineLane>=0) {
+                            String found=names[mineLane];mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
+                            message="تم اكتشاف لغم في معسكر "+found+" وإبطاله دون ضرر";
+                        } else message="لم يتم العثور على ألغام أرضية";
+                    }
+                    invalidate();
+                }).show();
+        }
+        private void showSupplyChoice() {
+            final String[] choices={"0 — إلغاء البطاقة","1 — إضافة طلقة","2 — إضافة طلقتين","3 — إضافة 3 طلقات"};
+            new AlertDialog.Builder(MainActivity.this).setTitle("الإمداد العسكري")
+                .setItems(choices,(dialog,which)->{
+                    if(which==0){selectedBattleCard=-1;cardTargeting=false;message="تم إلغاء الإمداد دون استهلاك البطاقة";invalidate();return;}
+                    if(!useCard(CardInventory.MILITARY_SUPPLY))return;
+                    die+=which;message="الإمداد العسكري: أُضيفت "+which+" إلى نتيجة النرد — المجموع "+die;
+                    choosing=true;selectedBattleCard=-1;cardTargeting=false;invalidate();
+                }).setOnCancelListener(d->{selectedBattleCard=-1;cardTargeting=false;invalidate();}).show();
         }
         private boolean executeBattleCard(int type,int lane) {
             if(type==CardInventory.DOUBLE_DICE) {
@@ -684,6 +738,7 @@ public class MainActivity extends Activity {
             }
             if(lane<0 || lane>2)return false;
             if(type==CardInventory.REPAIR) {
+                if((mineTargetSide==1 && mineLane==lane) || smokeActive[1][lane])return false;
                 if(!destroyed(1)[lane] && !cyberDisabled[1][lane])return false;
                 if(!useCard(type))return false;
                 // Cyber-disabled weapons keep their exact progress; only a destroyed
@@ -700,18 +755,36 @@ public class MainActivity extends Activity {
                 message="تم إصلاح "+names[lane]+" وإعادته إلى العمل";playGameSound(3);return true;
             }
             if(type==CardInventory.CYBER_WARFARE) {
-                if(destroyed(2)[lane])return false;
+                if(destroyed(2)[lane] || smokeActive[2][lane])return false;
+                if(mineTargetSide==2 && mineLane==lane) {
+                    positions(2)[lane]=Math.max(0,positions(2)[lane]-3);
+                    mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
+                    message="انفجر اللغم في معسكر "+names[lane]+" وخسر السلاح حتى 3 طلقات";
+                    return false;
+                }
                 if(!useCard(type))return false;
                 cyberDisabled[2][lane]=true;cyberTurns[2][lane]=2;
                 message="تم تعطيل "+names[lane]+" لدى جنيرال لمدة دورين";return true;
             }
             if(type==CardInventory.SHIELD) {
-                if(destroyed(1)[lane] || shieldActive[1][lane])return false;
+                if(destroyed(1)[lane] || shieldActive[1][lane] || (mineTargetSide==1 && mineLane==lane))return false;
                 boolean allProtected=true;for(int i=0;i<3;i++)if(!shieldActive[1][i]&&!destroyed(1)[i])allProtected=false;
                 if(allProtected)return false;
                 if(!useCard(type))return false;
                 shieldActive[1][lane]=true;shieldTurns[1][lane]=2;
                 message="تم تفعيل درع الحماية على "+names[lane];return true;
+            }
+            if(type==CardInventory.SMOKE_SCREEN) {
+                if(destroyed(1)[lane] || smokeActive[1][lane] || (mineTargetSide==1 && mineLane==lane))return false;
+                if(!useCard(type))return false;
+                smokeActive[1][lane]=true;smokeTurns[1][lane]=3;
+                message="تم تفعيل ستار الدخان على "+names[lane]+" لمدة 3 أدوار للخصم";return true;
+            }
+            if(type==CardInventory.MINEFIELD) {
+                if(mineTargetSide!=0 || destroyed(2)[lane] || smokeActive[2][lane])return false;
+                if(!useCard(type))return false;
+                mineOwnerSide=1;mineTargetSide=2;mineLane=lane;
+                message="تم زرع لغم أرضي في أحد معسكرات الخصم";return true;
             }
             return false;
         }
@@ -1899,6 +1972,18 @@ public class MainActivity extends Activity {
             }},850);
         }
         private void animateMove(final int side, final int lane, final int amount) {
+            if(mineTargetSide==side && mineLane==lane) {
+                positions(side)[lane]=Math.max(0,positions(side)[lane]-3);
+                mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
+                message="انفجر اللغم في معسكر "+names[lane]+" وخسر السلاح حتى 3 طلقات";
+                choosing=false;die=0;
+                if(mode==2) {
+                    finishCardTurnEffects(side);
+                    if(side==1){player=2;postDelayed(()->{if(mode==2&&winner==0&&player==2)computerTurn();},500);}
+                    else {player=1;message+=" — دورك الآن";}
+                } else afterTurn();
+                invalidate();return;
+            }
             final int epoch=matchEpoch;
             choosing=false;
             playGameSound(lane);
