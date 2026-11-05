@@ -722,8 +722,16 @@ public class MainActivity extends Activity {
                     choosing=true;selectedBattleCard=-1;cardTargeting=false;invalidate();
                 }).setOnCancelListener(d->{selectedBattleCard=-1;cardTargeting=false;invalidate();}).show();
         }
+        private boolean triggerMineByCardAttempt(int side,int lane) {
+            if(mineTargetSide!=side || mineLane!=lane)return false;
+            positions(side)[lane]=Math.max(0,positions(side)[lane]-3);
+            mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
+            message="انفجر اللغم في معسكر "+names[lane]+" وخسر السلاح حتى 3 طلقات";
+            invalidate();return true;
+        }
         private boolean executeBattleCard(int type,int lane) {
             if(type==CardInventory.DOUBLE_DICE) {
+                if(lane>=0 && lane<3 && triggerMineByCardAttempt(1,lane))return false;
                 if(lane<0 || lane>2 || destroyed(1)[lane] || destroyed(2)[lane]
                         || cyberDisabled[1][lane] || shieldActive[2][lane] || positions(1)[lane]>=15
                         || doubleDicePending)return false;
@@ -759,18 +767,14 @@ public class MainActivity extends Activity {
             }
             if(type==CardInventory.CYBER_WARFARE) {
                 if(destroyed(2)[lane] || smokeActive[2][lane])return false;
-                if(mineTargetSide==2 && mineLane==lane) {
-                    positions(2)[lane]=Math.max(0,positions(2)[lane]-3);
-                    mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
-                    message="انفجر اللغم في معسكر "+names[lane]+" وخسر السلاح حتى 3 طلقات";
-                    return false;
-                }
+                if(triggerMineByCardAttempt(2,lane))return false;
                 if(!useCard(type))return false;
                 cyberDisabled[2][lane]=true;cyberTurns[2][lane]=2;
                 message="تم تعطيل "+names[lane]+" لدى جنيرال لمدة دورين";return true;
             }
             if(type==CardInventory.SHIELD) {
-                if(destroyed(1)[lane] || shieldActive[1][lane] || (mineTargetSide==1 && mineLane==lane))return false;
+                if(destroyed(1)[lane] || shieldActive[1][lane])return false;
+                if(triggerMineByCardAttempt(1,lane))return false;
                 boolean allProtected=true;for(int i=0;i<3;i++)if(!shieldActive[1][i]&&!destroyed(1)[i])allProtected=false;
                 if(allProtected)return false;
                 if(!useCard(type))return false;
@@ -778,7 +782,8 @@ public class MainActivity extends Activity {
                 message="تم تفعيل درع الحماية على "+names[lane];return true;
             }
             if(type==CardInventory.SMOKE_SCREEN) {
-                if(destroyed(1)[lane] || smokeActive[1][lane] || (mineTargetSide==1 && mineLane==lane))return false;
+                if(destroyed(1)[lane] || smokeActive[1][lane])return false;
+                if(triggerMineByCardAttempt(1,lane))return false;
                 if(!useCard(type))return false;
                 smokeActive[1][lane]=true;smokeTurns[1][lane]=3;
                 message="تم تفعيل ستار الدخان على "+names[lane]+" لمدة 3 أدوار للخصم";return true;
