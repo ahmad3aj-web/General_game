@@ -534,7 +534,7 @@ public class MainActivity extends Activity {
             p.setShader(new LinearGradient(0,h*.68f,0,h,Color.TRANSPARENT,Color.argb(205,5,10,10),Shader.TileMode.CLAMP));
             c.drawRect(0,h*.68f,w,h,p);p.setShader(null);
             txt(c,"انقر للاستمرار",w*.5f,h*.88f,h*.038f,Color.WHITE,true);
-            txt(c,"الإصدار "+BuildConfig.VERSION_NAME,w*.5f,h*.965f,h*.022f,Color.rgb(245,190,65),true);
+            txt(c,"الإصدار "+BuildConfig.VERSION_NAME,w*.5f,h*.96f,h*.032f,Color.rgb(255,205,75),true);
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.003f));p.setColor(Color.argb(220,245,190,65));
             c.drawRoundRect(new RectF(w*.34f,h*.82f,w*.66f,h*.92f),h*.025f,h*.025f,p);p.setStyle(Paint.Style.FILL);
         }
@@ -733,7 +733,7 @@ public class MainActivity extends Activity {
                     if(!useCard(type))return;
                     if(type==CardInventory.AIRSTRIKE) {
                         startAirstrikeAnimation(2);
-                        for(int laneIndex=0;laneIndex<3;laneIndex++) if(!dead1[laneIndex] && !dead2[laneIndex]) {
+                        for(int laneIndex=0;laneIndex<3;laneIndex++) if(!dead1[laneIndex]) {
                             pos1[laneIndex]=Math.min(15,pos1[laneIndex]+3);
                             if(pos1[laneIndex]>=15) {
                                 dead2[laneIndex]=true;blueWinEffect[laneIndex]=true;
