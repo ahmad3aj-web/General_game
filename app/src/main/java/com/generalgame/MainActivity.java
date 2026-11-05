@@ -98,6 +98,8 @@ public class MainActivity extends Activity {
         private final boolean[][] shieldActive = new boolean[3][3];
         private final int[][] shieldTurns = new int[3][3];
         private boolean cardTargeting = false;
+        private boolean doubleDicePending = false;
+        private int doubleDiceLane = -1;
         private long cardNoticeUntil = 0;
         private int cardNoticeType = -1;
         private boolean cardNoticeFromGeneral = false;
@@ -638,6 +640,7 @@ public class MainActivity extends Activity {
                 shieldActive[side][lane]=false;shieldTurns[side][lane]=0;
             }
             selectedBattleCard=-1;cardTargeting=false;
+            doubleDicePending=false;doubleDiceLane=-1;
         }
         private boolean cardAvailable(int type) {
             return mode==2 && cardInventory.isMatchActive()
@@ -664,12 +667,21 @@ public class MainActivity extends Activity {
         }
         private boolean executeBattleCard(int type,int lane) {
             if(type==CardInventory.DOUBLE_DICE) {
-                if(die<=0)return false;
-                int doubled=die*2;
-                if(lane<0 || destroyed(1)[lane] || destroyed(2)[lane] || cyberDisabled[1][lane]
-                        || shieldActive[2][lane] || positions(1)[lane]+doubled>15)return false;
+                if(lane<0 || lane>2 || destroyed(1)[lane] || destroyed(2)[lane]
+                        || cyberDisabled[1][lane] || shieldActive[2][lane] || positions(1)[lane]>=15
+                        || doubleDicePending)return false;
+                if(die>0 && positions(1)[lane]+die*2>15)return false;
                 if(!useCard(type))return false;
-                die=doubled;message="تم تفعيل مضاعفة النرد — اختر السلاح المناسب";choosing=true;return true;
+                if(die>0) {
+                    die*=2;
+                    message="تم تفعيل مضاعفة النرد على "+names[lane];
+                    choosing=true;
+                } else {
+                    doubleDicePending=true;
+                    doubleDiceLane=lane;
+                    message="تم تفعيل مضاعفة النرد على "+names[lane]+" — اضغط النرد";
+                }
+                return true;
             }
             if(lane<0 || lane>2)return false;
             if(type==CardInventory.REPAIR) {
@@ -2282,7 +2294,7 @@ public class MainActivity extends Activity {
                 boolean[] active=cardInventory.getActiveCards(),used=cardInventory.getUsedCards();
                 float width=w*.052f,gap=w*.012f,cx=w*.835f;int slot=(int)Math.floor((x-(cx-(width*2+gap*1.5f)))/(width+gap));
                 if(slot>=0&&slot<4&&active[slot]&&!used[slot]) {
-                    if(slot==CardInventory.DOUBLE_DICE && die<=0)message="مضاعفة النرد متاحة بعد رمية النرد";
+                    if(slot==CardInventory.DOUBLE_DICE && doubleDicePending)message="تم تفعيل مضاعفة النرد بالفعل";
                     else {selectedBattleCard=selectedBattleCard==slot?-1:slot;cardTargeting=selectedBattleCard>=0;message=selectedBattleCard<0?"تم إلغاء اختيار البطاقة":"اختر الهدف على ساحة المعركة";}
                 }
                 invalidate();return true;
@@ -2319,7 +2331,22 @@ public class MainActivity extends Activity {
                 else if(mode==4){if(onlineSession!=null)onlineSession.rollNow(false);}
                 else {
                     die=random.nextInt(6)+1;choosing=true;
-                    if(!anyMove(player)){
+                    if(mode==2 && player==1 && doubleDicePending) {
+                        int targetLane=doubleDiceLane;
+                        doubleDicePending=false;doubleDiceLane=-1;
+                        die*=2;
+                        boolean laneReady=targetLane>=0 && targetLane<3
+                                && !destroyed(1)[targetLane] && !destroyed(2)[targetLane]
+                                && !cyberDisabled[1][targetLane] && !shieldActive[2][targetLane]
+                                && positions(1)[targetLane]<15;
+                        if(laneReady) {
+                            message="مضاعفة النرد — النتيجة: "+die;
+                            animateMove(1,targetLane,die);
+                        } else {
+                            message="تعذر تنفيذ مضاعفة النرد على السلاح المحدد";
+                            die=0;choosing=false;invalidate();
+                        }
+                    } else if(!anyMove(player)){
                         setNoMoveDialogue(player);
                         message="لا توجد حركة متاحة — نتيجة النرد: "+die+" — تم تجاوز الدور";
                         choosing=false;invalidate();
@@ -2349,7 +2376,7 @@ public class MainActivity extends Activity {
                     int card=selectedBattleCard;
                     if(executeBattleCard(card,lane)) {
                         selectedBattleCard=-1;cardTargeting=false;
-                        if(card==CardInventory.DOUBLE_DICE) {
+                        if(card==CardInventory.DOUBLE_DICE && die>0) {
                             if(canMove(player,lane)) animateMove(player,lane,die);
                             else message="لا يمكن تنفيذ الحركة المضاعفة بهذا السلاح";
                         }
