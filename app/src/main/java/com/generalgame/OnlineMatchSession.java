@@ -45,6 +45,8 @@ public final class OnlineMatchSession {
         void onRoll(int side, int value, boolean automatic);
         void onMove(int side, int lane, int value);
         void onTurnCancelled(int side);
+        void onPeerLoadoutReady();
+        void onCardUsed(int side, int cardType, int lane, int value);
         void onDisconnected(String reason);
         void onError(String reason);
     }
@@ -694,6 +696,18 @@ public final class OnlineMatchSession {
         listener.onTurnCancelled(localSide);
     }
 
+    public synchronized void markLoadoutReady() {
+        if (!connected) return;
+        send("loadout_ready", 0, 0, -1, 0, false);
+    }
+
+    public synchronized boolean sendCardUse(int cardType, int lane, int value) {
+        if (!connected || activeSide != localSide || cardType < 0 || cardType >= CardInventory.CARD_TYPES
+                || cardType == CardInventory.AIRSTRIKE || lane < -1 || lane > 2) return false;
+        send("card_use", expectedTurn, value, lane, cardType, false);
+        return true;
+    }
+
     public synchronized void requestRematch() {
         if (!connected || localRematchRequested) return;
         localRematchRequested = true;
@@ -729,6 +743,16 @@ public final class OnlineMatchSession {
         } else if ("rematch".equals(type)) {
             remoteRematchRequested = true;
             maybeStartRematch();
+        } else if ("loadout_ready".equals(type)) {
+            listener.onPeerLoadoutReady();
+        } else if ("card_use".equals(type)) {
+            int cardType = intValue(snapshot.child("round"), -1);
+            int lane = intValue(snapshot.child("lane"), -1);
+            if (turn == expectedTurn && activeSide == side && cardType >= 0
+                    && cardType < CardInventory.CARD_TYPES && cardType != CardInventory.AIRSTRIKE
+                    && lane >= -1 && lane <= 2) {
+                listener.onCardUsed(side, cardType, lane, value);
+            }
         } else if ("roll".equals(type)) {
             if (turn != expectedTurn || activeSide != side || rollReceived || rolledValue != 0
                     || value < 1 || value > 6) return;
