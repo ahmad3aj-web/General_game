@@ -210,8 +210,8 @@ public class MainActivity extends Activity {
             radarCardImage=loadCardImage("ui/card_radar.png");
             minefieldCardImage=loadCardImage("ui/card_minefield.png");
             mineDetectorCardImage=loadCardImage("ui/card_mine_detector.png");
-            airstrikePlaneImage=loadTransparentEncodedArtwork("ui/airstrike_plane.jpg.b64");
-            landMineImage=loadTransparentEncodedArtwork("ui/land_mine.jpg.b64");
+            airstrikePlaneImage=loadCardImage("ui/airstrike_plane.png");
+            landMineImage=loadCardImage("ui/land_mine.png");
         }
         // Card images are preprocessed into real RGBA PNG files by the build workflow.
         private Bitmap loadCardImage(String assetPath) {
@@ -2358,9 +2358,9 @@ public class MainActivity extends Activity {
             else if(shieldActive[side][lane]) drawCardImage(c,shieldCardImage,cx,cy);
             // Actual landmine artwork sits in front of the targeted weapon.
             if(mineTargetSide==side && mineLane==lane) {
-                float mineX=cx+(side==1?-1f:1f)*w*.047f;
-                float mineY=cy+h*.030f;
-                float mineW=w*.070f,mineH=h*.092f;
+                float mineX=cx+(side==1?-1f:1f)*w*.034f;
+                float mineY=cy+h*.022f;
+                float mineW=w*.038f,mineH=h*.050f;
                 if(landMineImage!=null) {
                     p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
                     c.drawBitmap(landMineImage,null,new RectF(mineX-mineW*.5f,mineY-mineH*.5f,mineX+mineW*.5f,mineY+mineH*.5f),p);
