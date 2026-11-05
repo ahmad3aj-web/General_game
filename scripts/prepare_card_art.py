@@ -14,7 +14,9 @@ def make_transparent(src_name, dst_name):
     hi = rgb.max(axis=2)
     # The supplied cards use a pale neutral checkerboard. Include antialiased
     # edge pixels, but only remove regions connected to the image boundary.
-    neutral = ((hi - lo) <= 72) & (lo >= 78)
+    # Aircraft is mostly light grey/white; use a much stricter edge threshold
+    # so the flood fill cannot leak through the plane and erase its body.
+    neutral = ((hi - lo) <= max_chroma) & (lo >= min_luma)
     h, w = neutral.shape
     seen = np.zeros((h, w), dtype=np.bool_)
     q = deque()
@@ -56,7 +58,7 @@ make_transparent("card_shield.png", "card_shield_transparent.png")
 import base64
 from io import BytesIO
 
-def make_transparent_encoded(encoded_name, dst_name):
+def make_transparent_encoded(encoded_name, dst_name, min_luma=78, max_chroma=72):
     encoded_path = ROOT / encoded_name
     raw = base64.b64decode(encoded_path.read_text(encoding="ascii"))
     image = Image.open(BytesIO(raw)).convert("RGBA")
@@ -96,5 +98,5 @@ def make_transparent_encoded(encoded_name, dst_name):
     Image.fromarray(pixels, "RGBA").save(ROOT / dst_name, optimize=True)
     print(f"{encoded_name} -> {dst_name}: cleared {int(seen.sum())} edge-connected background pixels")
 
-make_transparent_encoded("airstrike_plane.jpg.b64", "airstrike_plane.png")
+make_transparent_encoded("airstrike_plane.jpg.b64", "airstrike_plane.png", min_luma=238, max_chroma=24)
 make_transparent_encoded("land_mine.jpg.b64", "land_mine.png")
