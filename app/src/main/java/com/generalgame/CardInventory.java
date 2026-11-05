@@ -139,9 +139,29 @@ public final class CardInventory {
 
     /** Adds one card of a uniformly random type and returns its type. */
     public synchronized int addRandomCard() {
-        int type = random.nextInt(CARD_TYPES);
+        int type = drawRewardCardType();
         addCards(type, 1);
         return type;
+    }
+
+    /** Weighted reward draw: airstrike has 1/46 odds; every other card has weight 5. */
+    public synchronized int drawRewardCardType() {
+        return drawRewardCardType(null);
+    }
+
+    private int drawRewardCardType(boolean[] excluded) {
+        int total = 0;
+        for (int i = 0; i < CARD_TYPES; i++) {
+            if (excluded != null && excluded[i]) continue;
+            total += (i == AIRSTRIKE ? 1 : 5);
+        }
+        int pick = random.nextInt(total);
+        for (int i = 0; i < CARD_TYPES; i++) {
+            if (excluded != null && excluded[i]) continue;
+            pick -= (i == AIRSTRIKE ? 1 : 5);
+            if (pick < 0) return i;
+        }
+        return REPAIR;
     }
 
     public synchronized void addCards(int type, int amount) {
@@ -154,17 +174,15 @@ public final class CardInventory {
     public synchronized int[] addRandomCards(int amount) {
         if (amount < 0) throw new IllegalArgumentException("amount must be non-negative");
         int[] awarded = new int[CARD_TYPES];
-        // The first three rewards (and the first four when applicable) are
-        // guaranteed to be different card types. Only extra rewards may repeat.
-        int[] pool = new int[CARD_TYPES];
-        for (int i = 0; i < CARD_TYPES; i++) pool[i] = i;
-        for (int i = pool.length - 1; i > 0; i--) {
-            int j = random.nextInt(i + 1);
-            int swap = pool[i]; pool[i] = pool[j]; pool[j] = swap;
-        }
+        // Rewards are weighted: airstrike is intentionally much rarer.
+        boolean[] selected = new boolean[CARD_TYPES];
         int distinct = Math.min(amount, CARD_TYPES);
-        for (int i = 0; i < distinct; i++) awarded[pool[i]]++;
-        for (int i = distinct; i < amount; i++) awarded[random.nextInt(CARD_TYPES)]++;
+        for (int i = 0; i < distinct; i++) {
+            int type = drawRewardCardType(selected);
+            awarded[type]++;
+            selected[type] = true;
+        }
+        for (int i = distinct; i < amount; i++) awarded[drawRewardCardType()]++;
         SharedPreferences.Editor edit = prefs.edit();
         for (int i = 0; i < CARD_TYPES; i++) {
             if (awarded[i] > 0) edit.putInt(COUNT_KEYS[i], getCount(i) + awarded[i]);
@@ -180,7 +198,10 @@ public final class CardInventory {
         int streak = prefs.getInt(KEY_LOGIN_STREAK, 0);
         if (streak < 7 || prefs.getBoolean(KEY_WEEKLY_CLAIMED, false)) return false;
         SharedPreferences.Editor edit = prefs.edit();
-        for (int i = 0; i < CARD_TYPES; i++) edit.putInt(COUNT_KEYS[i], getCount(i) + 1);
+        for (int i = 0; i < CARD_TYPES; i++) {
+            int type = drawRewardCardType();
+            edit.putInt(COUNT_KEYS[type], getCount(type) + 1);
+        }
         edit.putBoolean(KEY_WEEKLY_CLAIMED, true);
         return edit.commit();
     }
@@ -216,7 +237,7 @@ public final class CardInventory {
         if (("," + claims + ",").contains(token)) return false;
         int amount = promotionIndex + 1;
         int[] awarded = new int[CARD_TYPES];
-        for (int i = 0; i < amount; i++) awarded[random.nextInt(CARD_TYPES)]++;
+        for (int i = 0; i < amount; i++) awarded[drawRewardCardType()]++;
         SharedPreferences.Editor edit = prefs.edit();
         for (int i = 0; i < CARD_TYPES; i++) {
             if (awarded[i] > 0) edit.putInt(COUNT_KEYS[i], getCount(i) + awarded[i]);
