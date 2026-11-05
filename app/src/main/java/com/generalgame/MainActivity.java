@@ -840,12 +840,13 @@ public class MainActivity extends Activity {
         private void drawBattleCards(Canvas c) {
             if(mode!=2 || !cardInventory.isMatchActive())return;
             boolean[] active=cardInventory.getActiveCards(),used=cardInventory.getUsedCards();
-            float width=w*.048f,gap=w*.006f,top=h*.145f,rowGap=h*.008f;
-            float left=w*.704f;
+            float width=w*.075f,gap=w*.012f,top=h*.145f,tileHeight=h*.085f;
+            float left=w*.70f;
+            int slot=0;
             for(int type=0;type<CardInventory.CARD_TYPES;type++) if(active[type]&&!used[type]) {
-                int row=type/5,col=type%5;
-                float x=left+col*(width+gap),y=top+row*(h*.055f+rowGap);
-                drawCardTile(c,type,x,y,x+width,y+h*.055f,selectedBattleCard==type,true,1);
+                float x=left+slot*(width+gap);
+                drawCardTile(c,type,x,top,x+width,top+tileHeight,selectedBattleCard==type,true,1);
+                slot++;
             }
         }
         private void drawCardUseNotice(Canvas c) {
@@ -2569,10 +2570,13 @@ public class MainActivity extends Activity {
             if(mode==2 && player==1 && winner==0 && !bonusAttempt
                     && y>=h*.145f && y<=h*.270f && x>=w*.70f && x<=w*.99f) {
                 boolean[] active=cardInventory.getActiveCards(),used=cardInventory.getUsedCards();
-                float width=w*.048f,gap=w*.006f,top=h*.145f,rowGap=h*.008f,left=w*.704f;
+                float width=w*.075f,gap=w*.012f,top=h*.145f,tileHeight=h*.085f,left=w*.70f;
+                int slot=0;
                 for(int type=0;type<CardInventory.CARD_TYPES;type++) {
-                    int row=type/5,col=type%5;float l=left+col*(width+gap),t=top+row*(h*.055f+rowGap);
-                    if(x>=l&&x<=l+width&&y>=t&&y<=t+h*.055f&&active[type]&&!used[type]) {
+                    if(!active[type]||used[type])continue;
+                    float l=left+slot*(width+gap),t=top;
+                    slot++;
+                    if(x>=l&&x<=l+width&&y>=t&&y<=t+tileHeight) {
                         if(type==CardInventory.DOUBLE_DICE && doubleDicePending)message="تم تفعيل مضاعفة النرد بالفعل";
                         else if(type==CardInventory.AIRSTRIKE || type==CardInventory.RADAR || type==CardInventory.MINE_DETECTOR) {
                             selectedBattleCard=-1;cardTargeting=false;confirmImmediateCard(type);
