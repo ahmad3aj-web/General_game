@@ -733,7 +733,7 @@ public class MainActivity extends Activity {
                     if(type==CardInventory.AIRSTRIKE) {
                         startAirstrikeAnimation(2);
                         for(int laneIndex=0;laneIndex<3;laneIndex++) if(!dead1[laneIndex] && !dead2[laneIndex]) {
-                            pos1[laneIndex]=Math.min(15,pos1[laneIndex]+1);
+                            pos1[laneIndex]=Math.min(15,pos1[laneIndex]+2);
                             if(pos1[laneIndex]>=15) {
                                 dead2[laneIndex]=true;blueWinEffect[laneIndex]=true;
                                 if(mode==2)missionManager.recordGeneralWeaponDestroyed(laneIndex);
@@ -1883,7 +1883,7 @@ public class MainActivity extends Activity {
                 if(useful && generalUseCard(CardInventory.AIRSTRIKE)) {
                     startAirstrikeAnimation(1);
                     for(int lane=0;lane<3;lane++)if(!dead2[lane] && !dead1[lane]) {
-                        pos2[lane]=Math.min(15,pos2[lane]+1);
+                        pos2[lane]=Math.min(15,pos2[lane]+2);
                         if(pos2[lane]>=15) {
                             dead1[lane]=true;redWinEffect[lane]=true;
                             if(mode==2)missionManager.recordPlayerWeaponDestroyed(lane);
