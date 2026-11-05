@@ -691,7 +691,8 @@ public class MainActivity extends Activity {
                         for(int laneIndex=0;laneIndex<3;laneIndex++) if(!dead2[laneIndex]) {
                             pos2[laneIndex]=Math.min(15,pos2[laneIndex]+1);
                             if(pos2[laneIndex]>=15) {
-                                dead2[laneIndex]=true;redWinEffect[laneIndex]=true;
+                                dead2[laneIndex]=true;blueWinEffect[laneIndex]=true;
+                                if(mode==2)missionManager.recordGeneralWeaponDestroyed(laneIndex);
                                 smokeActive[2][laneIndex]=false;smokeTurns[2][laneIndex]=0;
                                 if(mineTargetSide==2&&mineLane==laneIndex){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}
                                 spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[laneIndex]);
