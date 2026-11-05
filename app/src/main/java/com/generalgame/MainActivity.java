@@ -706,7 +706,7 @@ public class MainActivity extends Activity {
                         radarPending=true;radarOwnerSide=1;
                         message="الرادار جاهز — سيتم كشف السلاح المستهدف بعد رمية الخصم";
                     } else {
-                        if(mineTargetSide==1 && mineLane>=0) {
+                        if(mineTargetSide==2 && mineLane>=0) {
                             String found=names[mineLane];mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
                             message="تم اكتشاف لغم في معسكر "+found+" وإبطاله دون ضرر";
                         } else message="لم يتم العثور على ألغام أرضية";
@@ -1872,7 +1872,7 @@ public class MainActivity extends Activity {
                 }
             }
             // كاشف الألغام لدى جنيرال يبطل اللغم الذي زرعه اللاعب في معسكراته.
-            if(generalHasCard(CardInventory.MINE_DETECTOR) && mineTargetSide==2 && mineOwnerSide==1) {
+            if(generalHasCard(CardInventory.MINE_DETECTOR) && mineTargetSide==1) {
                 if(generalUseCard(CardInventory.MINE_DETECTOR)) {
                     String found=names[mineLane];mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
                     message="جنيرال اكتشف لغماً في معسكر "+found+" وأبطله دون ضرر";invalidate();return true;
