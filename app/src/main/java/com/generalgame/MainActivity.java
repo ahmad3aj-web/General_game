@@ -30,6 +30,7 @@ import java.util.Random;
 import java.util.Date;
 import java.util.Locale;
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.text.SimpleDateFormat;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -132,6 +133,21 @@ public class MainActivity extends Activity {
         private float explosionX = 0, explosionY = 0;
         private long muzzleFlashAt = 0;
         private float muzzleFlashX = 0, muzzleFlashY = 0;
+        private final ArrayList<Projectile> activeProjectiles = new ArrayList<>();
+        private final ArrayList<ImpactEffect> impactEffects = new ArrayList<>();
+        private class Projectile {
+            final float startX,startY,endX,endY,controlY;
+            final long startedAt,duration;
+            Projectile(float sx,float sy,float ex,float ey,float cy,long duration) {
+                startX=sx;startY=sy;endX=ex;endY=ey;controlY=cy;
+                startedAt=System.currentTimeMillis();this.duration=duration;
+            }
+        }
+        private class ImpactEffect {
+            final float x,y;
+            final long startedAt;
+            ImpactEffect(float x,float y){this.x=x;this.y=y;startedAt=System.currentTimeMillis();}
+        }
         private final int bg = Color.rgb(190,225,165), dark = Color.rgb(36,67,43);
         private final int blue = Color.rgb(35,112,205), red = Color.rgb(205,69,54);
         private final int gold = Color.rgb(245,190,65);
@@ -1198,6 +1214,7 @@ public class MainActivity extends Activity {
         private void resetMatch() {
             matchEpoch++;
             for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}clearWinEffects();
+            activeProjectiles.clear();impactEffects.clear();muzzleFlashAt=0;
             stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false; recorded=false; explosionAt=0;
             bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
             openingRoll1=0; openingRoll2=0; openingToss=false;
@@ -1319,40 +1336,65 @@ public class MainActivity extends Activity {
             final boolean bonusShot=bonusAttempt;
             choosing=false;
             playGameSound(lane);
-            muzzleFlashAt=System.currentTimeMillis();
-            muzzleFlashX=side==1?w*.874f:w*.126f;
-            muzzleFlashY=new float[]{h*.29f,h*.49f,h*.69f}[lane];
             final int start=positions(side)[lane];
-            final int target=Math.min(15,start+Math.max(1,Math.min(6,amount)));
-            message=(side==1?"الأزرق":"الأحمر")+" يطلق...";
-            final Runnable[] step=new Runnable[1];
-            step[0]=new Runnable(){ @Override public void run(){
+            final int shots=Math.max(1,Math.min(6,amount));
+            final int target=Math.min(15,start+shots);
+            final float laneY=new float[]{h*.29f,h*.49f,h*.69f}[lane];
+            final float startX=side==1?w*.875f:w*.125f;
+            final float endX=side==1?w*.125f:w*.875f;
+            final long launchGap=105L;
+            final long flightTime=560L;
+            message=(side==1?"الأزرق":"الأحمر")+" يطلق رشقة...";
+            for(int shot=0;shot<shots;shot++) {
+                final int shotIndex=shot;
+                postDelayed(()->{
+                    if(epoch!=matchEpoch || (winner!=0 && !bonusAttempt))return;
+                    muzzleFlashAt=System.currentTimeMillis();
+                    muzzleFlashX=side==1?w*.874f:w*.126f;
+                    muzzleFlashY=laneY;
+                    float arcOffset=((shotIndex%3)-1)*h*.009f;
+                    Projectile projectile=new Projectile(startX,laneY,endX,laneY,
+                            laneY-h*.115f+arcOffset,flightTime);
+                    activeProjectiles.add(projectile);
+                    invalidate();
+                    postDelayed(()->{
+                        if(epoch!=matchEpoch || (winner!=0 && !bonusAttempt)) {
+                            activeProjectiles.remove(projectile);
+                            return;
+                        }
+                        activeProjectiles.remove(projectile);
+                        if(positions(side)[lane]<target)positions(side)[lane]++;
+                        impactEffects.add(new ImpactEffect(endX,laneY));
+                        invalidate();
+                    },flightTime);
+                },shotIndex*launchGap);
+            }
+            long totalFlight=(shots-1)*launchGap+flightTime+90L;
+            postDelayed(()->{
                 if(epoch!=matchEpoch || (winner!=0 && !bonusAttempt))return;
-                if(positions(side)[lane]<target){
-                    positions(side)[lane]++;
-                    invalidate();
-                    postDelayed(step[0],115);
-                } else {
-                    if(target>=15){
-                        // The blue weapon is on the right and the red weapon is on the left.
-                        // Explosions must appear on the opposing weapon that was destroyed.
-                        if(side==1){dead2[lane]=true;blueWinEffect[lane]=true;setBattleDialogue(1,2);spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
-                        else {dead1[lane]=true;redWinEffect[lane]=true;setBattleDialogue(2,2);spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);}
+                if(positions(side)[lane]<target)positions(side)[lane]=target;
+                if(target>=15){
+                    // Only complete weapon destruction triggers the strong explosion and vibration.
+                    if(side==1){
+                        dead2[lane]=true;blueWinEffect[lane]=true;setBattleDialogue(1,2);
+                        spawnExplosion(w*.075f,laneY);playGameSound(3);
+                    } else {
+                        dead1[lane]=true;redWinEffect[lane]=true;setBattleDialogue(2,2);
+                        spawnExplosion(w*.925f,laneY);playGameSound(3);
                     }
-                    finishCheck();
-                    if(bonusShot && bonusAttempt && winner==1)finishMatch();
-                    if(winner==0){
-                        if(mode==2 && side==1){
-                            player=2; setBattleDialogue(2,1); die=0; message="دور جنيرال";
-                            postDelayed(new Runnable(){@Override public void run(){if(epoch==matchEpoch && mode==2 && winner==0 && player==2){computerTurn();invalidate();}}},650);
-                        } else if(mode==2 && side==2){
-                            player=1;die=0;choosing=false;message="دورك — اضغط النرد";
-                        } else afterTurn();
-                    }
-                    invalidate();
                 }
-            }};
-            postDelayed(step[0],180);
+                finishCheck();
+                if(bonusShot && bonusAttempt && winner==1)finishMatch();
+                if(winner==0){
+                    if(mode==2 && side==1){
+                        player=2;setBattleDialogue(2,1);die=0;message="دور جنيرال";
+                        postDelayed(()->{if(epoch==matchEpoch && mode==2 && winner==0 && player==2){computerTurn();invalidate();}},650);
+                    } else if(mode==2 && side==2){
+                        player=1;die=0;choosing=false;message="دورك — اضغط النرد";
+                    } else afterTurn();
+                }
+                invalidate();
+            },totalFlight);
         }
         private void spawnExplosion(float x,float y) {
             vibrateForExplosion();
@@ -1405,6 +1447,77 @@ public class MainActivity extends Activity {
         private void drawBullet(Canvas c,float cx,float cy,float bw,float bh,int color,boolean filled,boolean pointsRight) {
             String file=filled?(pointsRight?"ammo_round_right_gold.png":"ammo_round_left_gold.png"):(pointsRight?"ammo_round_right_white.png":"ammo_round_left_white.png");
             drawArt(c,file,cx-bw*.52f,cy-bh*.55f,cx+bw*.52f,cy+bh*.55f,false);
+        }
+        private void drawAmmoCounter(Canvas c,float cx,float cy,int remaining) {
+            remaining=Math.max(0,Math.min(15,remaining));
+            float boxW=w*.028f,boxH=h*.128f;
+            RectF back=new RectF(cx-boxW*.5f,cy-boxH*.5f,cx+boxW*.5f,cy+boxH*.5f);
+            p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(205,18,23,27));
+            c.drawRoundRect(back,h*.009f,h*.009f,p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1,h*.0018f));
+            p.setColor(Color.argb(190,151,112,54));c.drawRoundRect(back,h*.009f,h*.009f,p);
+            p.setStyle(Paint.Style.FILL);
+            float segmentW=boxW*.56f,segmentH=h*.0052f,gap=h*.0022f;
+            float total=15*segmentH+14*gap;
+            for(int i=0;i<15;i++) {
+                float top=cy+total*.5f-(i+1)*segmentH-i*gap;
+                RectF segment=new RectF(cx-segmentW*.5f,top,cx+segmentW*.5f,top+segmentH);
+                p.setColor(i<remaining?Color.rgb(226,174,67):Color.rgb(75,79,82));
+                c.drawRoundRect(segment,segmentH*.35f,segmentH*.35f,p);
+            }
+            txt(c,String.valueOf(remaining),cx,cy+boxH*.5f+h*.020f,h*.018f,
+                    remaining<=3?Color.rgb(245,112,85):Color.rgb(238,194,103),true);
+        }
+        private void drawProjectiles(Canvas c) {
+            long now=System.currentTimeMillis();
+            for(Projectile projectile:activeProjectiles) {
+                float t=Math.max(0f,Math.min(1f,(now-projectile.startedAt)/(float)projectile.duration));
+                float one=1f-t;
+                float controlX=(projectile.startX+projectile.endX)*.5f;
+                float x=one*one*projectile.startX+2f*one*t*controlX+t*t*projectile.endX;
+                float y=one*one*projectile.startY+2f*one*t*projectile.controlY+t*t*projectile.endY;
+                float dx=2f*one*(controlX-projectile.startX)+2f*t*(projectile.endX-controlX);
+                float dy=2f*one*(projectile.controlY-projectile.startY)+2f*t*(projectile.endY-projectile.controlY);
+                float angle=(float)Math.toDegrees(Math.atan2(dy,dx));
+                float radius=h*.009f;
+                c.save();c.rotate(angle,x,y);
+                p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(65,255,177,63));
+                c.drawCircle(x,y,radius*2.1f,p);
+                p.setColor(Color.rgb(238,166,58));
+                c.drawRoundRect(new RectF(x-radius*1.65f,y-radius*.48f,x+radius*1.65f,y+radius*.48f),
+                        radius*.42f,radius*.42f,p);
+                p.setColor(Color.rgb(255,238,185));
+                c.drawRoundRect(new RectF(x-radius*.65f,y-radius*.27f,x+radius*.85f,y+radius*.27f),
+                        radius*.24f,radius*.24f,p);
+                p.setColor(Color.argb(190,255,202,105));
+                c.drawCircle(x-radius*1.45f,y,radius*.34f,p);
+                c.restore();
+            }
+            if(!activeProjectiles.isEmpty())postInvalidateDelayed(16);
+        }
+        private void drawImpactEffects(Canvas c) {
+            long now=System.currentTimeMillis();
+            for(int index=impactEffects.size()-1;index>=0;index--) {
+                ImpactEffect effect=impactEffects.get(index);
+                float age=(now-effect.startedAt)/330f;
+                if(age>=1f){impactEffects.remove(index);continue;}
+                float radius=h*(.006f+age*.018f);
+                int alpha=(int)(210*(1f-age));
+                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1,h*.002f));
+                p.setColor(Color.argb(alpha,255,190,85));
+                c.drawCircle(effect.x,effect.y,radius,p);
+                p.setStyle(Paint.Style.FILL);
+                for(int spark=0;spark<6;spark++) {
+                    double angle=(Math.PI*2*spark/6.0)+.18;
+                    float distance=radius*(.7f+(spark%2)*.35f);
+                    float sx=effect.x+(float)Math.cos(angle)*distance;
+                    float sy=effect.y+(float)Math.sin(angle)*distance;
+                    p.setColor(Color.argb(alpha,255,spark%2==0?225:155,92));
+                    c.drawCircle(sx,sy,Math.max(1,h*.0024f*(1f-age)),p);
+                }
+            }
+            p.setStyle(Paint.Style.FILL);
+            if(!impactEffects.isEmpty())postInvalidateDelayed(24);
         }
         private void drawWeapon(Canvas c,int lane,float cx,float cy,int color,boolean faceRight) {
             String file=lane==0?"tank_01.png":lane==1?"fighter_01.png":"cannon_01.png";float ww=w*.105f,hh=h*.105f;
@@ -1527,6 +1640,8 @@ public class MainActivity extends Activity {
                 // Draw the GIF behind the weapon so the weapon remains unobstructed.
                 if(blueWinEffect[lane]) drawWinEffect(c,w*.925f,y-h*.025f);
                 if(redWinEffect[lane]) drawWinEffect(c,w*.075f,y-h*.025f);
+                drawAmmoCounter(c,w*.84f,y,15-pos2[lane]);
+                drawAmmoCounter(c,w*.16f,y,15-pos1[lane]);
                 drawWeapon(c,lane,w*.925f,y,blue,false);
                 drawWeapon(c,lane,w*.075f,y,red,true);
                 if(dead1[lane]) drawFire(c,w*.925f,y);
@@ -1539,6 +1654,8 @@ public class MainActivity extends Activity {
                     }
                 }
             }
+            drawProjectiles(c);
+            drawImpactEffects(c);
             drawMuzzleFlash(c);
             drawExplosion(c);
             drawBattleDialogue(c);
