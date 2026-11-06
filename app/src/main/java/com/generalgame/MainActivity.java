@@ -272,7 +272,7 @@ public class MainActivity extends Activity {
         }
         void resumeMusic(){if(musicEnabled)updateBackgroundMusic();}
         private void showSettingsDialog() {
-            final String[] labels={"المؤثرات الصوتية","الموسيقى","الاهتزاز عند الانفجار"};
+            final String[] labels={"المؤثرات الصوتية","الموسيقى","الاهتزاز عند تدمير السلاح"};
             final boolean[] values={soundEnabled,musicEnabled,vibrationEnabled};
             new AlertDialog.Builder(MainActivity.this).setTitle("إعدادات اللعبة")
                 .setMultiChoiceItems(labels,values,(dialog,which,checked)->{
