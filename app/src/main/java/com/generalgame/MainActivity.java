@@ -2484,8 +2484,8 @@ public class MainActivity extends Activity {
             radarPanel.setPadding(radarPad,radarPad/2,radarPad,radarPad/2);
             android.widget.TextView radarText=new android.widget.TextView(MainActivity.this);
             radarText.setText("جنيرال يستهدف "+names[lane]+" — اضغط لصد الهجمة مجاناً قبل انتهاء العدّ التنازلي.");
-            radarText.setTextColor(Color.rgb(55,65,55));
-            radarText.setTextSize(18);
+            radarText.setTextColor(Color.rgb(150,105,0));
+            radarText.setTextSize(19);
             radarText.setGravity(android.view.Gravity.CENTER);
             radarText.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);
             radarPanel.addView(radarText);
