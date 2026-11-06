@@ -3,7 +3,7 @@ name: Build GENERAL Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [ "main", "feature/cards-system-design" ]
+    branches: [ "main", "feature/cards-system-design", "feature/projectiles-cards-integration" ]
 
 permissions:
   contents: read
