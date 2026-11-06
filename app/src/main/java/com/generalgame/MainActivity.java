@@ -864,8 +864,8 @@ public class MainActivity extends Activity {
                     } else {
                         if(mineTargetSide==2 && mineLane>=0) {
                             mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
-                            message="تمت إزالة اللغم";showTemporaryCardMessage("تمت إزالة اللغم");
-                        } else {message="لم يتم العثور على لغم";showTemporaryCardMessage("لم يتم العثور على لغم");}
+                            message="";showTemporaryCardMessage("تمت إزالة اللغم");
+                        } else {message="";showTemporaryCardMessage("لم يتم العثور على لغم");}
                     }
                     invalidate();
                 }).show();
@@ -1032,8 +1032,8 @@ public class MainActivity extends Activity {
             if(type==CardInventory.RADAR) {
                 radarPending=true;radarOwnerSide=side;message=(local?"فعّلت":"فعّل الخصم")+" الرادار لمراقبة الهجوم القادم";
             } else if(type==CardInventory.MINE_DETECTOR) {
-                if(mineTargetSide==side) {mineTargetSide=0;mineOwnerSide=0;mineLane=-1;message="تمت إزالة اللغم";showTemporaryCardMessage("تمت إزالة اللغم");}
-                else {message="لم يتم العثور على لغم";showTemporaryCardMessage("لم يتم العثور على لغم");}
+                if(mineTargetSide==side) {mineTargetSide=0;mineOwnerSide=0;mineLane=-1;message="";showTemporaryCardMessage("تمت إزالة اللغم");}
+                else {message="";showTemporaryCardMessage("لم يتم العثور على لغم");}
             } else if(type==CardInventory.MILITARY_SUPPLY) {
                 die+=value;if(onlineSession!=null)onlineSession.adjustCurrentRoll(side,value);
                 message=(local?"الإمداد العسكري":"إمداد الخصم العسكري")+" — أضيفت "+value+" إلى النرد";
@@ -2254,7 +2254,7 @@ public class MainActivity extends Activity {
             if(generalHasCard(CardInventory.MINE_DETECTOR) && mineTargetSide==1) {
                 if(generalUseCard(CardInventory.MINE_DETECTOR)) {
                     mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
-                    message="تمت إزالة اللغم";showTemporaryCardMessage("تمت إزالة اللغم");invalidate();return true;
+                    message="";showTemporaryCardMessage("تمت إزالة اللغم");invalidate();return true;
                 }
             }
             // الرادار يراقب هجوم اللاعب القادم بعد انتهاء دور جنيرال.
