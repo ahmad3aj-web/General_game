@@ -53,7 +53,7 @@ jobs:
           PY
       - name: Prepare transparent card artwork
         run: |
-          python3 -m pip install --user pillow
+          python3 -m pip install --user pillow numpy
           python3 scripts/prepare_card_art.py
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
