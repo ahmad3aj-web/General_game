@@ -30,53 +30,24 @@ jobs:
           gradle-version: "8.9"
       - name: Restore stable debug signing key
         run: base64 --decode general-debug.keystore.b64 > general-debug.keystore
-      - name: Download recorded military music from Pixabay
+      - name: Download four CC0 battle music tracks
         run: |
           python3 - <<'PY'
-          import json, re, urllib.request, pathlib, html
+          import pathlib, urllib.request
           tracks = [
-              ("269842", "https://pixabay.com/music/main-title-army-military-war-music-269842/", "battle_music_1.mp3"),
-              ("160359", "https://pixabay.com/music/main-title-song-of-war-160359/", "battle_music_2.mp3"),
-              ("314656", "https://pixabay.com/music/main-title-war-army-military-music-314656/", "battle_music_3.mp3"),
-              ("338668", "https://pixabay.com/music/main-title-war-battle-military-music-338668/", "battle_music_4.mp3"),
+              ("https://raw.githubusercontent.com/enqiang/taohuayuan/47931d58f58f5f4d64d64c3408e98ee733e10688/assets/audio/taoyuan_battle.ogg", "battle_music_1.ogg"),
+              ("https://raw.githubusercontent.com/enqiang/taohuayuan/47931d58f58f5f4d64d64c3408e98ee733e10688/assets/audio/taoyuan_boss.ogg", "battle_music_2.ogg"),
+              ("https://raw.githubusercontent.com/mamba4live0918/baiyao-live-studio/c07c9b38c9b06d8cf938db31eee23ec150672dce/assets/celebrate/audio/bgm-epic-rock.ogg", "battle_music_3.ogg"),
+              ("https://raw.githubusercontent.com/mamba4live0918/baiyao-live-studio/c07c9b38c9b06d8cf938db31eee23ec150672dce/assets/celebrate/audio/bgm-rise.ogg", "battle_music_4.ogg"),
           ]
           out = pathlib.Path("app/src/main/res/raw")
           out.mkdir(parents=True, exist_ok=True)
-          def find_url(obj):
-              if isinstance(obj, dict):
-                  value = obj.get("contentUrl")
-                  if isinstance(value, str) and "cdn.pixabay.com/audio/" in value and value.lower().endswith(".mp3"):
-                      return value
-                  for item in obj.values():
-                      found = find_url(item)
-                      if found: return found
-              elif isinstance(obj, list):
-                  for item in obj:
-                      found = find_url(item)
-                      if found: return found
-              return None
-          for track_id, page, filename in tracks:
-              request = urllib.request.Request(page, headers={"User-Agent": "Mozilla/5.0"})
-              with urllib.request.urlopen(request, timeout=40) as response:
-                  source = response.read().decode("utf-8", "replace")
-              audio_url = None
-              scripts = re.findall(r"<script[^>]*type=['\"]application/ld\\+json['\"][^>]*>(.*?)</script>", source, re.I | re.S)
-              for script in scripts:
-                  try:
-                      audio_url = find_url(json.loads(html.unescape(script)))
-                  except (ValueError, TypeError):
-                      pass
-                  if audio_url: break
-              if not audio_url:
-                  urls = re.findall(r'https://cdn\.pixabay\.com/audio/[^"<> ]+?\.mp3', source)
-                  audio_url = next((url for url in urls if track_id in url), urls[0] if urls else None)
-              if not audio_url:
-                  raise RuntimeError("Could not extract MP3 URL for track " + track_id)
-              request = urllib.request.Request(audio_url, headers={"User-Agent": "Mozilla/5.0", "Referer": "https://pixabay.com/music/"})
+          for url, filename in tracks:
+              request = urllib.request.Request(url, headers={"User-Agent": "GENERAL-Android-Build"})
               with urllib.request.urlopen(request, timeout=90) as response:
                   data = response.read()
-              if len(data) < 100000 or not (data.startswith(b"ID3") or data[:2] in (bytes([255,251]), bytes([255,243]), bytes([255,242]))):
-                  raise RuntimeError("Invalid MP3 for " + filename + "; bytes=" + str(len(data)))
+              if len(data) < 50000 or not data.startswith(b"OggS"):
+                  raise RuntimeError("Invalid OGG audio for " + filename + "; bytes=" + str(len(data)))
               (out / filename).write_bytes(data)
               print("Downloaded and verified " + filename + ": " + str(len(data)) + " bytes")
           PY
