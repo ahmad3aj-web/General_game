@@ -432,6 +432,13 @@ public class MainActivity extends Activity {
             vibrationBox.setText("اهتزاز الهاتف عند تدمير السلاح");vibrationBox.setChecked(vibrationEnabled);
             final android.widget.CheckBox shakeBox=new android.widget.CheckBox(MainActivity.this);
             shakeBox.setText("اهتزاز الشاشة عند تدمير السلاح");shakeBox.setChecked(screenShakeEnabled);
+            int settingsGold=Color.rgb(150,105,0);
+            android.graphics.Typeface settingsBold=android.graphics.Typeface.DEFAULT_BOLD;
+            soundBox.setTextColor(settingsGold);soundBox.setTypeface(settingsBold);
+            musicBox.setTextColor(settingsGold);musicBox.setTypeface(settingsBold);
+            volumeLabel.setTextColor(settingsGold);volumeLabel.setTypeface(settingsBold);
+            vibrationBox.setTextColor(settingsGold);vibrationBox.setTypeface(settingsBold);
+            shakeBox.setTextColor(settingsGold);shakeBox.setTypeface(settingsBold);
             panel.addView(soundBox);panel.addView(musicBox);panel.addView(volumeLabel);panel.addView(volumeBar);
             panel.addView(vibrationBox);panel.addView(shakeBox);
             volumeBar.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener(){
