@@ -443,7 +443,14 @@ public class MainActivity extends Activity {
                 @Override public void onStartTrackingTouch(android.widget.SeekBar bar){}
                 @Override public void onStopTrackingTouch(android.widget.SeekBar bar){}
             });
-            AlertDialog dialog=new AlertDialog.Builder(MainActivity.this).setTitle("إعدادات اللعبة")
+            android.widget.TextView settingsTitle=new android.widget.TextView(MainActivity.this);
+            settingsTitle.setText("إعدادات اللعبة");
+            settingsTitle.setTextColor(Color.rgb(212,160,23));
+            settingsTitle.setTextSize(22);
+            settingsTitle.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);
+            settingsTitle.setGravity(android.view.Gravity.CENTER);
+            settingsTitle.setPadding(pad,pad,pad,pad);
+            AlertDialog dialog=new AlertDialog.Builder(MainActivity.this).setCustomTitle(settingsTitle)
                 .setView(panel).setPositiveButton("حفظ",null).setNegativeButton("إلغاء",null).create();
             dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
                 soundEnabled=soundBox.isChecked();musicEnabled=musicBox.isChecked();
@@ -2468,21 +2475,55 @@ public class MainActivity extends Activity {
                 },10000L);
                 return true;
             }
+            // حماية الرادار المجانية تصد هجمة واحدة ولا تستهلك بطاقة الدرع.
             final boolean[] resolved={false};
+            final int[] secondsLeft={10};
+            int radarPad=(int)(18*getResources().getDisplayMetrics().density);
+            android.widget.LinearLayout radarPanel=new android.widget.LinearLayout(MainActivity.this);
+            radarPanel.setOrientation(android.widget.LinearLayout.VERTICAL);
+            radarPanel.setPadding(radarPad,radarPad/2,radarPad,radarPad/2);
+            android.widget.TextView radarText=new android.widget.TextView(MainActivity.this);
+            radarText.setText("جنيرال يستهدف "+names[lane]+" — اضغط لصد الهجمة مجاناً قبل انتهاء العدّ التنازلي.");
+            radarText.setTextColor(Color.rgb(55,65,55));
+            radarText.setTextSize(18);
+            radarText.setGravity(android.view.Gravity.CENTER);
+            radarText.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);
+            radarPanel.addView(radarText);
+            android.widget.ImageView weaponImage=new android.widget.ImageView(MainActivity.this);
+            String weaponArtName=new String[]{"tank_01.png","fighter_01.png","cannon_01.png"}[lane];
+            Bitmap weaponBitmap=art.get(weaponArtName);
+            if(weaponBitmap!=null) {
+                weaponImage.setImageBitmap(weaponBitmap);
+                weaponImage.setAdjustViewBounds(true);
+                weaponImage.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+                android.widget.LinearLayout.LayoutParams imageParams=new android.widget.LinearLayout.LayoutParams(
+                    (int)(150*getResources().getDisplayMetrics().density),
+                    (int)(105*getResources().getDisplayMetrics().density));
+                imageParams.gravity=android.view.Gravity.CENTER;
+                imageParams.topMargin=radarPad/2;
+                radarPanel.addView(weaponImage,imageParams);
+            }
+            android.widget.TextView weaponName=new android.widget.TextView(MainActivity.this);
+            weaponName.setText(names[lane]);
+            weaponName.setTextColor(Color.rgb(212,160,23));
+            weaponName.setTextSize(19);
+            weaponName.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);
+            weaponName.setGravity(android.view.Gravity.CENTER);
+            radarPanel.addView(weaponName);
+            android.widget.TextView radarTitle=new android.widget.TextView(MainActivity.this);
+            radarTitle.setText("الرادار كشف الهجوم");
+            radarTitle.setTextColor(Color.rgb(212,160,23));
+            radarTitle.setTextSize(22);
+            radarTitle.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);
+            radarTitle.setGravity(android.view.Gravity.CENTER);
+            radarTitle.setPadding(radarPad,radarPad,radarPad,radarPad/2);
             final AlertDialog dialog=new AlertDialog.Builder(MainActivity.this)
-                .setTitle("الرادار كشف الهجوم")
-                .setMessage("الخصم يستهدف "+names[lane]+". لديك 10 ثوانٍ لاستخدام بطاقة الدرع فقط.")
-                .setPositiveButton("استخدام الدرع",(d,which)->{
+                .setCustomTitle(radarTitle).setView(radarPanel)
+                .setPositiveButton("صد الهجوم 10",(d,which)->{
                     if(resolved[0])return;
                     resolved[0]=true;radarPauseActive=false;
-                    if(cardAvailable(CardInventory.SHIELD) && useCard(CardInventory.SHIELD)) {
-                        shieldActive[1][lane]=true;shieldTurns[1][lane]=3;
-                        message="استخدمت الدرع بعد كشف الرادار وتم صد الهجوم";
-                        finishRadarResponseTurn(side);
-                    } else {
-                        message="لا تتوفر بطاقة درع — استمر الهجوم";
-                        invalidate();animateMove(side,lane,amount);
-                    }
+                    message="صدَدت هجمة جنيرال بحماية مجانية من الرادار — لم تُستهلك بطاقة الدرع";
+                    finishRadarResponseTurn(side);
                 })
                 .setNegativeButton("متابعة الهجوم",(d,which)->{
                     if(resolved[0])return;
@@ -2490,15 +2531,21 @@ public class MainActivity extends Activity {
                     animateMove(side,lane,amount);
                 }).setCancelable(false).create();
             dialog.show();
-            if(!cardAvailable(CardInventory.SHIELD))dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
-            postDelayed(()->{
-                if(!resolved[0]) {
+            final android.widget.Button blockButton=dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            final Runnable countdown=new Runnable(){@Override public void run(){
+                if(resolved[0] || epoch!=matchEpoch || !radarPauseActive)return;
+                secondsLeft[0]--;
+                if(secondsLeft[0]<=0) {
                     resolved[0]=true;radarPauseActive=false;
                     if(dialog.isShowing())dialog.dismiss();
-                    message="انتهت مهلة الرادار — استكمل الخصم هجومه";
+                    message="انتهت مهلة الرادار — استكمل جنيرال هجومه";
                     animateMove(side,lane,amount);
+                    return;
                 }
-            },10000L);
+                blockButton.setText("صد الهجوم "+secondsLeft[0]);
+                postDelayed(this,1000L);
+            }};
+            postDelayed(countdown,1000L);
             invalidate();return true;
         }
         private void animateMove(final int side, final int lane, final int amount) {
