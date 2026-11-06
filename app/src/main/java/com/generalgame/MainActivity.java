@@ -1005,7 +1005,7 @@ public class MainActivity extends Activity {
             boolean local=side==onlineLocalSide;int opponent=side==1?2:1;
             if(send && (!local || !onlineCards[type] || onlineSession==null || !onlineSession.isConnected()))return false;
             if(type==CardInventory.RADAR) { if(radarPending)return false; }
-            else if(type==CardInventory.MINE_DETECTOR) { if(mineTargetSide!=side)return false; }
+            else if(type==CardInventory.MINE_DETECTOR) { /* A detector may also report an empty scan. */ }
             else if(type==CardInventory.MILITARY_SUPPLY) { if(value<1 || value>3 || !choosing || die<=0)return false; }
             else {
                 if(lane<0 || lane>2)return false;
@@ -1032,8 +1032,8 @@ public class MainActivity extends Activity {
             if(type==CardInventory.RADAR) {
                 radarPending=true;radarOwnerSide=side;message=(local?"فعّلت":"فعّل الخصم")+" الرادار لمراقبة الهجوم القادم";
             } else if(type==CardInventory.MINE_DETECTOR) {
-                String found=names[mineLane];mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
-                message=(local?"اكتشفت":"اكتشف الخصم")+" لغماً في معسكر "+found+" وأبطله دون ضرر";
+                if(mineTargetSide==side) {mineTargetSide=0;mineOwnerSide=0;mineLane=-1;message="تمت إزالة اللغم";showTemporaryCardMessage("تمت إزالة اللغم");}
+                else {message="لم يتم العثور على لغم";showTemporaryCardMessage("لم يتم العثور على لغم");}
             } else if(type==CardInventory.MILITARY_SUPPLY) {
                 die+=value;if(onlineSession!=null)onlineSession.adjustCurrentRoll(side,value);
                 message=(local?"الإمداد العسكري":"إمداد الخصم العسكري")+" — أضيفت "+value+" إلى النرد";
@@ -2253,8 +2253,8 @@ public class MainActivity extends Activity {
             // كاشف الألغام لدى جنيرال يبطل اللغم الذي زرعه اللاعب في معسكراته.
             if(generalHasCard(CardInventory.MINE_DETECTOR) && mineTargetSide==1) {
                 if(generalUseCard(CardInventory.MINE_DETECTOR)) {
-                    String found=names[mineLane];mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
-                    message="جنيرال اكتشف لغماً في معسكر "+found+" وأبطله دون ضرر";invalidate();return true;
+                    mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
+                    message="تمت إزالة اللغم";showTemporaryCardMessage("تمت إزالة اللغم");invalidate();return true;
                 }
             }
             // الرادار يراقب هجوم اللاعب القادم بعد انتهاء دور جنيرال.
