@@ -2616,7 +2616,6 @@ public class MainActivity extends Activity {
             }
             if(showRadarInterception(side,lane,amount))return;
             final int epoch=matchEpoch;
-            final boolean bonusShot=bonusAttempt;
             choosing=false;
             playGameSound(lane);
             final int start=positions(side)[lane];
@@ -2672,7 +2671,6 @@ public class MainActivity extends Activity {
                     }
                 }
                 finishCheck();
-                if(bonusShot && bonusAttempt && winner==1)finishMatch();
                 if(winner==0){
                     if(mode==2 && side==1){
                         finishCardTurnEffects(1);
