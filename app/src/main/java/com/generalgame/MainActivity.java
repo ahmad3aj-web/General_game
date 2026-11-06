@@ -115,6 +115,12 @@ public class MainActivity extends Activity {
         private boolean cardTargeting = false;
         private boolean doubleDicePending = false;
         private int doubleDiceLane = -1;
+        private int doubleDiceDisplayValue = 0;
+        private long radarBlockStartedAt=0;
+        private int radarBlockLane=-1,radarBlockAttackerSide=0,radarBlockAmount=0;
+        private final boolean[] airstrikeShakeTriggered={false,false,false};
+        private String temporaryCardMessage="";
+        private long temporaryCardMessageUntil=0;
         private long cardNoticeUntil = 0;
         private int cardNoticeType = -1;
         private boolean cardNoticeFromGeneral = false;
@@ -796,7 +802,9 @@ public class MainActivity extends Activity {
             mineOwnerSide=0;mineTargetSide=0;mineLane=-1;
             radarPending=false;radarOwnerSide=0;radarPauseActive=false;
             selectedBattleCard=-1;cardTargeting=false;
-            doubleDicePending=false;doubleDiceLane=-1;
+            doubleDicePending=false;doubleDiceLane=-1;doubleDiceDisplayValue=0;
+            radarBlockStartedAt=0;radarBlockLane=-1;radarBlockAttackerSide=0;radarBlockAmount=0;
+            temporaryCardMessage="";temporaryCardMessageUntil=0;
         }
         private boolean cardAvailable(int type) {
             return mode==2 && cardInventory.isMatchActive()
@@ -855,9 +863,9 @@ public class MainActivity extends Activity {
                         message="الرادار جاهز — سيتم كشف السلاح المستهدف بعد رمية الخصم";
                     } else {
                         if(mineTargetSide==2 && mineLane>=0) {
-                            String found=names[mineLane];mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
-                            message="تم اكتشاف لغم في معسكر "+found+" وإبطاله دون ضرر";
-                        } else message="لم يتم العثور على ألغام أرضية";
+                            mineTargetSide=0;mineOwnerSide=0;mineLane=-1;
+                            message="تمت إزالة اللغم";showTemporaryCardMessage("تمت إزالة اللغم");
+                        } else {message="لم يتم العثور على لغم";showTemporaryCardMessage("لم يتم العثور على لغم");}
                     }
                     invalidate();
                 }).show();
@@ -925,6 +933,7 @@ public class MainActivity extends Activity {
                         || doubleDicePending)return false;
                 if(!useCard(type))return false;
                 if(die>0) {
+                    doubleDiceDisplayValue=die;
                     die*=2;
                     message="تم تفعيل مضاعفة النرد على "+names[lane];
                     choosing=true;
@@ -950,7 +959,7 @@ public class MainActivity extends Activity {
                     blueWinEffect[lane]=false;redWinEffect[lane]=false;
                 }
                 cyberDisabled[1][lane]=false;cyberTurns[1][lane]=0;
-                repairEffectUntil[1][lane]=System.currentTimeMillis()+Math.max(900,repairCardMovie==null?900:repairCardMovie.duration());
+                repairEffectUntil[1][lane]=System.currentTimeMillis()+1000L;
                 message="تم إصلاح "+names[lane]+" وإعادته إلى العمل";playGameSound(3);return true;
             }
             if(type==CardInventory.CYBER_WARFARE) {
@@ -1032,7 +1041,7 @@ public class MainActivity extends Activity {
                 boolean wasDestroyed=destroyed(side)[lane];destroyed(side)[lane]=false;
                 if(wasDestroyed){positions(side)[lane]=0;positions(opponent)[lane]=0;blueWinEffect[lane]=false;redWinEffect[lane]=false;}
                 cyberDisabled[side][lane]=false;cyberTurns[side][lane]=0;
-                repairEffectUntil[side][lane]=System.currentTimeMillis()+900L;
+                repairEffectUntil[side][lane]=System.currentTimeMillis()+1000L;
                 message=(local?"أصلحت":"أصلح الخصم")+" "+names[lane]+" وأعاده إلى العمل";
             } else if(type==CardInventory.DOUBLE_DICE) {
                 onlineDoubleDicePending=true;onlineDoubleDiceLane=lane;
@@ -1089,6 +1098,19 @@ public class MainActivity extends Activity {
                 float x=onlineLocalSide==1?left+slot*(width+gap):left+slot*(width+gap);
                 drawCardTile(c,type,x,top,x+width,top+tileHeight,selectedBattleCard==type,true,1);slot++;
             }
+        }
+        private void drawTemporaryCardMessage(Canvas c) {
+            if(temporaryCardMessageUntil<=System.currentTimeMillis()||temporaryCardMessage.length()==0)return;
+            float alpha=Math.min(1f,(temporaryCardMessageUntil-System.currentTimeMillis())/180f);
+            float top=h*.205f;
+            p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.argb((int)(220*alpha),10,20,16));
+            c.drawRoundRect(new RectF(w*.24f,top,w*.76f,top+h*.075f),h*.018f,h*.018f,p);
+            txt(c,temporaryCardMessage,w*.5f,top+h*.050f,h*.032f,Color.argb((int)(255*alpha),255,220,125),true);
+            postInvalidateDelayed(35);
+        }
+        private void showTemporaryCardMessage(String value) {
+            temporaryCardMessage=value;temporaryCardMessageUntil=System.currentTimeMillis()+1000L;
+            invalidate();postInvalidateDelayed(35);
         }
         private void drawCardUseNotice(Canvas c) {
             long now=System.currentTimeMillis();
@@ -2154,7 +2176,7 @@ public class MainActivity extends Activity {
                             blueWinEffect[lane]=false;redWinEffect[lane]=false;
                         }
                         cyberDisabled[2][lane]=false;cyberTurns[2][lane]=0;
-                        repairEffectUntil[2][lane]=System.currentTimeMillis()+Math.max(900,repairCardMovie==null?900:repairCardMovie.duration());
+                        repairEffectUntil[2][lane]=System.currentTimeMillis()+1000L;
                         message="جنيرال فعّل بطاقة إصلاح السلاح — "+names[lane];
                         playGameSound(3);invalidate();return true;
                     }
@@ -2335,7 +2357,7 @@ public class MainActivity extends Activity {
         }
         private void afterTurn() {
             if(winner!=0 && !bonusAttempt)return;
-            die=0; choosing=false;
+            die=0; choosing=false;doubleDiceDisplayValue=0;
             if(mode==4)finishCardTurnEffects(player);
             if(mode==2) {
                 player=1;
@@ -2361,6 +2383,7 @@ public class MainActivity extends Activity {
                 int lane=-1,best=-1;
                 for(int i=0;i<3;i++)if(canMove(2,i)&&pos2[i]+die*2<=15&&pos2[i]>best){best=pos2[i];lane=i;}
                 if(lane>=0 && generalUseCard(CardInventory.DOUBLE_DICE)) {
+                    doubleDiceDisplayValue=die;
                     die*=2;message="جنيرال فعّل بطاقة مضاعفة النرد!";
                 } else message="جنيرال يرمي النرد...";
             } else message="جنيرال يرمي النرد...";
@@ -2413,10 +2436,29 @@ public class MainActivity extends Activity {
                 }},850);
             }},850);
         }
+        private void startRadarBlockedAttack(final int attackingSide,final int lane,final int amount) {
+            radarBlockStartedAt=System.currentTimeMillis();radarBlockLane=lane;
+            radarBlockAttackerSide=attackingSide;radarBlockAmount=Math.max(1,Math.min(12,amount));
+            invalidate();postInvalidateDelayed(25);final int epoch=matchEpoch;
+            postDelayed(()->{if(epoch!=matchEpoch||radarBlockStartedAt==0)return;
+                radarBlockStartedAt=0;radarBlockLane=-1;radarBlockAttackerSide=0;radarBlockAmount=0;
+                finishRadarResponseTurn(attackingSide);invalidate();},1250L);
+        }
+        private void drawRadarBlockedAttack(Canvas c) {
+            if(radarBlockStartedAt<=0||radarBlockLane<0)return;
+            long elapsed=System.currentTimeMillis()-radarBlockStartedAt;float progress=Math.min(1f,elapsed/950f);
+            float[] rows={h*.29f,h*.49f,h*.69f};float y=rows[radarBlockLane];
+            float startX=radarBlockAttackerSide==1?w*.86f:w*.14f,targetX=radarBlockAttackerSide==1?w*.14f:w*.86f;
+            float x=startX+(targetX-startX)*progress;int count=Math.min(6,Math.max(1,radarBlockAmount));
+            int alpha=(int)(255*(progress<.78f?1f:Math.max(0f,1f-(progress-.78f)/.22f)));
+            for(int i=0;i<count;i++){float offset=(i-(count-1)*.5f)*h*.014f;p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(alpha,255,205,70));c.drawCircle(x,y+offset,h*.009f,p);}
+            if(progress>=.78f){float pulse=.5f+.5f*(float)Math.sin(elapsed/35.0);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(h*.008f);p.setColor(Color.argb((int)(220*pulse),105,225,255));c.drawCircle(targetX,y,h*(.045f+.018f*pulse),p);p.setStyle(Paint.Style.FILL);txt(c,"تم صد الهجوم",targetX,y-h*.075f,h*.025f,Color.rgb(255,230,135),true);}
+            postInvalidateDelayed(25);
+        }
         private void finishRadarResponseTurn(int attackingSide) {
             if(mode==4){die=0;choosing=false;afterTurn();return;}
             finishCardTurnEffects(attackingSide);
-            die=0;choosing=false;
+            die=0;choosing=false;doubleDiceDisplayValue=0;
             if(mode==2 && attackingSide==2) {
                 player=1;message="تم صد الهجوم — دورك الآن";setBattleDialogue(1,1);
             } else if(mode==2) {
@@ -2465,22 +2507,9 @@ public class MainActivity extends Activity {
             final int radarOwner=radarOwnerSide;
             radarPending=false;radarOwnerSide=0;radarPauseActive=true;
             if(radarOwner==2 && side==1) {
-                if(generalHasCard(CardInventory.SHIELD) && !destroyed(2)[lane] && !shieldActive[2][lane]
-                        && generalUseCard(CardInventory.SHIELD)) {
-                    shieldActive[2][lane]=true;shieldTurns[2][lane]=3;
-                    radarPauseActive=false;
-                    message="جنيرال كشف هجومك بالرادار واستخدم الدرع لصدّه";
-                    finishRadarResponseTurn(side);return true;
-                }
-                message="رادار جنيرال كشف السلاح المستهدف — مهلة دفاع 10 ثوانٍ";
-                invalidate();
-                postDelayed(()->{
-                    if(epoch==matchEpoch && radarPauseActive) {
-                        radarPauseActive=false;message="انتهت مهلة الرادار — استكمل هجومك";
-                        animateMove(side,lane,amount);
-                    }
-                },10000L);
-                return true;
+                radarPauseActive=false;
+                message="جنيرال كشف هجومك بالرادار وصدّه تلقائياً";
+                startRadarBlockedAttack(side,lane,amount);return true;
             }
             // حماية الرادار المجانية تصد هجمة واحدة ولا تستهلك بطاقة الدرع.
             final boolean[] resolved={false};
@@ -2530,7 +2559,7 @@ public class MainActivity extends Activity {
                     if(resolved[0])return;
                     resolved[0]=true;radarPauseActive=false;
                     message="صدَدت هجمة جنيرال بحماية مجانية من الرادار — لم تُستهلك بطاقة الدرع";
-                    finishRadarResponseTurn(side);
+                    startRadarBlockedAttack(side,lane,amount);
                 })
                 .setNegativeButton("متابعة الهجوم",(d,which)->{
                     if(resolved[0])return;
@@ -2645,6 +2674,7 @@ public class MainActivity extends Activity {
             postInvalidateDelayed(30);
         }
         private void startAirstrikeAnimation(int targetSide) {
+            for(int i=0;i<3;i++)airstrikeShakeTriggered[i]=false;
             airstrikeTargetSide=targetSide;
             // The card-use popup lasts two seconds; start the five-second animation just after it fades.
             airstrikeStartedAt=System.currentTimeMillis()+2000L;
@@ -2688,7 +2718,14 @@ public class MainActivity extends Activity {
             float[] rows={h*.29f,h*.49f,h*.69f};
             for(int lane=0;lane<3;lane++) {
                 long blastElapsed=elapsed-(1750L+lane*650L);
-                if(blastElapsed>=0 && blastElapsed<850L)drawAirstrikeBlast(c,targetX,rows[lane]-h*.065f,blastElapsed/850f);
+                if(blastElapsed>=0 && blastElapsed<850L) {
+                    if(!airstrikeShakeTriggered[lane]) {
+                        airstrikeShakeTriggered[lane]=true;
+                        if(screenShakeEnabled){screenShakeStartedAt=System.currentTimeMillis();postInvalidateDelayed(16);}
+                        vibrateForExplosion();
+                    }
+                    drawAirstrikeBlast(c,targetX,rows[lane]-h*.065f,blastElapsed/850f);
+                }
             }
             postInvalidateDelayed(30);
         }
@@ -2747,12 +2784,18 @@ public class MainActivity extends Activity {
         // Effects are drawn behind the vehicle so the weapon stays fully visible.
         private void drawWeaponCardEffect(Canvas c,int side,int lane,float cx,float cy) {
             long now=System.currentTimeMillis();
+            boolean repair=repairEffectUntil[side][lane]>now;
+            boolean active=smokeActive[side][lane]||cyberDisabled[side][lane]||shieldActive[side][lane];
+            if(!repair&&!active)return;
+            float pulse=.5f+.5f*(float)Math.sin(now/115.0);
+            int alpha=(int)(55+200*pulse);
             if(smokeActive[side][lane]) {
-                if(smokeEffectImage!=null)drawScaledWeaponEffect(c,smokeEffectImage,cx,cy,1.58f,230);
-                else txt(c,"🌫",cx,cy-h*.065f,h*.050f,Color.WHITE,true);
-            } else if(repairEffectUntil[side][lane]>now) drawScaledWeaponEffect(c,repairCardImage,cx,cy,1.32f,225);
-            else if(cyberDisabled[side][lane]) drawScaledWeaponEffect(c,cyberCardImage,cx,cy,1.32f,225);
-            else if(shieldActive[side][lane]) drawScaledWeaponEffect(c,shieldCardImage,cx,cy,1.32f,225);
+                if(smokeEffectImage!=null)drawScaledWeaponEffect(c,smokeEffectImage,cx,cy,1.58f,alpha);
+                else txt(c,"🌫",cx,cy-h*.065f,h*.050f,Color.argb(alpha,255,255,255),true);
+            } else if(repair)drawScaledWeaponEffect(c,repairCardImage,cx,cy,1.32f,alpha);
+            else if(cyberDisabled[side][lane])drawScaledWeaponEffect(c,cyberCardImage,cx,cy,1.32f,alpha);
+            else if(shieldActive[side][lane])drawScaledWeaponEffect(c,shieldCardImage,cx,cy,1.32f,alpha);
+            postInvalidateDelayed(45);
         }
         // Mines remain in front of the weapon, separate from the background effects.
         private void drawWeaponMineEffect(Canvas c,int side,int lane,float cx,float cy) {
@@ -2760,8 +2803,9 @@ public class MainActivity extends Activity {
             float mineX=cx+(side==1?-1f:1f)*w*.034f;
             float mineY=cy+h*.022f;
             float mineW=w*.038f,mineH=h*.050f;
+            int pulseAlpha=(int)(65+190*(.5+.5*Math.sin(System.currentTimeMillis()/115.0)));
             if(landMineImage!=null) {
-                p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
+                p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(pulseAlpha);
                 c.drawBitmap(landMineImage,null,new RectF(mineX-mineW*.5f,mineY-mineH*.5f,mineX+mineW*.5f,mineY+mineH*.5f),p);
             } else txt(c,"💣",mineX,mineY+h*.012f,h*.045f,Color.rgb(255,215,80),true);
         }
@@ -2902,10 +2946,10 @@ public class MainActivity extends Activity {
                 // Draw the GIF behind the weapon so the weapon remains unobstructed.
                 if(blueWinEffect[lane]) drawWinEffect(c,w*.925f,y-h*.025f);
                 if(redWinEffect[lane]) drawWinEffect(c,w*.075f,y-h*.025f);
-                drawWeaponCardEffect(c,1,lane,w*.925f,y);
-                drawWeaponCardEffect(c,2,lane,w*.075f,y);
                 drawWeapon(c,lane,w*.925f,y,blue,false);
                 drawWeapon(c,lane,w*.075f,y,red,true);
+                drawWeaponCardEffect(c,1,lane,w*.925f,y);
+                drawWeaponCardEffect(c,2,lane,w*.075f,y);
                 drawWeaponMineEffect(c,1,lane,w*.925f,y);
                 drawWeaponMineEffect(c,2,lane,w*.075f,y);
                 if(dead1[lane]) drawFire(c,w*.925f,y);
@@ -2924,6 +2968,7 @@ public class MainActivity extends Activity {
             drawMuzzleFlash(c);
             drawExplosion(c);
             drawBattleDialogue(c);
+            drawRadarBlockedAttack(c);
             float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
             boolean localRollTurn=(mode==1 || (mode==2 && player==1)
                     || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected())
@@ -2936,10 +2981,17 @@ public class MainActivity extends Activity {
                 int diceColor=winner!=0?dark:(player==1?blue:red);
                 if((mode==3 || mode==4) && winner==0 && !choosing && die==0) {
                     txt(c,"بانتظار دورك",diceCx,diceCy+h*.012f,h*.027f,Color.WHITE,true);
-                } else if(die>0) drawDiceFace(c,diceCx,diceCy,diceSize*.88f,die);
+                } else if(die>0) {
+                    if(doubleDiceDisplayValue>0) {
+                        float faceSize=diceSize*.68f,gap=diceSize*.08f;
+                        drawDiceFace(c,diceCx-faceSize*.58f-gap*.5f,diceCy,faceSize,doubleDiceDisplayValue);
+                        drawDiceFace(c,diceCx+faceSize*.58f+gap*.5f,diceCy,faceSize,doubleDiceDisplayValue);
+                    } else drawDiceFace(c,diceCx,diceCy,diceSize*.88f,die);
+                }
             }
             if(choosing) { txt(c,"اختر السلاح",w*.5f,h*.965f,h*.026f,dark,true);txt(c,"عدد الطلقات المطلوبة: "+die,w*.5f,h*.925f,h*.022f,Color.WHITE,true); }
             drawCardUseNotice(c);
+            drawTemporaryCardMessage(c);
             c.restore();
         }
 
@@ -3113,10 +3165,11 @@ public class MainActivity extends Activity {
                 else if(mode==3){if(lanSession!=null)lanSession.rollNow(false);}
                 else if(mode==4){if(onlineSession!=null)onlineSession.rollNow(false);}
                 else {
-                    die=random.nextInt(6)+1;choosing=true;
+                    die=random.nextInt(6)+1;doubleDiceDisplayValue=0;choosing=true;
                     if(mode==2 && player==1 && doubleDicePending) {
                         int targetLane=doubleDiceLane;
                         doubleDicePending=false;doubleDiceLane=-1;
+                        doubleDiceDisplayValue=die;
                         die*=2;
                         boolean laneReady=targetLane>=0 && targetLane<3
                                 && !destroyed(1)[targetLane] && !destroyed(2)[targetLane]
