@@ -1,4 +1,5 @@
 name: Build GENERAL Android APK
+# Keep the canonical cards-and-missions branch buildable.
 
 on:
   workflow_dispatch:
