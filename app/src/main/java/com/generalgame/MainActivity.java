@@ -1467,15 +1467,17 @@ public class MainActivity extends Activity {
                 if(list!=null) {
                     list.setDivider(new android.graphics.drawable.ColorDrawable(Color.rgb(205,190,150)));
                     list.setDividerHeight(1);
-                    list.setBackgroundColor(Color.rgb(246,247,239));
-                    for(int i=0;i<list.getChildCount();i++) {
-                        android.view.View child=list.getChildAt(i);
-                        if(child instanceof android.widget.TextView) {
-                            android.widget.TextView item=(android.widget.TextView)child;
-                            item.setTextColor(Color.rgb(35,55,42));
-                            item.setTextSize(17f);
+                    list.setBackgroundColor(Color.rgb(24,35,29));
+                    list.post(()->{
+                        for(int i=0;i<list.getChildCount();i++) {
+                            android.view.View child=list.getChildAt(i);
+                            if(child instanceof android.widget.TextView) {
+                                android.widget.TextView item=(android.widget.TextView)child;
+                                item.setTextColor(Color.rgb(242,196,94));
+                                item.setTextSize(17f);
+                            }
                         }
-                    }
+                    });
                 }
             });
             loadoutDialog.show();
@@ -1537,7 +1539,7 @@ public class MainActivity extends Activity {
                 });}
                 @Override public void onRematchReady(){runOnUiThread(()->{
                     onlineOpeningStarted=false;onlineLoadoutReady=false;onlinePeerLoadoutReady=false;
-                    onlineLoadoutDialogShown=false;java.util.Arrays.fill(onlineCards,false);
+                    onlineLoadoutDialogShown=false;resultRevealReady=false;java.util.Arrays.fill(onlineCards,false);
                     for(int side=1;side<=2;side++)java.util.Arrays.fill(onlineCardsUsedBySide[side],false);
                     message="اختَر بطاقاتك الثلاث للمباراة الجديدة";
                     showOnlineCardSelectionDialog();invalidate();
@@ -1846,7 +1848,7 @@ public class MainActivity extends Activity {
         }
 
         private void drawSetup(Canvas c) {
-            txt(c,"إعداد اللاعبين",w*.5f,h*.105f,h*.060f,dark,true);
+            txt(c,mode==4?"إعداد اللعب أون لاين":"إعداد اللاعبين",w*.5f,h*.105f,h*.060f,mode==4?Color.rgb(242,196,94):dark,true);
             iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
             int idx=setupSide-1;
             if(mode==2) {
@@ -3189,9 +3191,10 @@ public class MainActivity extends Activity {
                     iconButton(c,w*.145f,h*.065f,w*.245f,h*.155f,dark,"⚙");
                     iconButton(c,w*.875f,h*.065f,w*.965f,h*.155f,Color.rgb(91,24,43),"⏻");
                     float c1=w*.18f,c2=w*.50f,c3=w*.82f;
-                    menuButton(c,"⚔","لاعبان على نفس الجهاز",c1-w*.15f,h*.32f,c1+w*.15f,h*.72f,blue);
-                    menuButton(c,"★","ضد جنيرال",c2-w*.15f,h*.32f,c2+w*.15f,h*.72f,red);
-                    menuButton(c,"◎","أون لاين",c3-w*.15f,h*.32f,c3+w*.15f,h*.72f,Color.rgb(37,105,160));
+                    int modeTile=Color.rgb(43,42,31);
+                    menuButton(c,"⚔","لاعبان على نفس الجهاز",c1-w*.15f,h*.32f,c1+w*.15f,h*.72f,modeTile);
+                    menuButton(c,"★","ضد جنيرال",c2-w*.15f,h*.32f,c2+w*.15f,h*.72f,modeTile);
+                    menuButton(c,"◎","أون لاين",c3-w*.15f,h*.32f,c3+w*.15f,h*.72f,modeTile);
                 } else {
                     txt(c,"المقر الرئيسي",w*.5f,h*.205f,h*.060f,Color.rgb(242,196,94),true);
                     iconButton(c,w*.035f,h*.065f,w*.125f,h*.155f,dark,"⚙");
@@ -3346,7 +3349,7 @@ public class MainActivity extends Activity {
             boolean localRollTurn=(mode==1 || (mode==2 && player==1)
                     || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected())
                     || (mode==4 && player==onlineLocalSide && onlineSession!=null && onlineSession.isConnected()));
-            if(localRollTurn && !choosing && die==0) {
+            if(localRollTurn && winner==0 && !choosing && die==0) {
                 float buttonHalf=w*.115f;
                 btn(c,(mode==3 || mode==4)?("أطلق ("+lanCountdown+")"):"أطلق",
                         diceCx-buttonHalf,h*.80f,diceCx+buttonHalf,h*.93f,player==1?blue:red);
