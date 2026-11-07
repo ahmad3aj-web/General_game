@@ -4,9 +4,9 @@ name: Build GENERAL Android APK
 on:
   workflow_dispatch:
   pull_request:
-    branches: [ "feature/cards-system-design" ]
+    branches: [ "feature/cards-system-design", "feature/menu-gold-burgundy-screens" ]
   push:
-    branches: [ "main", "feature/cards-system-design", "feature/menu-gold-burgundy-screens" ]
+    branches: [ "main", "feature/cards-system-design", "feature/menu-gold-burgundy-screens", "feature/gameplay-agreed-fixes" ]
 
 permissions:
   contents: read
