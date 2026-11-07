@@ -1941,96 +1941,90 @@ public class MainActivity extends Activity {
             txt(c,text,w*.5f,y,h*.034f,Color.rgb(155,105,28),true);
             return y+h*.052f;
         }
-        private void drawHelpButton(Canvas c,String title,String subtitle,float left,float top,float right,float bottom) {
+        private void drawHelpButton(Canvas c,String title,String subtitle,int icon,float left,float top,float right,float bottom) {
             RectF r=new RectF(left,top,right,bottom);
-            p.setShader(new LinearGradient(left,top,right,bottom,Color.rgb(58,65,52),Color.rgb(19,29,26),Shader.TileMode.CLAMP));
+            p.setShader(new LinearGradient(left,top,right,bottom,Color.rgb(43,61,48),Color.rgb(17,29,25),Shader.TileMode.CLAMP));
             p.setStyle(Paint.Style.FILL);c.drawRoundRect(r,h*.018f,h*.018f,p);p.setShader(null);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.005f));p.setColor(Color.rgb(116,37,54));
-            c.drawRoundRect(r,h*.018f,h*.018f,p);p.setStyle(Paint.Style.FILL);
-            txt(c,title,(left+right)*.5f,top+(bottom-top)*.46f,h*.032f,Color.rgb(245,204,112),true);
-            txt(c,subtitle,(left+right)*.5f,top+(bottom-top)*.75f,h*.018f,Color.WHITE,false);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.004f));p.setColor(Color.rgb(126,37,55));
+            c.drawRoundRect(r,h*.018f,h*.018f,p);p.setStrokeWidth(Math.max(1,h*.0018f));p.setColor(gold);
+            c.drawRoundRect(new RectF(left+h*.006f,top+h*.006f,right-h*.006f,bottom-h*.006f),h*.014f,h*.014f,p);p.setStyle(Paint.Style.FILL);
+            float cx=(left+right)*.5f,cy=top+(bottom-top)*.39f;
+            if(icon==0){drawWeapon(c,0,cx-w*.055f,cy,blue,false);drawWeapon(c,1,cx,cy,blue,false);drawWeapon(c,2,cx+w*.055f,cy,blue,false);}
+            else if(icon==1){drawWeapon(c,0,cx-w*.04f,cy,blue,false);drawWeapon(c,1,cx+w*.04f,cy,blue,false);}
+            else if(icon==2){Bitmap b=cardImageForType(7);if(b!=null)drawHelpBitmap(c,b,cx,cy,w*.105f,h*.09f);}
+            else if(icon==3){txt(c,"★",cx,cy+h*.025f,h*.075f,Color.rgb(245,190,65),true);}
+            else if(icon==4){txt(c,"🏅",cx,cy+h*.025f,h*.070f,Color.rgb(245,190,65),true);}
+            else {drawArt(c,"vs_emblem.png",cx-w*.045f,cy-h*.045f,cx+w*.045f,cy+h*.045f,false);}
+            txt(c,title,cx,bottom-h*.040f,h*.030f,Color.rgb(245,204,112),true);
+            txt(c,subtitle,cx,bottom-h*.014f,h*.016f,Color.rgb(225,231,216),false);
+        }
+        private void drawHelpBitmap(Canvas c,Bitmap bitmap,float cx,float cy,float width,float height) {
+            if(bitmap==null)return;p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
+            c.drawBitmap(bitmap,null,new RectF(cx-width*.5f,cy-height*.5f,cx+width*.5f,cy+height*.5f),p);
+        }
+        private void drawHelpInfoCard(Canvas c,String title,String detail,Bitmap image,float y,float height) {
+            float left=w*.095f,right=w*.905f,top=y,bottom=y+height;
+            p.setShader(new LinearGradient(left,top,right,bottom,Color.rgb(38,54,44),Color.rgb(18,29,25),Shader.TileMode.CLAMP));
+            p.setStyle(Paint.Style.FILL);c.drawRoundRect(new RectF(left,top,right,bottom),h*.012f,h*.012f,p);p.setShader(null);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.003f));p.setColor(Color.rgb(123,39,55));
+            c.drawRoundRect(new RectF(left,top,right,bottom),h*.012f,h*.012f,p);p.setStyle(Paint.Style.FILL);
+            float imageCx=right-w*.105f,imageCy=(top+bottom)*.5f;
+            if(image!=null)drawHelpBitmap(c,image,imageCx,imageCy,w*.13f,height*.78f);
+            float textX=w*.50f;
+            txt(c,title,textX,top+height*.34f,h*.026f,Color.rgb(245,204,112),true);
+            p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.17f);p.setColor(Color.rgb(225,231,216));
+            String[] words=detail.split(" ");String line="";float yy=top+height*.65f;
+            for(String word:words){String next=line.isEmpty()?word:line+" "+word;if(p.measureText(next)>w*.58f&&!line.isEmpty()){c.drawText(line,textX,yy,p);yy+=h*.20f;line=word;}else line=next;}
+            if(!line.isEmpty())c.drawText(line,textX,yy,p);p.setTextAlign(Paint.Align.CENTER);
         }
         private void drawHelp(Canvas c) {
-            box(c,w*.055f,h*.105f,w*.945f,h*.895f,Color.rgb(244,248,235));
-            txt(c,helpSection<0?"دليل لعبة جنيرال":new String[]{"طريقة اللعب","الأسلحة","البطاقات","المهمات","النقاط والرتب","اللعب الجماعي والإعدادات"}[Math.min(5,helpSection)],w*.5f,h*.15f,h*.046f,dark,true);
-            c.save();c.clipRect(w*.075f,h*.185f,w*.925f,h*.875f);
+            // لوحة شرح عسكرية متناسقة مع خلفيات وأزرار اللعبة.
+            p.setShader(new LinearGradient(0,h*.10f,0,h*.90f,Color.rgb(35,52,42),Color.rgb(13,23,21),Shader.TileMode.CLAMP));
+            p.setStyle(Paint.Style.FILL);c.drawRoundRect(new RectF(w*.035f,h*.085f,w*.965f,h*.99f),h*.025f,h*.025f,p);p.setShader(null);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(4,h*.006f));p.setColor(Color.rgb(116,34,51));
+            c.drawRoundRect(new RectF(w*.035f,h*.085f,w*.965f,h*.99f),h*.025f,h*.025f,p);p.setStrokeWidth(Math.max(2,h*.002f));p.setColor(gold);
+            c.drawRoundRect(new RectF(w*.045f,h*.095f,w*.955f,h*.98f),h*.020f,h*.020f,p);p.setStyle(Paint.Style.FILL);
+            String[] titles={"طريقة اللعب","الأسلحة","البطاقات","المهمات","النقاط والرتب","اللعب الجماعي"};
+            txt(c,helpSection<0?"دليل جنيرال":titles[Math.min(5,helpSection)],w*.5f,h*.15f,h*.046f,Color.rgb(245,200,105),true);
+            c.save();c.clipRect(w*.065f,h*.19f,w*.935f,h*.875f);
             if(helpSection<0) {
-                String[] titles={"طريقة اللعب","الأسلحة","البطاقات","المهمات","النقاط والرتب","اللعب الجماعي والإعدادات"};
-                String[] subs={"بداية الحرب والأدوار والفوز","الدبابة والطائرة والمدفع","شرح البطاقات العشر","اليومية والأسبوعية","المكافآت والتقدم العسكري","محلي وWi-Fi وإنترنت"};
-                float[] tops={h*.23f,h*.43f,h*.63f};
-                for(int row=0;row<3;row++)for(int col=0;col<2;col++){
-                    int idx=row*2+col;float left=col==0?w*.105f:w*.525f,right=col==0?w*.475f:w*.895f;
-                    drawHelpButton(c,titles[idx],subs[idx],left,tops[row],right,tops[row]+h*.15f);
-                }
-                txt(c,"اختر الموضوع الذي تريد معرفة تفاصيله",w*.5f,h*.86f,h*.020f,Color.rgb(85,105,88),false);
+                String[] subs={"الحرب والأدوار والفوز","الدبابة والطائرة والمدفع","البطاقات العشر واستخدامها","اليومية والأسبوعية","الترقيات والمكافآت","محلي وشبكة وإنترنت"};
+                float top=h*.225f,cardH=h*.19f;
+                for(int i=0;i<6;i++){int row=i/2,col=i%2;float left=col==0?w*.075f:w*.515f,right=col==0?w*.485f:w*.925f;
+                    drawHelpButton(c,titles[i],subs[i],i,left,top+row*h*.205f,right,top+row*h*.205f+cardH);}
             } else {
-                c.translate(0,-helpScrollY);float y=h*.225f;
+                c.translate(0,-helpScrollY);float y=h*.205f,cardH=h*.12f,gap=h*.012f;
                 if(helpSection==0) {
-                    y=drawHelpHeading(c,"هدف اللعبة",y);
-                    y=drawHelpLine(c,"هدفك تدمير أسلحة الخصم: الدبابة والطائرة والمدفع.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"كل سلاح يواجه السلاح المقابل له في مسار مستقل.",y,dark,h*.022f,false);
-                    y=drawHelpHeading(c,"بداية المباراة وطريقة الدور",y);
-                    y=drawHelpLine(c,"تبدأ المباراة بقرعة النرد لتحديد من يبدأ أولاً.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"اضغط «أطلق» لتحصل على رقم من 1 إلى 6، ثم اختر سلاحاً متاحاً.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"يتحرك السلاح بعدد خطوات النرد باتجاه خصمه.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"يتكوّن كل مسار من 15 خطوة، وعند نهايته يُدمّر السلاح المقابل.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"إذا دُمّر أحد سلاحي المسار تتوقف المواجهة في ذلك المسار.",y,dark,h*.022f,false);
-                    y=drawHelpHeading(c,"الفوز وأوضاع اللعب",y);
-                    y=drawHelpLine(c,"يفوز من يدمّر سلاحين من أصل ثلاثة، ويمكن مواصلة اللعب على السلاح الثالث لمكافأة إضافية.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"اختر مستوى جنيرال: مبتدئ، متوسط، محترف أو أسطوري.",y,dark,h*.022f,false);
+                    drawHelpInfoCard(c,"هدف المعركة","دمّر سلاحين من أسلحة الخصم الثلاثة لتحسم الفوز، ويمكنك مواصلة القتال على السلاح الثالث للمكافأة.",art.get("tank_01.png"),y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"رمي النرد","اضغط زر إطلاق النرد، ثم اختر السلاح الذي تريد تحريكه بعد ظهور النتيجة.",art.get("cannon_01.png"),y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"خطوات الهجوم","يتحرك السلاح بعدد خطوات النرد، ويحتاج المسار إلى 15 خطوة لإصابة السلاح المقابل.",art.get("fighter_01.png"),y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"الأدوار","تتناوب أنت وجنيرال على رمي النرد واختيار السلاح وتنفيذ الحركة.",art.get("fighter_02.png"),y,cardH);
                 } else if(helpSection==1) {
-                    y=drawHelpHeading(c,"الأسلحة الثلاثة",y);
-                    y=drawHelpLine(c,"الدبابة والطائرة والمدفع؛ لكل سلاح مسار مستقل أمام السلاح المقابل.",y,dark,h*.023f,false);
-                    y=drawHelpLine(c,"كل مسار يحتاج إلى 15 خطوة لإصابة السلاح المقابل وتدميره.",y,dark,h*.023f,false);
-                    y=drawHelpLine(c,"تختار السلاح بعد رمية النرد، وتتحرك بعدد الخطوات الظاهر على النرد.",y,dark,h*.023f,false);
-                    y=drawHelpLine(c,"تتوقف المواجهة في المسار عند تدمير أحد السلاحين، ويمكن إصلاح السلاح ببطاقة الإصلاح في اللعب ضد جنيرال.",y,dark,h*.023f,false);
-                    y=drawHelpLine(c,"الفوز يتحقق بتدمير سلاحين، وتدمير السلاح الثالث يمنح فرصة لمكافأة إضافية.",y,dark,h*.023f,false);
+                    for(int i=0;i<3;i++){drawHelpInfoCard(c,names[i],"هذا السلاح يواجه السلاح المقابل في مساره. اختره بعد رمية النرد لتحريك الهجوم.",art.get(i==0?"tank_01.png":i==1?"fighter_01.png":"cannon_01.png"),y,cardH);y+=cardH+gap;}
+                    drawHelpInfoCard(c,"تدمير السلاح","عند اكتمال 15 خطوة يُدمّر السلاح المقابل، ويتوقف القتال في ذلك المسار.",art.get("tank_01.png"),y,cardH);
                 } else if(helpSection==2) {
-                    y=drawHelpHeading(c,"البطاقات العشر وطريقة استخدامها",y);
-                    y=drawHelpLine(c,"قبل مباراة جنيرال اختر حتى 3 أنواع مختلفة من مخزنك؛ لكل بطاقة استخدام واحد في المباراة.",y,dark,h*.022f,true);
-                    y=drawHelpLine(c,"إصلاح السلاح: يعيد السلاح المدمّر إلى بداية المسار، أو يزيل التعطيل السيبراني مع إبقاء التقدم.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"مضاعفة النرد: اختر سلاحك أولاً؛ تضاعف رمية النرد الحالية أو تنتظر الرمية التالية إذا لم ترمِ بعد.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"الحرب السيبرانية: تعطل سلاح جنيرال لدورين كاملين، ويمكنها اختراق درع الحماية.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"درع الحماية: يحمي سلاحك من الهجمات العادية لدورين كاملين للخصم.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"الضربة الجوية: تضيف 3 خطوات إلى عداد كل سلاح من أسلحة جنيرال الثلاثة.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"ستار الدخان: يخفي سلاحاً ويحميه من استهداف الخصم لمدة 3 أدوار.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"الإمداد العسكري: بعد رمية النرد تختار إضافة 1 أو 2 أو 3 إلى النتيجة، أو تلغي دون استهلاك البطاقة.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"الرادار: يراقب هجوم الخصم القادم، ويكشف السلاح المستهدف ويمنحك 10 ثوانٍ لاتخاذ قرار الدفاع.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"حقل الألغام: يزرع لغماً مخفياً في سلاح من أسلحة الخصم؛ أول محاولة استخدام تخصم حتى 3 خطوات.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"كاشف الألغام: يفحص معسكرات الخصم الثلاثة ويكشف اللغم ويبطل مفعوله دون ضرر.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"البطاقات متاحة في اللعب ضد جنيرال فقط، ولا تستخدم أكثر من بطاقة واحدة في الدور.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"البطاقة المستخدمة تُستهلك؛ وغير المستخدمة تعود بعد المباراة الطبيعية. عند الاستسلام تُفقد بطاقات المباراة كلها.",y,dark,h*.022f,false);
+                    for(int i=0;i<CardInventory.CARD_TYPES;i++){drawHelpInfoCard(c,cardNames[i],cardDescriptions[i],cardImageForType(i),y,cardH);y+=cardH+gap;}
+                    drawHelpInfoCard(c,"اختيار البطاقات","اختر حتى 3 أنواع مختلفة قبل مباراة جنيرال. البطاقة المستخدمة تُستهلك ولا تستخدم أكثر من بطاقة في الدور.",null,y,cardH);
                 } else if(helpSection==3) {
-                    y=drawHelpHeading(c,"المهمات اليومية والأسبوعية",y);
-                    y=drawHelpLine(c,"تظهر 3 مهمات يومية و5 مهمات أسبوعية، ضد جنيرال فقط.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"لا تحتسب المهمات في اللعب المحلي بين لاعبين أو عبر الإنترنت.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"اليومية: سهلة واحدة ومتوسطة واحدة وصعبة واحدة.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"الأسبوعية: مهمتان متوسطتان ومهمتان صعبتان وصعبة جداً واحدة.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"تتجدد اليومية منتصف الليل، والأسبوعية مع بداية الجمعة بتوقيت الأردن.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"مكافآت اليومية: سهلة = بطاقة، متوسطة = بطاقتان، صعبة = 3 بطاقات.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"مكافآت الأسبوعية: متوسطة = 3 بطاقات، صعبة = 5، صعبة جداً = 7.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"نوع البطاقات المكافأة عشوائي، وقد تتشابه أو تختلف. تضاف للمخزن تلقائياً.",y,dark,h*.022f,false);
+                    drawHelpInfoCard(c,"المهمات اليومية","3 مهمات: سهلة ومتوسطة وصعبة. تتجدد يومياً منتصف الليل بتوقيت الأردن.",null,y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"المهمات الأسبوعية","5 مهمات: مهمتان متوسطتان، مهمتان صعبتان، ومهمة صعبة جداً. تتجدد الجمعة.",null,y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"المكافآت","اليومية: 1 و2 و3 بطاقات حسب الصعوبة. الأسبوعية: 3 و5 و7 بطاقات.",null,y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"شروط الاحتساب","تُحتسب المهمات عند اللعب ضد جنيرال فقط، ولا تُحتسب في اللعب الجماعي.",null,y,cardH);
                 } else if(helpSection==4) {
-                    y=drawHelpHeading(c,"النقاط والرتب والمكافآت",y);
-                    y=drawHelpLine(c,"نقاط الرتب تُكتسب من الفوز على جنيرال، وتزداد مع ارتفاع مستوى الصعوبة.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"الفوز المثالي بتدمير الأسلحة الثلاثة يمنح مكافأة إضافية.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"الترقية إلى رتبة عسكرية جديدة تمنح بطاقات إضافية.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"الدخول اليومي يمنح بطاقة عشوائية واحدة مرة كل يوم.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"الفوز ضد جنيرال يمنح بطاقات حسب مستوى الصعوبة، والفوز المثالي يمنح بطاقة إضافية.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"سجل المواجهات ولوحة التقدم يعرضان نتائجك وتقدمك العسكري.",y,dark,h*.022f,false);
+                    drawHelpInfoCard(c,"النقاط العسكرية","تُكتسب نقاط التقدم من الفوز على جنيرال، وتزداد مع ارتفاع مستوى الصعوبة.",null,y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"الرتب","تتدرج من جندي إلى لواء، والترقية تمنح بطاقات إضافية.",null,y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"مكافأة الفوز الكامل","تدمير الأسلحة الثلاثة يمنح مكافأة إضافية.",null,y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"الدخول اليومي","تحصل على بطاقة عشوائية واحدة عند الدخول مرة كل يوم.",null,y,cardH);
                 } else {
-                    y=drawHelpHeading(c,"اللعب الجماعي",y);
-                    y=drawHelpLine(c,"اللعب المحلي: لاعبان على الهاتف نفسه، ويتناوب اللاعبان على رمي النرد واختيار السلاح.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"اللعب عبر Wi-Fi: يتصل جهازان على الشبكة المحلية نفسها؛ يتولى أحدهما إنشاء المباراة والآخر الانضمام.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"اللعب عبر الإنترنت: أنشئ مباراة أو انضم إلى مباراة لاعب آخر عند توفر الاتصال.",y,dark,h*.022f,false);
-                    y=drawHelpHeading(c,"الإعدادات وحفظ البيانات",y);
-                    y=drawHelpLine(c,"يمكنك تشغيل أو إيقاف المؤثرات الصوتية والموسيقى والاهتزاز واهتزاز الشاشة من الإعدادات.",y,dark,h*.022f,false);
-                    y=drawHelpLine(c,"المهمات ومخزن البطاقات محفوظان محلياً على الجهاز.",y,dark,h*.022f,false);
+                    drawHelpInfoCard(c,"اللعب المحلي","لاعبان على الهاتف نفسه، ويتناوبان على رمي النرد واختيار الأسلحة.",null,y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"اللعب عبر Wi-Fi","يتصل جهازان بالشبكة المحلية نفسها؛ أحدهما ينشئ المباراة والآخر ينضم.",null,y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"اللعب عبر الإنترنت","أنشئ مباراة أو انضم إلى مباراة لاعب آخر عند توفر الاتصال.",null,y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"الإعدادات","يمكنك التحكم بالموسيقى والمؤثرات الصوتية والاهتزاز من شاشة الإعدادات.",null,y,cardH);
                 }
-                helpContentHeight=(int)(y+h*.04f);
+                helpContentHeight=(int)(y+cardH+h*.04f);
             }
             c.restore();
-            if(helpSection>=0)txt(c,"اسحب للأعلى والأسفل لقراءة الشرح",w*.5f,h*.888f,h*.018f,Color.rgb(85,105,88),false);
+            if(helpSection>=0)txt(c,"اسحب للأعلى والأسفل لعرض بقية الشرح",w*.5f,h*.887f,h*.018f,Color.rgb(225,205,155),false);
             btn(c,helpSection<0?"العودة إلى الرئيسية":"العودة إلى قائمة الشروحات",w*.32f,h*.91f,w*.68f,h*.985f,dark);
         }
 
@@ -2491,42 +2485,56 @@ public class MainActivity extends Activity {
                 radarBlockStartedAt=0;radarBlockLane=-1;radarBlockAttackerSide=0;radarBlockAmount=0;
                 finishRadarResponseTurn(attackingSide);invalidate();},1250L);
         }
+        private void drawRadarRound(Canvas c,float x,float y,float angle,int color,float scale) {
+            float length=h*.030f*scale,thickness=h*.009f*scale;
+            c.save();c.rotate(angle,x,y);
+            p.setShader(null);p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.argb(85,Color.red(color),Color.green(color),Color.blue(color)));
+            c.drawOval(new RectF(x-length*.9f,y-thickness*1.15f,x+length*.9f,y+thickness*1.15f),p);
+            p.setColor(color);
+            c.drawRoundRect(new RectF(x-length*.5f,y-thickness*.5f,x+length*.30f,y+thickness*.5f),thickness*.35f,thickness*.35f,p);
+            Path tip=new Path();tip.moveTo(x+length*.30f,y-thickness*.5f);tip.lineTo(x+length*.72f,y);tip.lineTo(x+length*.30f,y+thickness*.5f);tip.close();c.drawPath(tip,p);
+            p.setColor(Color.rgb(255,235,175));
+            c.drawRoundRect(new RectF(x-length*.40f,y-thickness*.22f,x+length*.12f,y+thickness*.22f),thickness*.2f,thickness*.2f,p);
+            p.setColor(Color.argb(220,Color.red(color),Color.green(color),Color.blue(color)));
+            c.drawOval(new RectF(x-length*.85f,y-thickness*.23f,x-length*.55f,y+thickness*.23f),p);
+            c.restore();
+        }
         private void drawRadarBlockedAttack(Canvas c) {
             if(radarBlockStartedAt<=0||radarBlockLane<0)return;
             long elapsed=System.currentTimeMillis()-radarBlockStartedAt;
-            float flight=Math.min(1f,elapsed/780f);
+            float flight=Math.min(1f,elapsed/900f);
             float[] rows={h*.29f,h*.49f,h*.69f};float y=rows[radarBlockLane];
             float attackerX=radarBlockAttackerSide==1?w*.86f:w*.14f;
-            float weaponX=radarBlockAttackerSide==1?w*.14f:w*.86f;
-            float direction=weaponX>attackerX?1f:-1f;
-            float interceptX=weaponX-direction*w*.115f;
+            float defenderX=radarBlockAttackerSide==1?w*.14f:w*.86f;
+            float direction=defenderX>attackerX?1f:-1f;
+            // يخرج كل مقذوف من فوهة السلاح المهاجم، وتخرج المقذوفات الخضراء من فوهة السلاح المدافع.
+            float attackMuzzle=attackerX+direction*w*.043f;
+            float defendMuzzle=defenderX-direction*w*.043f;
+            float interceptX=defenderX-direction*w*.13f;
+            float incomingX=attackMuzzle+(interceptX-attackMuzzle)*flight;
+            float counterX=defendMuzzle+(interceptX-defendMuzzle)*flight;
             int count=Math.min(6,Math.max(1,radarBlockAmount));
-            float incomingX=attackerX+(interceptX-attackerX)*flight;
-            float interceptorX=weaponX+(interceptX-weaponX)*flight;
-            p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeCap(Paint.Cap.ROUND);
-            p.setStrokeWidth(h*.006f);p.setColor(Color.argb(190,255,160,65));
-            c.drawLine(attackerX,y,incomingX,y,p);
-            p.setStrokeWidth(h*.007f);p.setColor(Color.argb(230,80,255,125));
-            c.drawLine(weaponX,y,interceptorX,y,p);
-            p.setStyle(Paint.Style.FILL);
-            for(int i=0;i<count;i++){
+            float angle=direction>0?0f:180f;
+            for(int i=0;i<count;i++) {
                 float offset=(i-(count-1)*.5f)*h*.012f;
-                p.setColor(Color.rgb(255,190,70));c.drawCircle(incomingX,y+offset,h*.008f,p);
+                drawRadarRound(c,incomingX,y+offset,angle,Color.rgb(239,166,55),.9f);
+                drawRadarRound(c,counterX,y+offset,angle+180f,Color.rgb(42,238,92),.9f);
             }
-            for(int i=-1;i<=1;i++){
-                float offset=i*h*.014f;
-                p.setColor(Color.rgb(45,255,105));c.drawCircle(interceptorX,y+offset,h*.009f,p);
-                p.setColor(Color.argb(170,70,255,130));c.drawCircle(interceptorX-direction*h*.018f,y+offset,h*.004f,p);
-            }
-            if(elapsed>=780L){
-                float pulse=.5f+.5f*(float)Math.sin((elapsed-780L)/32.0);
-                float radius=h*(.018f+.035f*pulse);
-                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(h*.007f);
-                p.setColor(Color.argb((int)(235*(1f-pulse*.35f)),40,255,105));
-                c.drawCircle(interceptX,y,radius,p);c.drawCircle(interceptX,y,radius*.58f,p);
-                p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(120,255,150));
-                for(int i=0;i<8;i++){double angle=Math.PI*2*i/8.0;float d=radius*(.7f+(i%2)*.35f);c.drawCircle(interceptX+(float)Math.cos(angle)*d,y+(float)Math.sin(angle)*d,h*.003f,p);}
-                txt(c,"تم اعتراض الصواريخ",interceptX,y-h*.075f,h*.022f,Color.rgb(95,255,140),true);
+            if(elapsed>=900L) {
+                float age=Math.min(1f,(elapsed-900L)/360f);
+                float radius=h*(.012f+.048f*age);
+                int alpha=(int)(245*(1f-age));
+                p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(alpha,65,255,105));
+                c.drawCircle(interceptX,y,radius*.62f,p);
+                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(h*.006f);
+                p.setColor(Color.argb(alpha,105,255,135));c.drawCircle(interceptX,y,radius,p);
+                p.setStyle(Paint.Style.FILL);
+                for(int i=0;i<10;i++){
+                    double a=Math.PI*2*i/10.0;float d=radius*(.75f+(i%2)*.35f);
+                    c.drawCircle(interceptX+(float)Math.cos(a)*d,y+(float)Math.sin(a)*d,Math.max(1,h*.0035f*(1f-age)),p);
+                }
+                txt(c,"تم اعتراض الطلقات",interceptX,y-h*.075f,h*.021f,Color.rgb(95,255,140),true);
             }
             p.setStyle(Paint.Style.FILL);postInvalidateDelayed(25);
         }
