@@ -3152,8 +3152,8 @@ public class MainActivity extends Activity {
                     for(int i=0;i<15;i++) {
                         float bx=rightStart-i*(trackW*.92f/14f);
                         float rx=leftStart+i*(trackW*.92f/14f);
-                        if(!dead1[lane] && i>=pos1[lane])drawBullet(c,bx,y-gap,bulletW,bulletH,blue,false,false);
-                        if(!dead2[lane] && i>=pos2[lane])drawBullet(c,rx,y+gap,bulletW,bulletH,red,false,true);
+                        if(!dead1[lane] && i>=pos1[lane])drawBullet(c,bx,y-gap,bulletW,bulletH,blue,true,false);
+                        if(!dead2[lane] && i>=pos2[lane])drawBullet(c,rx,y+gap,bulletW,bulletH,red,true,true);
                     }
                 }
                 drawAmmoCounter(c,w*.84f,y,15-pos2[lane]);
