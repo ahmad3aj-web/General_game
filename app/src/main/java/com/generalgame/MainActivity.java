@@ -3147,9 +3147,9 @@ public class MainActivity extends Activity {
                 for(int i=0;i<15;i++) {
                     float bx=rightStart-i*(trackW*.92f/14f);
                     float rx=leftStart+i*(trackW*.92f/14f);
-                    boolean leftDead=dead1[lane], rightDead=dead2[lane];
-                    drawBullet(c,bx,y-gap,bulletW,bulletH,leftDead?Color.GRAY:blue,!leftDead && i<pos1[lane],false);
-                    drawBullet(c,rx,y+gap,bulletW,bulletH,rightDead?Color.GRAY:red,!rightDead && i<pos2[lane],true);
+                    // إظهار الذخيرة المتبقية فقط؛ الطلقات التي وصلت سابقاً تختفي من المسار.
+                    if(!dead1[lane] && i>=pos1[lane])drawBullet(c,bx,y-gap,bulletW,bulletH,blue,false,false);
+                    if(!dead2[lane] && i>=pos2[lane])drawBullet(c,rx,y+gap,bulletW,bulletH,red,false,true);
                 }
                 drawAmmoCounter(c,w*.84f,y,15-pos2[lane]);
                 drawAmmoCounter(c,w*.16f,y,15-pos1[lane]);
