@@ -63,6 +63,7 @@ public class MainActivity extends Activity {
         private final CardInventory cardInventory;
         private final MissionManager missionManager;
         private boolean missionsScreen=false;
+        private boolean warMenuScreen=false;
         private boolean weeklyMissionTab=false;
         private final HashMap<String,Bitmap> art = new HashMap<>();
         private Movie fireMovie;
@@ -1783,6 +1784,15 @@ public class MainActivity extends Activity {
         }
 
 
+        private void wideMenuButton(Canvas c,String glyph,String label,float l,float t,float r,float b) {
+            RectF rect=new RectF(l,t,r,b);
+            p.setShader(new LinearGradient(l,t,r,b,Color.rgb(55,67,55),Color.rgb(17,28,25),Shader.TileMode.CLAMP));
+            p.setStyle(Paint.Style.FILL);c.drawRoundRect(rect,h*.035f,h*.035f,p);p.setShader(null);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.009f));p.setColor(Color.rgb(105,27,48));
+            c.drawRoundRect(rect,h*.035f,h*.035f,p);p.setStyle(Paint.Style.FILL);
+            txt(c,glyph,(l+r)*.5f,(t+b)*.49f,h*.105f,Color.rgb(242,196,94),true);
+            txt(c,label,(l+r)*.5f,b-h*.045f,h*.052f,Color.rgb(242,196,94),true);
+        }
         private void menuButton(Canvas c,String glyph,String label,float l,float t,float r,float b,int color) {
             // زر أيقونة مربع مستقل، والعنوان تحته مباشرة.
             float cx=(l+r)*.5f;
@@ -1795,11 +1805,11 @@ public class MainActivity extends Activity {
             c.drawRoundRect(tile,side*.13f,side*.13f,p);
             p.setShader(null);
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,side*.025f));
-            p.setColor(Color.argb(225,238,224,190));
+            p.setColor(Color.rgb(105,27,48));
             c.drawRoundRect(tile,side*.13f,side*.13f,p);
             p.setStyle(Paint.Style.FILL);
-            txt(c,glyph,cx,top+side*.68f,side*.56f,Color.WHITE,true);
-            txt(c,label,cx,top+side+h*.032f,h*.024f,Color.WHITE,true);
+            txt(c,glyph,cx,top+side*.68f,side*.56f,Color.rgb(242,196,94),true);
+            txt(c,label,cx,top+side+h*.032f,h*.024f,Color.rgb(242,196,94),true);
         }
         private void miniMenuButton(Canvas c,String glyph,String label,float cx,float top,int color) {
             float side=h*.083f;
@@ -1808,10 +1818,10 @@ public class MainActivity extends Activity {
                     shade(color,1.22f),shade(color,.58f),Shader.TileMode.CLAMP));
             p.setStyle(Paint.Style.FILL);c.drawRoundRect(tile,side*.15f,side*.15f,p);
             p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,side*.025f));
-            p.setColor(Color.argb(225,238,224,190));c.drawRoundRect(tile,side*.15f,side*.15f,p);
+            p.setColor(Color.rgb(105,27,48));c.drawRoundRect(tile,side*.15f,side*.15f,p);
             p.setStyle(Paint.Style.FILL);
-            txt(c,glyph,cx,top+side*.69f,side*.54f,Color.WHITE,true);
-            txt(c,label,cx,top+side+h*.025f,h*.021f,Color.WHITE,true);
+            txt(c,glyph,cx,top+side*.69f,side*.54f,Color.rgb(242,196,94),true);
+            txt(c,label,cx,top+side+h*.025f,h*.021f,Color.rgb(242,196,94),true);
         }
         private int rankIndex(int points) {
             int rank=0;
@@ -2938,24 +2948,37 @@ public class MainActivity extends Activity {
             if(mode==0) {
                 drawMenuBackdrop(c);
                 if(missionsScreen){drawMissions(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}
-                if(inventoryScreen){drawInventory(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}if(historyScreen){drawHistory(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}if(progressScreen){drawProgress(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}if(helpScreen){drawHelp(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}
-                txt(c,"اختر ساحة المعركة",w*.5f,h*.205f,h*.060f,Color.rgb(248,232,190),true);
-                iconButton(c,w*.035f,h*.065f,w*.125f,h*.165f,dark,"⚙");iconButton(c,w*.875f,h*.065f,w*.965f,h*.165f,Color.rgb(135,48,43),"⏻");
-                float c1=w*.18f,c2=w*.50f,c3=w*.82f;
-                menuButton(c,"⚔","لاعبان على نفس الجهاز",c1-w*.15f,h*.245f,c1+w*.15f,h*.505f,blue);
-                menuButton(c,"★","ضد جنيرال الكمبيوتر",c2-w*.15f,h*.245f,c2+w*.15f,h*.505f,red);
-                menuButton(c,"◎","اللعب عبر الإنترنت",c3-w*.15f,h*.245f,c3+w*.15f,h*.505f,Color.rgb(37,105,160));
-                menuButton(c,"▤","سجل المباريات",c1-w*.15f,h*.515f,c1+w*.15f,h*.775f,dark);
-                menuButton(c,"♜","لوحة التقدم",c2-w*.15f,h*.515f,c2+w*.15f,h*.775f,Color.rgb(155,105,28));
-                menuButton(c,"?","شرح اللعبة",c3-w*.15f,h*.515f,c3+w*.15f,h*.775f,Color.rgb(55,91,72));
-                miniMenuButton(c,"⚑","المهمات",w*.31f,h*.795f,Color.rgb(155,105,28));
-                miniMenuButton(c,"▣","مخزن البطاقات  •  "+cardInventory.getTotalCount(),w*.69f,h*.795f,Color.rgb(37,105,160));
-                p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(true);
-                p.setTextSize(h*.020f);p.setColor(Color.WHITE);
-                c.drawText("© 2026 أحمد جرادات",w*.5f,h*.945f,p);
-                p.setTextSize(h*.018f);
-                c.drawText("ahmad3aj@gmail.com",w*.5f,h*.975f,p);
-                p.setFakeBoldText(false);
+                if(inventoryScreen){drawInventory(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}
+                if(historyScreen){drawHistory(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}
+                if(progressScreen){drawProgress(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}
+                if(helpScreen){drawHelp(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}
+                if(warMenuScreen) {
+                    txt(c,"اختر نمط الحرب",w*.5f,h*.205f,h*.060f,Color.rgb(242,196,94),true);
+                    iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
+                    iconButton(c,w*.145f,h*.065f,w*.245f,h*.155f,dark,"⚙");
+                    iconButton(c,w*.875f,h*.065f,w*.965f,h*.155f,Color.rgb(91,24,43),"⏻");
+                    float c1=w*.18f,c2=w*.50f,c3=w*.82f;
+                    menuButton(c,"⚔","لاعبان على نفس الجهاز",c1-w*.15f,h*.32f,c1+w*.15f,h*.72f,blue);
+                    menuButton(c,"★","ضد جنيرال",c2-w*.15f,h*.32f,c2+w*.15f,h*.72f,red);
+                    menuButton(c,"◎","أون لاين",c3-w*.15f,h*.32f,c3+w*.15f,h*.72f,Color.rgb(37,105,160));
+                } else {
+                    txt(c,"المقر الرئيسي",w*.5f,h*.205f,h*.060f,Color.rgb(242,196,94),true);
+                    iconButton(c,w*.035f,h*.065f,w*.125f,h*.155f,dark,"⚙");
+                    iconButton(c,w*.875f,h*.065f,w*.965f,h*.155f,Color.rgb(91,24,43),"⏻");
+                    wideMenuButton(c,"⚔","الحرب",w*.32f,h*.29f,w*.68f,h*.51f);
+                    float top=h*.64f;
+                    miniMenuButton(c,"⚑","المهمات",w*.10f,top,Color.rgb(155,105,28));
+                    miniMenuButton(c,"▣","البطاقات",w*.30f,top,Color.rgb(37,105,160));
+                    miniMenuButton(c,"▤","السجل",w*.50f,top,dark);
+                    miniMenuButton(c,"♜","التقدم",w*.70f,top,Color.rgb(155,105,28));
+                    miniMenuButton(c,"?","الشرح",w*.90f,top,Color.rgb(55,91,72));
+                    p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(true);
+                    p.setTextSize(h*.020f);p.setColor(Color.WHITE);
+                    c.drawText("© 2026 أحمد جرادات",w*.5f,h*.945f,p);
+                    p.setTextSize(h*.018f);
+                    c.drawText("ahmad3aj@gmail.com",w*.5f,h*.975f,p);
+                    p.setFakeBoldText(false);
+                }
                 drawRewardPopup(c);
                 return;
             }
@@ -3152,16 +3175,22 @@ public class MainActivity extends Activity {
                         historyScreen=false;progressScreen=false;helpScreen=false;inventoryScreen=false;missionsScreen=false;
                     }
                 }
+                else if(warMenuScreen) {
+                    if(y>=h*.065f&&y<=h*.155f&&x>=w*.025f&&x<=w*.125f)warMenuScreen=false;
+                    else if(y>=h*.065f&&y<=h*.155f&&x>=w*.145f&&x<=w*.245f)showSettingsDialog();
+                    else if(y>=h*.065f&&y<=h*.155f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
+                    else if(y>=h*.32f&&y<=h*.72f&&x>=w*.03f&&x<=w*.33f){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
+                    else if(y>=h*.32f&&y<=h*.72f&&x>=w*.35f&&x<=w*.65f){cardInventory.prepareNewMatchSetup();mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
+                    else if(y>=h*.32f&&y<=h*.72f&&x>=w*.67f&&x<=w*.97f)showOnlineModeDialog();
+                }
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
-                else if(y>=h*.245f&&y<=h*.505f&&x>=w*.075f&&x<=w*.285f){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.245f&&y<=h*.505f&&x>=w*.3975f&&x<=w*.6025f){cardInventory.prepareNewMatchSetup();mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
-                else if(y>=h*.245f&&y<=h*.505f&&x>=w*.7175f&&x<=w*.9225f)showOnlineModeDialog();
-                else if(y>=h*.515f&&y<=h*.775f&&x>=w*.075f&&x<=w*.285f)historyScreen=true;
-                else if(y>=h*.515f&&y<=h*.775f&&x>=w*.3975f&&x<=w*.6025f)progressScreen=true;
-                else if(y>=h*.515f&&y<=h*.775f&&x>=w*.7175f&&x<=w*.9225f){helpScreen=true;helpScrollY=0;}
-                else if(y>=h*.795f&&y<=h*.94f&&x>=w*.20f&&x<=w*.42f)missionsScreen=true;
-                else if(y>=h*.795f&&y<=h*.94f&&x>=w*.58f&&x<=w*.80f)inventoryScreen=true;
+                else if(y>=h*.29f&&y<=h*.51f&&x>=w*.32f&&x<=w*.68f)warMenuScreen=true;
+                else if(y>=h*.64f&&y<=h*.90f&&x>=w*.02f&&x<=w*.18f)missionsScreen=true;
+                else if(y>=h*.64f&&y<=h*.90f&&x>=w*.20f&&x<=w*.40f)inventoryScreen=true;
+                else if(y>=h*.64f&&y<=h*.90f&&x>=w*.40f&&x<=w*.60f)historyScreen=true;
+                else if(y>=h*.64f&&y<=h*.90f&&x>=w*.60f&&x<=w*.80f)progressScreen=true;
+                else if(y>=h*.64f&&y<=h*.90f&&x>=w*.80f&&x<=w*.98f){helpScreen=true;helpScrollY=0;}
                 invalidate();return true;
             }
             if(setup) {
