@@ -1244,9 +1244,9 @@ public class MainActivity extends Activity {
                 .setNeutralButton("إلغاء",null).show();
         }
         private void showOnlineModeDialog() {
-            final String[] choices={"لعب سريع — ابحث عن لاعب","دعوة صديق عبر واتساب","الانضمام برمز غرفة"};
+            final String[] choices={"⚔  لعب سريع — ابحث عن لاعب","✉  دعوة صديق عبر واتساب","⌨  اللعب برمز غرفة"};
             new AlertDialog.Builder(MainActivity.this)
-                .setTitle("اللعب عبر الإنترنت")
+                .setTitle("اللعب أون لاين")
                 .setItems(choices,(dialog,which)->{
                     mode=4; setup=true; setupSide=1; onlineJoinCode=null;
                     playerNames[0]=savedPlayerName(0); avatars[0]=0;
@@ -1400,11 +1400,11 @@ public class MainActivity extends Activity {
             final int[] types={CardInventory.REPAIR,CardInventory.DOUBLE_DICE,CardInventory.CYBER_WARFARE,
                     CardInventory.SHIELD,CardInventory.SMOKE_SCREEN,CardInventory.MILITARY_SUPPLY,
                     CardInventory.RADAR,CardInventory.MINEFIELD,CardInventory.MINE_DETECTOR};
-            final String[] labels={"الإصلاح","مضاعفة النرد","الحرب السيبرانية","الدرع","ستار الدخان",
-                    "الإمداد العسكري","الرادار","الألغام الأرضية","كاشف الألغام"};
+            final String[] labels={"🔧  الإصلاح","🎲  مضاعفة النرد","💻  الحرب السيبرانية","🛡  الدرع","🌫  ستار الدخان",
+                    "📦  الإمداد العسكري","📡  الرادار","💣  الألغام الأرضية","🔎  كاشف الألغام"};
             final boolean[] checked=new boolean[types.length];
-            new AlertDialog.Builder(MainActivity.this).setTitle("اختر 3 بطاقات سرية للحرب")
-                .setMessage("اختر ثلاث بطاقات مختلفة. لن يراها الخصم إلا عند استخدام كل بطاقة. الضربة الجوية مستثناة.")
+            AlertDialog loadoutDialog=new AlertDialog.Builder(MainActivity.this).setTitle("اختر 3 بطاقات سرية للحرب")
+                .setMessage("اختر ثلاث بطاقات مختلفة من البطاقات الظاهرة أدناه. لن يراها الخصم إلا عند استخدام كل بطاقة. الضربة الجوية مستثناة.")
                 .setMultiChoiceItems(labels,checked,(dialog,which,isChecked)->{
                     if(isChecked){int count=0;for(boolean value:checked)if(value)count++;
                         if(count>3){checked[which]=false;((AlertDialog)dialog).getListView().setItemChecked(which,false);
@@ -1424,7 +1424,24 @@ public class MainActivity extends Activity {
                 .setNegativeButton("إلغاء",(dialog,which)->{
                     onlineLoadoutDialogShown=false;timerlessCloseOnline();mode=0;setup=false;
                     message="تم إلغاء المباراة";invalidate();
-                }).setCancelable(false).show();
+                }).setCancelable(false).create();
+            loadoutDialog.setOnShowListener(dialog->{
+                android.widget.ListView list=loadoutDialog.getListView();
+                if(list!=null) {
+                    list.setDivider(new android.graphics.drawable.ColorDrawable(Color.rgb(205,190,150)));
+                    list.setDividerHeight(1);
+                    list.setBackgroundColor(Color.rgb(246,247,239));
+                    for(int i=0;i<list.getChildCount();i++) {
+                        android.view.View child=list.getChildAt(i);
+                        if(child instanceof android.widget.TextView) {
+                            android.widget.TextView item=(android.widget.TextView)child;
+                            item.setTextColor(Color.rgb(35,55,42));
+                            item.setTextSize(17f);
+                        }
+                    }
+                }
+            });
+            loadoutDialog.show();
         }
         private void startOnlineBattleIfReady() {
             if(mode!=4 || !onlineLoadoutReady || !onlinePeerLoadoutReady || onlineOpeningStarted
