@@ -1409,8 +1409,6 @@ public class MainActivity extends Activity {
                 android.widget.Button button=dialog.getButton(which);
                 if(button!=null){button.setTextColor(gold);button.setBackground(buttonBg.getConstantState().newDrawable().mutate());}
             }
-            android.widget.TextView title=dialog.findViewById(androidx.appcompat.R.id.alertTitle);
-            if(title!=null)title.setTextColor(gold);
             int titleId=getResources().getIdentifier("alertTitle","id","android");
             android.widget.TextView platformTitle=dialog.findViewById(titleId);
             if(platformTitle!=null)platformTitle.setTextColor(gold);
@@ -1877,13 +1875,29 @@ public class MainActivity extends Activity {
                     drawCardTile(c,i,l,t,l+w*.064f,t+h*.058f,cardInventory.isSelected(i),counts[i]>0,counts[i]);
                 }
             } else {
-                txt(c,setupSide==1?"اللاعب الأول — الأزرق":"اللاعب الثاني — الأحمر",w*.5f,h*.20f,h*.040f,setupSide==1?blue:red,true);
-                float portraitY=h*.43f;drawAvatar(c,avatars[idx],w*.5f,portraitY,h*.125f,true);arrowButton(c,w*.39f,portraitY,true);arrowButton(c,w*.61f,portraitY,false);
-                txt(c,"الشخصية "+(avatars[idx]+1)+" من 17",w*.5f,portraitY+h*.16f,h*.027f,dark,true);
-                box(c,w*.27f,h*.62f,w*.73f,h*.71f,Color.rgb(248,250,239));txt(c,playerNames[idx],w*.5f,h*.675f,h*.043f,dark,true);txt(c,"اضغط على الاسم لتعديله",w*.5f,h*.745f,h*.024f,dark,false);
+                if(mode==4) {
+                    txt(c,onlineLocalSide==1?"إعداد الاتصال — اللاعب المضيف":"إعداد الاتصال — اللاعب المنضم",w*.5f,h*.20f,h*.036f,Color.rgb(242,196,94),true);
+                    float portraitY=h*.43f;
+                    drawAvatar(c,avatars[idx],w*.5f,portraitY,h*.125f,true);arrowButton(c,w*.39f,portraitY,true);arrowButton(c,w*.61f,portraitY,false);
+                    txt(c,"الشخصية "+(avatars[idx]+1)+" من 17",w*.5f,portraitY+h*.16f,h*.027f,Color.rgb(242,196,94),true);
+                    box(c,w*.27f,h*.62f,w*.73f,h*.71f,Color.rgb(32,39,32));
+                    p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.004f));p.setColor(Color.rgb(105,27,48));
+                    c.drawRoundRect(new RectF(w*.27f,h*.62f,w*.73f,h*.71f),h*.018f,h*.018f,p);p.setStyle(Paint.Style.FILL);
+                    txt(c,playerNames[idx],w*.5f,h*.675f,h*.043f,Color.rgb(242,196,94),true);
+                    txt(c,"اضغط على الاسم لتعديله",w*.5f,h*.745f,h*.024f,Color.rgb(242,196,94),false);
+                } else {
+                    txt(c,setupSide==1?"اللاعب الأول — الأزرق":"اللاعب الثاني — الأحمر",w*.5f,h*.20f,h*.040f,setupSide==1?blue:red,true);
+                    float portraitY=h*.43f;drawAvatar(c,avatars[idx],w*.5f,portraitY,h*.125f,true);arrowButton(c,w*.39f,portraitY,true);arrowButton(c,w*.61f,portraitY,false);
+                    txt(c,"الشخصية "+(avatars[idx]+1)+" من 17",w*.5f,portraitY+h*.16f,h*.027f,dark,true);
+                    box(c,w*.27f,h*.62f,w*.73f,h*.71f,Color.rgb(248,250,239));txt(c,playerNames[idx],w*.5f,h*.675f,h*.043f,dark,true);txt(c,"اضغط على الاسم لتعديله",w*.5f,h*.745f,h*.024f,dark,false);
+                }
             }
-            String startLabel=setupSide==1 && mode==1?"التالي":(mode==4 && onlineQuickMatch?"ابحث عن لاعب":(mode==4 && onlineInvitePending?"إنشاء الدعوة":"ابدأ المباراة"));
-            btn(c,startLabel,w*.37f,h*.91f,w*.63f,h*.985f,setupSide==1?blue:red);
+            String startLabel=setupSide==1 && mode==1?"التالي":(mode==4 && onlineQuickMatch?"ابحث عن لاعب":(mode==4 && onlineInvitePending?"إنشاء الدعوة":(mode==4 && onlineLocalSide==1?"إنشاء الغرفة":"ابدأ المباراة")));
+            btn(c,startLabel,w*.37f,h*.91f,w*.63f,h*.985f,mode==4?Color.rgb(105,27,48):(setupSide==1?blue:red));
+            if(mode==4) {
+                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.003f));p.setColor(Color.rgb(242,196,94));
+                c.drawRoundRect(new RectF(w*.37f,h*.91f,w*.63f,h*.985f),h*.018f,h*.018f,p);p.setStyle(Paint.Style.FILL);
+            }
         }
 
 
