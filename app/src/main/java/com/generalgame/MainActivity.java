@@ -806,7 +806,7 @@ public class MainActivity extends Activity {
             int opposingSide=side==1?2:1;
             // Disabled weapons cannot fire; a shield blocks ordinary attacks on its weapon.
             return !destroyed(side)[lane] && !destroyed(opposingSide)[lane]
-                    && !cyberDisabled[side][lane] && !shieldActive[opposingSide][lane]
+                    && !cyberDisabled[side][lane]
                     && !smokeActive[opposingSide][lane]
                     && positions(side)[lane]+die<=15;
         }
@@ -871,19 +871,7 @@ public class MainActivity extends Activity {
                     if(!useCard(type))return;
                     if(type==CardInventory.AIRSTRIKE) {
                         startAirstrikeAnimation(2);
-                        for(int laneIndex=0;laneIndex<3;laneIndex++) if(!dead1[laneIndex]) {
-                            pos1[laneIndex]=Math.min(15,pos1[laneIndex]+3);
-                            if(pos1[laneIndex]>=15) {
-                                dead2[laneIndex]=true;blueWinEffect[laneIndex]=true;
-                                if(mode==2)missionManager.recordGeneralWeaponDestroyed(laneIndex);
-                                smokeActive[2][laneIndex]=false;smokeTurns[2][laneIndex]=0;
-                                if(mineTargetSide==2&&mineLane==laneIndex){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}
-                                spawnExplosion(w*.075f,new float[]{h*.29f,h*.49f,h*.69f}[laneIndex]);
-                                playGameSound(3);
-                            }
-                        }
-                        message="نفذت الضربة الجوية وزادت عدّادات أسلحتك الثلاثة";
-                        finishCheck();
+                        message="الطائرة بدأت الهجوم — ستُطلق ذخائرها على الأسلحة الثلاثة تباعاً";
                     } else if(type==CardInventory.RADAR) {
                         radarPending=true;radarOwnerSide=1;
                         message="الرادار جاهز — سيتم كشف السلاح المستهدف بعد رمية الخصم";
@@ -2640,6 +2628,34 @@ public class MainActivity extends Activity {
             }
             if(showRadarInterception(side,lane,amount))return;
             final int epoch=matchEpoch;
+            final int defendingSide=side==1?2:1;
+            if(shieldActive[defendingSide][lane]) {
+                choosing=false;
+                playGameSound(lane);
+                final float laneY=new float[]{h*.29f,h*.49f,h*.69f}[lane];
+                final float meetingX=w*.5f;
+                final long interceptFlight=430L;
+                Projectile incoming=new Projectile(side==1?w*.875f:w*.125f,laneY,meetingX,laneY-h*.012f,laneY-h*.045f,interceptFlight);
+                Projectile counter=new Projectile(side==1?w*.125f:w*.875f,laneY,meetingX,laneY+h*.012f,laneY+h*.045f,interceptFlight);
+                activeProjectiles.add(incoming);activeProjectiles.add(counter);
+                message="إطلاق متبادل! الخصم يصدّ الطلقات قبل وصولها إلى السلاح";
+                invalidate();
+                postDelayed(()->{
+                    if(epoch!=matchEpoch)return;
+                    activeProjectiles.remove(incoming);activeProjectiles.remove(counter);
+                    impactEffects.add(new ImpactEffect(meetingX,laneY));
+                    if(mode==2) {
+                        finishCardTurnEffects(side);
+                        die=0;choosing=false;
+                        if(side==1) {
+                            player=2;message="جنيرال يرد بعد صدّ الهجوم";
+                            postDelayed(()->{if(epoch==matchEpoch&&mode==2&&winner==0&&player==2)computerTurn();},450L);
+                        } else {player=1;message="دورك — اضغط النرد";}
+                    } else afterTurn();
+                    invalidate();
+                },interceptFlight);
+                return;
+            }
             choosing=false;
             playGameSound(lane);
             final int start=positions(side)[lane];
@@ -2744,11 +2760,50 @@ public class MainActivity extends Activity {
             p.setColor(Color.WHITE);c.drawCircle(muzzleFlashX,muzzleFlashY,r*.32f,p);
             postInvalidateDelayed(30);
         }
-        private void startAirstrikeAnimation(int targetSide) {
+        private void startAirstrikeAnimation(final int targetSide) {
             for(int i=0;i<3;i++)airstrikeShakeTriggered[i]=false;
             airstrikeTargetSide=targetSide;
-            // The card-use popup lasts two seconds; start the five-second animation just after it fades.
+            final int attackerSide=targetSide==2?1:2;
+            final int epoch=matchEpoch;
+            // The aircraft crosses the battlefield after the card notice fades.
             airstrikeStartedAt=System.currentTimeMillis()+2000L;
+            final float[] rows={h*.29f,h*.49f,h*.69f};
+            for(int lane=0;lane<3;lane++) {
+                final int targetLane=lane;
+                final long launchDelay=3750L+lane*650L;
+                postDelayed(()->{
+                    if(epoch!=matchEpoch || winner!=0 || destroyed(targetSide)[targetLane])return;
+                    float progress=Math.max(0f,Math.min(1f,(1750f+targetLane*650f)/5000f));
+                    float startX=targetSide==2?w*.94f:w*.06f;
+                    float endX=targetSide==2?w*.06f:w*.94f;
+                    float planeX=startX+(endX-startX)*progress;
+                    float planeY=h*.225f-(float)Math.sin(progress*Math.PI)*h*.012f;
+                    float targetX=targetSide==2?w*.075f:w*.925f;
+                    float targetY=rows[targetLane];
+                    muzzleFlashAt=System.currentTimeMillis();muzzleFlashX=planeX;muzzleFlashY=planeY;
+                    playGameSound(1);
+                    Projectile bomb=new Projectile(planeX,planeY,targetX,targetY,
+                            (planeY+targetY)*.5f-h*.055f,850L);
+                    activeProjectiles.add(bomb);invalidate();
+                    postDelayed(()->{
+                        if(epoch!=matchEpoch)return;
+                        activeProjectiles.remove(bomb);
+                        if(winner!=0 || destroyed(targetSide)[targetLane]){invalidate();return;}
+                        positions(attackerSide)[targetLane]=Math.min(15,positions(attackerSide)[targetLane]+3);
+                        impactEffects.add(new ImpactEffect(targetX,targetY));
+                        spawnExplosion(targetX,targetY);playGameSound(3);
+                        if(positions(attackerSide)[targetLane]>=15) {
+                            destroyed(targetSide)[targetLane]=true;
+                            if(attackerSide==1)blueWinEffect[targetLane]=true;else redWinEffect[targetLane]=true;
+                            if(mode==2 && targetSide==2)missionManager.recordGeneralWeaponDestroyed(targetLane);
+                            smokeActive[targetSide][targetLane]=false;smokeTurns[targetSide][targetLane]=0;
+                            if(mineTargetSide==targetSide&&mineLane==targetLane){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;mineTurns=0;}
+                        }
+                        message="وصلت ذخائر الضربة الجوية إلى "+names[targetLane];
+                        finishCheck();invalidate();
+                    },850L);
+                },launchDelay);
+            }
             invalidate();postInvalidateDelayed(16);
         }
         private void drawAirstrikeBlast(Canvas c,float cx,float cy,float progress) {
@@ -2785,19 +2840,7 @@ public class MainActivity extends Activity {
                     c.save();c.scale(-1f,1f,planeX,planeY);c.drawBitmap(airstrikePlaneImage,null,planeRect,p);c.restore();
                 } else c.drawBitmap(airstrikePlaneImage,null,planeRect,p);
             } else txt(c,"✈",planeX,planeY+h*.025f,h*.085f,Color.WHITE,true);
-            float targetX=airstrikeTargetSide==2?w*.075f:w*.925f;
-            float[] rows={h*.29f,h*.49f,h*.69f};
-            for(int lane=0;lane<3;lane++) {
-                long blastElapsed=elapsed-(1750L+lane*650L);
-                if(blastElapsed>=0 && blastElapsed<850L) {
-                    if(!airstrikeShakeTriggered[lane]) {
-                        airstrikeShakeTriggered[lane]=true;
-                        if(screenShakeEnabled){screenShakeStartedAt=System.currentTimeMillis();postInvalidateDelayed(16);}
-                        vibrateForExplosion();
-                    }
-                    drawAirstrikeBlast(c,targetX,rows[lane]-h*.065f,blastElapsed/850f);
-                }
-            }
+            // Actual bomb projectiles and their impacts are drawn by the shared projectile system.
             postInvalidateDelayed(30);
         }
         private void drawExplosion(Canvas c) {
