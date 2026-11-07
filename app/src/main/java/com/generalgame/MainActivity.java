@@ -2005,20 +2005,20 @@ public class MainActivity extends Activity {
                     for(int i=0;i<CardInventory.CARD_TYPES;i++){drawHelpInfoCard(c,cardNames[i],cardDescriptions[i],cardImageForType(i),y,cardH);y+=cardH+gap;}
                     drawHelpInfoCard(c,"اختيار البطاقات","اختر حتى 3 أنواع مختلفة قبل مباراة جنيرال. البطاقة المستخدمة تُستهلك ولا تستخدم أكثر من بطاقة في الدور.",null,y,cardH);
                 } else if(helpSection==3) {
-                    drawHelpInfoCard(c,"المهمات اليومية","3 مهمات: سهلة ومتوسطة وصعبة. تتجدد يومياً منتصف الليل بتوقيت الأردن.",null,y,cardH);y+=cardH+gap;
-                    drawHelpInfoCard(c,"المهمات الأسبوعية","5 مهمات: مهمتان متوسطتان، مهمتان صعبتان، ومهمة صعبة جداً. تتجدد الجمعة.",null,y,cardH);y+=cardH+gap;
-                    drawHelpInfoCard(c,"المكافآت","اليومية: 1 و2 و3 بطاقات حسب الصعوبة. الأسبوعية: 3 و5 و7 بطاقات.",null,y,cardH);y+=cardH+gap;
-                    drawHelpInfoCard(c,"شروط الاحتساب","تُحتسب المهمات عند اللعب ضد جنيرال فقط، ولا تُحتسب في اللعب الجماعي.",null,y,cardH);
+                    drawHelpInfoCard(c,"المهمات اليومية","3 مهمات: سهلة ومتوسطة وصعبة. تتجدد يومياً منتصف الليل بتوقيت الأردن.",cardImageForType(CardInventory.RADAR),y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"المهمات الأسبوعية","5 مهمات: مهمتان متوسطتان، مهمتان صعبتان، ومهمة صعبة جداً. تتجدد الجمعة.",cardImageForType(CardInventory.DOUBLE_DICE),y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"المكافآت","اليومية: 1 و2 و3 بطاقات حسب الصعوبة. الأسبوعية: 3 و5 و7 بطاقات.",cardImageForType(CardInventory.MILITARY_SUPPLY),y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"شروط الاحتساب","تُحتسب المهمات عند اللعب ضد جنيرال فقط، ولا تُحتسب في اللعب الجماعي.",art.get("vs_emblem.png"),y,cardH);
                 } else if(helpSection==4) {
-                    drawHelpInfoCard(c,"النقاط العسكرية","تُكتسب نقاط التقدم من الفوز على جنيرال، وتزداد مع ارتفاع مستوى الصعوبة.",null,y,cardH);y+=cardH+gap;
-                    drawHelpInfoCard(c,"الرتب","تتدرج من جندي إلى لواء، والترقية تمنح بطاقات إضافية.",null,y,cardH);y+=cardH+gap;
-                    drawHelpInfoCard(c,"مكافأة الفوز الكامل","تدمير الأسلحة الثلاثة يمنح مكافأة إضافية.",null,y,cardH);y+=cardH+gap;
-                    drawHelpInfoCard(c,"الدخول اليومي","تحصل على بطاقة عشوائية واحدة عند الدخول مرة كل يوم.",null,y,cardH);
+                    drawHelpInfoCard(c,"النقاط العسكرية","تُكتسب نقاط التقدم من الفوز على جنيرال، وتزداد مع ارتفاع مستوى الصعوبة.",art.get("character_01.png"),y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"الرتب","تتدرج من جندي إلى لواء، والترقية تمنح بطاقات إضافية.",art.get("character_02.png"),y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"مكافأة الفوز الكامل","تدمير الأسلحة الثلاثة يمنح مكافأة إضافية.",art.get("tank_01.png"),y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"الدخول اليومي","تحصل على بطاقة عشوائية واحدة عند الدخول مرة كل يوم.",cardImageForType(CardInventory.MILITARY_SUPPLY),y,cardH);
                 } else {
-                    drawHelpInfoCard(c,"اللعب المحلي","لاعبان على الهاتف نفسه، ويتناوبان على رمي النرد واختيار الأسلحة.",null,y,cardH);y+=cardH+gap;
-                    drawHelpInfoCard(c,"اللعب عبر Wi-Fi","يتصل جهازان بالشبكة المحلية نفسها؛ أحدهما ينشئ المباراة والآخر ينضم.",null,y,cardH);y+=cardH+gap;
-                    drawHelpInfoCard(c,"اللعب عبر الإنترنت","أنشئ مباراة أو انضم إلى مباراة لاعب آخر عند توفر الاتصال.",null,y,cardH);y+=cardH+gap;
-                    drawHelpInfoCard(c,"الإعدادات","يمكنك التحكم بالموسيقى والمؤثرات الصوتية والاهتزاز من شاشة الإعدادات.",null,y,cardH);
+                    drawHelpInfoCard(c,"اللعب المحلي","لاعبان على الهاتف نفسه، ويتناوبان على رمي النرد واختيار الأسلحة.",art.get("vs_emblem.png"),y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"اللعب عبر Wi-Fi","يتصل جهازان بالشبكة المحلية نفسها؛ أحدهما ينشئ المباراة والآخر ينضم.",art.get("vs_emblem.png"),y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"اللعب عبر الإنترنت","أنشئ مباراة أو انضم إلى مباراة لاعب آخر عند توفر الاتصال.",art.get("vs_emblem.png"),y,cardH);y+=cardH+gap;
+                    drawHelpInfoCard(c,"الإعدادات","يمكنك التحكم بالموسيقى والمؤثرات الصوتية والاهتزاز من شاشة الإعدادات.",cardImageForType(CardInventory.SHIELD),y,cardH);
                 }
                 helpContentHeight=(int)(y+cardH+h*.04f);
             }
