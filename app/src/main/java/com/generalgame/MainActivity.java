@@ -1784,6 +1784,11 @@ public class MainActivity extends Activity {
         }
 
 
+        private void drawMenuNavigation(Canvas c) {
+            iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
+            iconButton(c,w*.145f,h*.065f,w*.245f,h*.155f,dark,"⚙");
+            iconButton(c,w*.875f,h*.065f,w*.965f,h*.155f,Color.rgb(91,24,43),"⏻");
+        }
         private void wideMenuButton(Canvas c,String glyph,String label,float l,float t,float r,float b) {
             RectF rect=new RectF(l,t,r,b);
             p.setShader(new LinearGradient(l,t,r,b,Color.rgb(55,67,55),Color.rgb(17,28,25),Shader.TileMode.CLAMP));
@@ -2947,11 +2952,11 @@ public class MainActivity extends Activity {
             if(setup) { drawSetup(c); return; }
             if(mode==0) {
                 drawMenuBackdrop(c);
-                if(missionsScreen){drawMissions(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}
-                if(inventoryScreen){drawInventory(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}
-                if(historyScreen){drawHistory(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}
-                if(progressScreen){drawProgress(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}
-                if(helpScreen){drawHelp(c);iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");return;}
+                if(missionsScreen){drawMissions(c);drawMenuNavigation(c);return;}
+                if(inventoryScreen){drawInventory(c);drawMenuNavigation(c);return;}
+                if(historyScreen){drawHistory(c);drawMenuNavigation(c);return;}
+                if(progressScreen){drawProgress(c);drawMenuNavigation(c);return;}
+                if(helpScreen){drawHelp(c);drawMenuNavigation(c);return;}
                 if(warMenuScreen) {
                     txt(c,"اختر نمط الحرب",w*.5f,h*.205f,h*.060f,Color.rgb(242,196,94),true);
                     iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
@@ -3173,7 +3178,8 @@ public class MainActivity extends Activity {
                 if(historyScreen || progressScreen || helpScreen || inventoryScreen || missionsScreen) {
                     if((x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f)||(x>=w*.38f&&x<=w*.62f&&y>=h*.91f&&y<=h*.995f)) {
                         historyScreen=false;progressScreen=false;helpScreen=false;inventoryScreen=false;missionsScreen=false;
-                    }
+                    } else if(y>=h*.065f&&y<=h*.155f&&x>=w*.145f&&x<=w*.245f)showSettingsDialog();
+                    else if(y>=h*.065f&&y<=h*.155f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
                 }
                 else if(warMenuScreen) {
                     if(y>=h*.065f&&y<=h*.155f&&x>=w*.025f&&x<=w*.125f)warMenuScreen=false;
