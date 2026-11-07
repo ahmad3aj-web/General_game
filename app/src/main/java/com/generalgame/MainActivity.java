@@ -110,7 +110,7 @@ public class MainActivity extends Activity {
         private final int[][] shieldTurns = new int[3][3];
         private final boolean[][] smokeActive = new boolean[3][3];
         private final int[][] smokeTurns = new int[3][3];
-        private int mineOwnerSide=0, mineTargetSide=0, mineLane=-1;
+        private int mineOwnerSide=0, mineTargetSide=0, mineLane=-1, mineTurns=0;
         private boolean radarPending=false;
         private int radarOwnerSide=0;
         private boolean radarPauseActive=false;
@@ -816,7 +816,7 @@ public class MainActivity extends Activity {
                 shieldActive[side][lane]=false;shieldTurns[side][lane]=0;
                 smokeActive[side][lane]=false;smokeTurns[side][lane]=0;
             }
-            mineOwnerSide=0;mineTargetSide=0;mineLane=-1;
+            mineOwnerSide=0;mineTargetSide=0;mineLane=-1;mineTurns=0;
             radarPending=false;radarOwnerSide=0;radarPauseActive=false;
             selectedBattleCard=-1;cardTargeting=false;
             doubleDicePending=false;doubleDiceLane=-1;doubleDiceDisplayValue=0;
@@ -841,7 +841,16 @@ public class MainActivity extends Activity {
             showCardUseNotice(type,false);
             return true;
         }
+        private void tickMineExpiry(int completedSide) {
+            if(mineTargetSide!=completedSide || mineTurns<=0)return;
+            mineTurns--;
+            if(mineTurns==0) {
+                mineOwnerSide=0;mineTargetSide=0;mineLane=-1;
+                message="انتهت صلاحية حقل الألغام بعد 4 جولات";
+            }
+        }
         private void finishCardTurnEffects(int side) {
+            tickMineExpiry(side);
             for(int lane=0;lane<3;lane++) {
                 if(cyberDisabled[side][lane] && --cyberTurns[side][lane]<=0) cyberDisabled[side][lane]=false;
                 int opponent=side==1?2:1;
@@ -1006,7 +1015,7 @@ public class MainActivity extends Activity {
                 if(triggerMineByCardAttempt(2,lane))return false;
                 if(mineTargetSide!=0 || destroyed(2)[lane] || smokeActive[2][lane])return false;
                 if(!useCard(type))return false;
-                mineOwnerSide=1;mineTargetSide=2;mineLane=lane;
+                mineOwnerSide=1;mineTargetSide=2;mineLane=lane;mineTurns=4;
                 message="تم زرع لغم أرضي في أحد معسكرات الخصم";return true;
             }
             return false;
@@ -1075,7 +1084,7 @@ public class MainActivity extends Activity {
                 smokeActive[side][lane]=true;smokeTurns[side][lane]=3;
                 message=(local?"فعّلت":"فعّل الخصم")+" ستار الدخان على "+names[lane];
             } else if(type==CardInventory.MINEFIELD) {
-                mineOwnerSide=side;mineTargetSide=opponent;mineLane=lane;
+                mineOwnerSide=side;mineTargetSide=opponent;mineLane=lane;mineTurns=4;
                 message=(local?"زرعت":"زرع الخصم")+" لغماً أرضياً في أحد المعسكرات";
             }
             cardNoticeType=type;cardNoticeFromGeneral=!local;cardNoticeUntil=System.currentTimeMillis()+2000L;
@@ -2277,7 +2286,7 @@ public class MainActivity extends Activity {
                     if(pos1[lane]>best){best=pos1[lane];target=lane;}
                 }
                 if(target>=0 && generalUseCard(CardInventory.MINEFIELD)) {
-                    mineOwnerSide=2;mineTargetSide=1;mineLane=target;
+                    mineOwnerSide=2;mineTargetSide=1;mineLane=target;mineTurns=4;
                     message="تم زرع ألغام أرضية في أحد معسكراتك";invalidate();return true;
                 }
             }
@@ -2390,7 +2399,7 @@ public class MainActivity extends Activity {
         private void afterTurn() {
             if(winner!=0 && !bonusAttempt)return;
             die=0; choosing=false;doubleDiceDisplayValue=0;
-            if(mode==4)finishCardTurnEffects(player);
+            if(mode==4 || mode==1 || mode==3)finishCardTurnEffects(player);
             if(mode==2) {
                 player=1;
                 setBattleDialogue(1,1);
@@ -2970,13 +2979,23 @@ public class MainActivity extends Activity {
                     txt(c,"المقر الرئيسي",w*.5f,h*.205f,h*.060f,Color.rgb(242,196,94),true);
                     iconButton(c,w*.035f,h*.065f,w*.125f,h*.155f,dark,"⚙");
                     iconButton(c,w*.875f,h*.065f,w*.965f,h*.155f,Color.rgb(91,24,43),"⏻");
-                    wideMenuButton(c,"⚔","الحرب",w*.32f,h*.29f,w*.68f,h*.51f);
-                    float top=h*.64f;
-                    miniMenuButton(c,"⚑","المهمات",w*.10f,top,Color.rgb(155,105,28));
-                    miniMenuButton(c,"▣","البطاقات",w*.30f,top,Color.rgb(37,105,160));
-                    miniMenuButton(c,"▤","السجل",w*.50f,top,dark);
-                    miniMenuButton(c,"♜","التقدم",w*.70f,top,Color.rgb(155,105,28));
-                    miniMenuButton(c,"?","الشرح",w*.90f,top,Color.rgb(55,91,72));
+                    // واجهة المقر مقسومة بوضوح إلى قسم الحرب وقسم الخدمات.
+                    p.setShader(null);p.setStyle(Paint.Style.FILL);
+                    p.setColor(Color.argb(205,12,22,20));
+                    c.drawRoundRect(new RectF(w*.035f,h*.285f,w*.385f,h*.865f),h*.035f,h*.035f,p);
+                    c.drawRoundRect(new RectF(w*.415f,h*.285f,w*.965f,h*.865f),h*.035f,h*.035f,p);
+                    p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.006f));p.setColor(Color.rgb(105,27,48));
+                    c.drawRoundRect(new RectF(w*.035f,h*.285f,w*.385f,h*.865f),h*.035f,h*.035f,p);
+                    c.drawRoundRect(new RectF(w*.415f,h*.285f,w*.965f,h*.865f),h*.035f,h*.035f,p);
+                    p.setStyle(Paint.Style.FILL);
+                    txt(c,"ساحة المعركة",w*.21f,h*.355f,h*.030f,Color.rgb(242,196,94),true);
+                    wideMenuButton(c,"⚔","الحرب",w*.075f,h*.405f,w*.345f,h*.785f);
+                    txt(c,"الخدمات والملفات",w*.69f,h*.355f,h*.030f,Color.rgb(242,196,94),true);
+                    miniMenuButton(c,"⚑","المهمات",w*.535f,h*.425f,Color.rgb(55,48,37));
+                    miniMenuButton(c,"▣","البطاقات",w*.715f,h*.425f,Color.rgb(55,48,37));
+                    miniMenuButton(c,"▤","السجل",w*.895f,h*.425f,Color.rgb(55,48,37));
+                    miniMenuButton(c,"♜","التقدم",w*.625f,h*.665f,Color.rgb(55,48,37));
+                    miniMenuButton(c,"?","الشرح",w*.805f,h*.665f,Color.rgb(55,48,37));
                     p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(true);
                     p.setTextSize(h*.020f);p.setColor(Color.WHITE);
                     c.drawText("© 2026 أحمد جرادات",w*.5f,h*.945f,p);
@@ -3191,12 +3210,12 @@ public class MainActivity extends Activity {
                 }
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
-                else if(y>=h*.29f&&y<=h*.51f&&x>=w*.32f&&x<=w*.68f)warMenuScreen=true;
-                else if(y>=h*.64f&&y<=h*.90f&&x>=w*.02f&&x<=w*.18f)missionsScreen=true;
-                else if(y>=h*.64f&&y<=h*.90f&&x>=w*.20f&&x<=w*.40f)inventoryScreen=true;
-                else if(y>=h*.64f&&y<=h*.90f&&x>=w*.40f&&x<=w*.60f)historyScreen=true;
-                else if(y>=h*.64f&&y<=h*.90f&&x>=w*.60f&&x<=w*.80f)progressScreen=true;
-                else if(y>=h*.64f&&y<=h*.90f&&x>=w*.80f&&x<=w*.98f){helpScreen=true;helpScrollY=0;}
+                else if(y>=h*.38f&&y<=h*.82f&&x>=w*.055f&&x<=w*.365f)warMenuScreen=true;
+                else if(y>=h*.405f&&y<=h*.59f&&x>=w*.47f&&x<=w*.60f)missionsScreen=true;
+                else if(y>=h*.405f&&y<=h*.59f&&x>=w*.65f&&x<=w*.78f)inventoryScreen=true;
+                else if(y>=h*.405f&&y<=h*.59f&&x>=w*.83f&&x<=w*.96f)historyScreen=true;
+                else if(y>=h*.65f&&y<=h*.83f&&x>=w*.56f&&x<=w*.69f)progressScreen=true;
+                else if(y>=h*.65f&&y<=h*.83f&&x>=w*.74f&&x<=w*.87f){helpScreen=true;helpScrollY=0;}
                 invalidate();return true;
             }
             if(setup) {
