@@ -3143,19 +3143,7 @@ public class MainActivity extends Activity {
             }
             for(int lane=0;lane<3;lane++) {
                 float y=rows[lane], gap=h*.038f;
-                // ستة صفوف واضحة: صفّان متقابلان لكل نوع سلاح.
-                // اللاعب الأزرق يميناً يطلق يساراً، والخصم الأحمر يساراً يطلق يميناً.
-                float bulletW=trackW/17f, bulletH=h*.048f;
-                float leftStart=trackL+bulletW*.65f, rightStart=trackR-bulletW*.65f;
-                // لا تظهر أي ذخيرة بين السلاحين قبل انطلاق الحرب فعلياً.
-                if(stage>=2) {
-                    for(int i=0;i<15;i++) {
-                        float bx=rightStart-i*(trackW*.92f/14f);
-                        float rx=leftStart+i*(trackW*.92f/14f);
-                        if(!dead1[lane] && i>=pos1[lane])drawBullet(c,bx,y-gap,bulletW,bulletH,blue,true,false);
-                        if(!dead2[lane] && i>=pos2[lane])drawBullet(c,rx,y+gap,bulletW,bulletH,red,true,true);
-                    }
-                }
+                // تم إخفاء صفوف الذخيرة الستة (60 طلقة) نهائياً من واجهة المعركة.
                 drawAmmoCounter(c,w*.84f,y,15-pos2[lane]);
                 drawAmmoCounter(c,w*.16f,y,15-pos1[lane]);
                 // Draw the GIF behind the weapon so the weapon remains unobstructed.
