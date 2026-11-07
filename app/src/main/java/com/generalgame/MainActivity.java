@@ -101,6 +101,7 @@ public class MainActivity extends Activity {
         private boolean historyScreen = false;
         private boolean progressScreen = false;
         private boolean helpScreen = false;
+        private int helpSection=-1;
         private boolean inventoryScreen = false;
         private boolean cardMatchSettled = false;
         private int selectedBattleCard = -1;
@@ -1940,83 +1941,97 @@ public class MainActivity extends Activity {
             txt(c,text,w*.5f,y,h*.034f,Color.rgb(155,105,28),true);
             return y+h*.052f;
         }
+        private void drawHelpButton(Canvas c,String title,String subtitle,float left,float top,float right,float bottom) {
+            RectF r=new RectF(left,top,right,bottom);
+            p.setShader(new LinearGradient(left,top,right,bottom,Color.rgb(58,65,52),Color.rgb(19,29,26),Shader.TileMode.CLAMP));
+            p.setStyle(Paint.Style.FILL);c.drawRoundRect(r,h*.018f,h*.018f,p);p.setShader(null);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.005f));p.setColor(Color.rgb(116,37,54));
+            c.drawRoundRect(r,h*.018f,h*.018f,p);p.setStyle(Paint.Style.FILL);
+            txt(c,title,(left+right)*.5f,top+(bottom-top)*.46f,h*.032f,Color.rgb(245,204,112),true);
+            txt(c,subtitle,(left+right)*.5f,top+(bottom-top)*.75f,h*.018f,Color.WHITE,false);
+        }
         private void drawHelp(Canvas c) {
             box(c,w*.055f,h*.105f,w*.945f,h*.895f,Color.rgb(244,248,235));
-            txt(c,"دليل لعبة جنيرال",w*.5f,h*.15f,h*.052f,dark,true);
-            c.save();
-            c.clipRect(w*.075f,h*.185f,w*.925f,h*.875f);
-            c.translate(0,-helpScrollY);
-            float y=h*.225f;
-            y=drawHelpHeading(c,"نبذة وهدف اللعبة",y);
-            y=drawHelpLine(c,"جنيرال لعبة استراتيجية حربية للأندرويد.",y,dark,h*.022f,true);
-            y=drawHelpLine(c,"هدفك تدمير أسلحة الخصم: الدبابة والطائرة والمدفع.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"كل سلاح يواجه السلاح المقابل له في مسار مستقل.",y,dark,h*.021f,false);
-            y=drawHelpHeading(c,"بداية المباراة وطريقة الدور",y);
-            y=drawHelpLine(c,"تبدأ المباراة بقرعة النرد لتحديد من يبدأ أولاً.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"اضغط «أطلق» لتحصل على رقم من 1 إلى 6.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"اختر سلاحاً متاحاً: دبابة أو طائرة أو مدفع.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"يتحرك السلاح بعدد خطوات النرد باتجاه خصمه.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"يتكوّن كل مسار من 15 خطوة، وعند نهايته يُدمّر السلاح المقابل.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"إذا دُمّر أحد سلاحي المسار تتوقف المواجهة في ذلك المسار.",y,dark,h*.021f,false);
-            y=drawHelpHeading(c,"الفوز وأوضاع اللعب",y);
-            y=drawHelpLine(c,"بعد حسم المسارات الثلاثة، يفوز من يحسم مسارين على الأقل.",y,dark,h*.021f,true);
-            y=drawHelpLine(c,"يمكن اللعب بلاعبين على الجهاز نفسه، أو ضد جنيرال الكمبيوتر.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"اختر مستوى جنيرال: مبتدئ، متوسط، محترف أو أسطوري.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"تتوفر أيضاً خيارات اللعب عبر Wi-Fi والإنترنت.",y,dark,h*.021f,false);
-            y=drawHelpHeading(c,"البطاقات العشر وطريقة استخدامها",y);
-            y=drawHelpLine(c,"قبل مباراة جنيرال اختر حتى 3 أنواع مختلفة من مخزنك؛ لكل بطاقة استخدام واحد في المباراة.",y,dark,h*.024f,true);
-            y=drawHelpLine(c,"إصلاح السلاح: يعيد السلاح المدمّر إلى بداية المسار، أو يزيل التعطيل السيبراني مع إبقاء الطلقات.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"مضاعفة النرد: اختر سلاحك أولاً؛ تضاعف رمية النرد الحالية أو تنتظر الرمية التالية إذا لم ترمِ بعد.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"الحرب السيبرانية: تعطل سلاح جنيرال لدورين كاملين، ويمكنها اختراق درع الحماية.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"درع الحماية: يحمي سلاحك من الهجمات العادية لدورين كاملين للخصم.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"الضربة الجوية: تضيف 3 طلقات إلى عداد كل سلاح من أسلحة جنيرال الثلاثة.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"ستار الدخان: يخفي سلاحاً ويحميه من استهداف الخصم لمدة 3 أدوار؛ استخدام بطاقة عليه يزيل الدخان ويكشفه بعد التنبيه.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"الإمداد العسكري: بعد رمية النرد تختار إضافة 1 أو 2 أو 3 إلى النتيجة، أو تلغي دون استهلاك البطاقة.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"الرادار: يراقب هجوم الخصم القادم، ويكشف السلاح المستهدف ويمنحك 10 ثوانٍ لتفعيل الدرع.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"حقل الألغام: يزرع لغماً مخفياً في سلاح من أسلحة جنيرال؛ أول محاولة استخدام تخصم حتى 3 طلقات.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"كاشف الألغام: يفحص معسكرات الخصم الثلاثة ويكشف اللغم ويبطل مفعوله دون ضرر.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"البطاقات متاحة في اللعب ضد جنيرال فقط، ولا تستخدم أكثر من بطاقة واحدة في الدور.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"البطاقة المستخدمة تُستهلك؛ وغير المستخدمة تعود بعد المباراة الطبيعية. عند الاستسلام تُفقد بطاقات المباراة كلها.",y,dark,h*.024f,false);
-            y=drawHelpHeading(c,"المهمات والمكافآت والرتب",y);
-            y=drawHelpLine(c,"تظهر 3 مهمات يومية و5 مهمات أسبوعية، ضد جنيرال فقط.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"لا تحتسب المهمات في اللعب المحلي بين لاعبين أو عبر الإنترنت.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"اليومية: سهلة واحدة ومتوسطة واحدة وصعبة واحدة.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"الأسبوعية: مهمتان متوسطتان ومهمتان صعبتان وصعبة جداً واحدة.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"تتجدد اليومية منتصف الليل، والأسبوعية مع بداية الجمعة بتوقيت الأردن.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"اليومية: سهلة = بطاقة، متوسطة = بطاقتان، صعبة = 3 بطاقات.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"الأسبوعية: متوسطة = 3 بطاقات، صعبة = 5، صعبة جداً = 7.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"نوع البطاقات المكافأة عشوائي، وقد تتشابه أو تختلف.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"مكافآت المهمات بطاقات فقط ولا تمنح نقاط رتب.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"تُضاف المكافآت للمخزن تلقائياً، وتظهر مجتمعة بعد المباراة.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"تدمير سلاح لجنيرال يُحتسب حتى عند الخسارة، مرة واحدة للسلاح",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"نفسه في المباراة. الخسارة أو التعادل يصفران سلسلة الانتصارات.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"المهمة غير المكتملة تنتهي عند التجديد ولا تنتقل للفترة التالية.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"الدخول اليومي يمنح بطاقة عشوائية واحدة مرة كل يوم.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"الفوز ضد جنيرال يمنح 1/2/3/4 بطاقات حسب الصعوبة،",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"والفوز المثالي بتدمير أسلحته الثلاثة يمنح بطاقة إضافية.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"الترقية إلى رتبة عسكرية جديدة تمنح بطاقات إضافية.",y,dark,h*.021f,false);
-            y=drawHelpHeading(c,"الإعدادات وحفظ البيانات",y);
-            y=drawHelpLine(c,"يمكنك التحكم بالمؤثرات الصوتية والموسيقى واهتزاز الهاتف",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"واهتزاز الشاشة عند تدمير أي سلاح من الإعدادات.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"المهمات ومخزن البطاقات محفوظان محلياً على الجهاز.",y,dark,h*.021f,false);
-            y=drawHelpLine(c,"نقاط الرتب تُكتسب من الفوز على جنيرال، وتزداد مع ارتفاع مستوى الصعوبة؛ الفوز المثالي يمنح مكافأة إضافية.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"سجل المواجهات ولوحة التقدم يعرضان نتائجك وتقدمك العسكري، وتُحفظ بيانات المخزن والمهمات على الجهاز.",y,dark,h*.024f,false);
-            y=drawHelpHeading(c,"اللعب الجماعي والإعدادات",y);
-            y=drawHelpLine(c,"اللعب المحلي: لاعبان على الهاتف نفسه، ويتناوب اللاعبان على رمي النرد واختيار السلاح.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"اللعب عبر Wi-Fi: يتصل جهازان على الشبكة المحلية نفسها؛ يتولى أحدهما إنشاء المباراة والآخر الانضمام.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"اللعب عبر الإنترنت: أنشئ مباراة أو انضم إلى مباراة لاعب آخر عند توفر الاتصال.",y,dark,h*.024f,false);
-            y=drawHelpLine(c,"من الإعدادات تستطيع تشغيل أو إيقاف المؤثرات الصوتية والموسيقى والاهتزاز واهتزاز الشاشة.",y,dark,h*.024f,false);
-            y=drawHelpHeading(c,"معلومات المطور وحقوق الموسيقى",y);
-            y=drawHelpLine(c,"لبناء APK: افتح Actions ثم Build GENERAL Android APK،",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"اختر Build GENERAL Android APK ثم Run workflow وانتظر نجاح البناء.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"افتح نتيجة التشغيل، ثم Artifacts، ونزّل GENERAL-debug-APK.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"استخرج ملف APK من ZIP وثبّته على جهاز Android.",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"الموسيقى Dramatic2 من تأليف PeriTune:",y,dark,h*.020f,false);
-            y=drawHelpLine(c,"peritune.com/dramatic2/ — رخصة Creative Commons Attribution (CC BY).",y,dark,h*.018f,false);
-            helpContentHeight=(int)(y+h*.04f);
+            txt(c,helpSection<0?"دليل لعبة جنيرال":new String[]{"طريقة اللعب","الأسلحة","البطاقات","المهمات","النقاط والرتب","اللعب الجماعي والإعدادات"}[Math.min(5,helpSection)],w*.5f,h*.15f,h*.046f,dark,true);
+            c.save();c.clipRect(w*.075f,h*.185f,w*.925f,h*.875f);
+            if(helpSection<0) {
+                String[] titles={"طريقة اللعب","الأسلحة","البطاقات","المهمات","النقاط والرتب","اللعب الجماعي والإعدادات"};
+                String[] subs={"بداية الحرب والأدوار والفوز","الدبابة والطائرة والمدفع","شرح البطاقات العشر","اليومية والأسبوعية","المكافآت والتقدم العسكري","محلي وWi-Fi وإنترنت"};
+                float[] tops={h*.23f,h*.43f,h*.63f};
+                for(int row=0;row<3;row++)for(int col=0;col<2;col++){
+                    int idx=row*2+col;float left=col==0?w*.105f:w*.525f,right=col==0?w*.475f:w*.895f;
+                    drawHelpButton(c,titles[idx],subs[idx],left,tops[row],right,tops[row]+h*.15f);
+                }
+                txt(c,"اختر الموضوع الذي تريد معرفة تفاصيله",w*.5f,h*.86f,h*.020f,Color.rgb(85,105,88),false);
+            } else {
+                c.translate(0,-helpScrollY);float y=h*.225f;
+                if(helpSection==0) {
+                    y=drawHelpHeading(c,"هدف اللعبة",y);
+                    y=drawHelpLine(c,"هدفك تدمير أسلحة الخصم: الدبابة والطائرة والمدفع.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"كل سلاح يواجه السلاح المقابل له في مسار مستقل.",y,dark,h*.022f,false);
+                    y=drawHelpHeading(c,"بداية المباراة وطريقة الدور",y);
+                    y=drawHelpLine(c,"تبدأ المباراة بقرعة النرد لتحديد من يبدأ أولاً.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"اضغط «أطلق» لتحصل على رقم من 1 إلى 6، ثم اختر سلاحاً متاحاً.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"يتحرك السلاح بعدد خطوات النرد باتجاه خصمه.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"يتكوّن كل مسار من 15 خطوة، وعند نهايته يُدمّر السلاح المقابل.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"إذا دُمّر أحد سلاحي المسار تتوقف المواجهة في ذلك المسار.",y,dark,h*.022f,false);
+                    y=drawHelpHeading(c,"الفوز وأوضاع اللعب",y);
+                    y=drawHelpLine(c,"يفوز من يدمّر سلاحين من أصل ثلاثة، ويمكن مواصلة اللعب على السلاح الثالث لمكافأة إضافية.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"اختر مستوى جنيرال: مبتدئ، متوسط، محترف أو أسطوري.",y,dark,h*.022f,false);
+                } else if(helpSection==1) {
+                    y=drawHelpHeading(c,"الأسلحة الثلاثة",y);
+                    y=drawHelpLine(c,"الدبابة والطائرة والمدفع؛ لكل سلاح مسار مستقل أمام السلاح المقابل.",y,dark,h*.023f,false);
+                    y=drawHelpLine(c,"كل مسار يحتاج إلى 15 خطوة لإصابة السلاح المقابل وتدميره.",y,dark,h*.023f,false);
+                    y=drawHelpLine(c,"تختار السلاح بعد رمية النرد، وتتحرك بعدد الخطوات الظاهر على النرد.",y,dark,h*.023f,false);
+                    y=drawHelpLine(c,"تتوقف المواجهة في المسار عند تدمير أحد السلاحين، ويمكن إصلاح السلاح ببطاقة الإصلاح في اللعب ضد جنيرال.",y,dark,h*.023f,false);
+                    y=drawHelpLine(c,"الفوز يتحقق بتدمير سلاحين، وتدمير السلاح الثالث يمنح فرصة لمكافأة إضافية.",y,dark,h*.023f,false);
+                } else if(helpSection==2) {
+                    y=drawHelpHeading(c,"البطاقات العشر وطريقة استخدامها",y);
+                    y=drawHelpLine(c,"قبل مباراة جنيرال اختر حتى 3 أنواع مختلفة من مخزنك؛ لكل بطاقة استخدام واحد في المباراة.",y,dark,h*.022f,true);
+                    y=drawHelpLine(c,"إصلاح السلاح: يعيد السلاح المدمّر إلى بداية المسار، أو يزيل التعطيل السيبراني مع إبقاء التقدم.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"مضاعفة النرد: اختر سلاحك أولاً؛ تضاعف رمية النرد الحالية أو تنتظر الرمية التالية إذا لم ترمِ بعد.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"الحرب السيبرانية: تعطل سلاح جنيرال لدورين كاملين، ويمكنها اختراق درع الحماية.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"درع الحماية: يحمي سلاحك من الهجمات العادية لدورين كاملين للخصم.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"الضربة الجوية: تضيف 3 خطوات إلى عداد كل سلاح من أسلحة جنيرال الثلاثة.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"ستار الدخان: يخفي سلاحاً ويحميه من استهداف الخصم لمدة 3 أدوار.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"الإمداد العسكري: بعد رمية النرد تختار إضافة 1 أو 2 أو 3 إلى النتيجة، أو تلغي دون استهلاك البطاقة.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"الرادار: يراقب هجوم الخصم القادم، ويكشف السلاح المستهدف ويمنحك 10 ثوانٍ لاتخاذ قرار الدفاع.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"حقل الألغام: يزرع لغماً مخفياً في سلاح من أسلحة الخصم؛ أول محاولة استخدام تخصم حتى 3 خطوات.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"كاشف الألغام: يفحص معسكرات الخصم الثلاثة ويكشف اللغم ويبطل مفعوله دون ضرر.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"البطاقات متاحة في اللعب ضد جنيرال فقط، ولا تستخدم أكثر من بطاقة واحدة في الدور.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"البطاقة المستخدمة تُستهلك؛ وغير المستخدمة تعود بعد المباراة الطبيعية. عند الاستسلام تُفقد بطاقات المباراة كلها.",y,dark,h*.022f,false);
+                } else if(helpSection==3) {
+                    y=drawHelpHeading(c,"المهمات اليومية والأسبوعية",y);
+                    y=drawHelpLine(c,"تظهر 3 مهمات يومية و5 مهمات أسبوعية، ضد جنيرال فقط.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"لا تحتسب المهمات في اللعب المحلي بين لاعبين أو عبر الإنترنت.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"اليومية: سهلة واحدة ومتوسطة واحدة وصعبة واحدة.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"الأسبوعية: مهمتان متوسطتان ومهمتان صعبتان وصعبة جداً واحدة.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"تتجدد اليومية منتصف الليل، والأسبوعية مع بداية الجمعة بتوقيت الأردن.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"مكافآت اليومية: سهلة = بطاقة، متوسطة = بطاقتان، صعبة = 3 بطاقات.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"مكافآت الأسبوعية: متوسطة = 3 بطاقات، صعبة = 5، صعبة جداً = 7.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"نوع البطاقات المكافأة عشوائي، وقد تتشابه أو تختلف. تضاف للمخزن تلقائياً.",y,dark,h*.022f,false);
+                } else if(helpSection==4) {
+                    y=drawHelpHeading(c,"النقاط والرتب والمكافآت",y);
+                    y=drawHelpLine(c,"نقاط الرتب تُكتسب من الفوز على جنيرال، وتزداد مع ارتفاع مستوى الصعوبة.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"الفوز المثالي بتدمير الأسلحة الثلاثة يمنح مكافأة إضافية.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"الترقية إلى رتبة عسكرية جديدة تمنح بطاقات إضافية.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"الدخول اليومي يمنح بطاقة عشوائية واحدة مرة كل يوم.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"الفوز ضد جنيرال يمنح بطاقات حسب مستوى الصعوبة، والفوز المثالي يمنح بطاقة إضافية.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"سجل المواجهات ولوحة التقدم يعرضان نتائجك وتقدمك العسكري.",y,dark,h*.022f,false);
+                } else {
+                    y=drawHelpHeading(c,"اللعب الجماعي",y);
+                    y=drawHelpLine(c,"اللعب المحلي: لاعبان على الهاتف نفسه، ويتناوب اللاعبان على رمي النرد واختيار السلاح.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"اللعب عبر Wi-Fi: يتصل جهازان على الشبكة المحلية نفسها؛ يتولى أحدهما إنشاء المباراة والآخر الانضمام.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"اللعب عبر الإنترنت: أنشئ مباراة أو انضم إلى مباراة لاعب آخر عند توفر الاتصال.",y,dark,h*.022f,false);
+                    y=drawHelpHeading(c,"الإعدادات وحفظ البيانات",y);
+                    y=drawHelpLine(c,"يمكنك تشغيل أو إيقاف المؤثرات الصوتية والموسيقى والاهتزاز واهتزاز الشاشة من الإعدادات.",y,dark,h*.022f,false);
+                    y=drawHelpLine(c,"المهمات ومخزن البطاقات محفوظان محلياً على الجهاز.",y,dark,h*.022f,false);
+                }
+                helpContentHeight=(int)(y+h*.04f);
+            }
             c.restore();
-            txt(c,"اسحب للأعلى والأسفل لقراءة الدليل كاملاً",w*.5f,h*.888f,h*.019f,Color.rgb(85,105,88),false);
-            btn(c,"العودة إلى الرئيسية",w*.38f,h*.91f,w*.62f,h*.985f,dark);
+            if(helpSection>=0)txt(c,"اسحب للأعلى والأسفل لقراءة الشرح",w*.5f,h*.888f,h*.018f,Color.rgb(85,105,88),false);
+            btn(c,helpSection<0?"العودة إلى الرئيسية":"العودة إلى قائمة الشروحات",w*.32f,h*.91f,w*.68f,h*.985f,dark);
         }
 
         private void drawProgress(Canvas c) {
@@ -2478,14 +2493,42 @@ public class MainActivity extends Activity {
         }
         private void drawRadarBlockedAttack(Canvas c) {
             if(radarBlockStartedAt<=0||radarBlockLane<0)return;
-            long elapsed=System.currentTimeMillis()-radarBlockStartedAt;float progress=Math.min(1f,elapsed/950f);
+            long elapsed=System.currentTimeMillis()-radarBlockStartedAt;
+            float flight=Math.min(1f,elapsed/780f);
             float[] rows={h*.29f,h*.49f,h*.69f};float y=rows[radarBlockLane];
-            float startX=radarBlockAttackerSide==1?w*.86f:w*.14f,targetX=radarBlockAttackerSide==1?w*.14f:w*.86f;
-            float x=startX+(targetX-startX)*progress;int count=Math.min(6,Math.max(1,radarBlockAmount));
-            int alpha=(int)(255*(progress<.78f?1f:Math.max(0f,1f-(progress-.78f)/.22f)));
-            for(int i=0;i<count;i++){float offset=(i-(count-1)*.5f)*h*.014f;p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(alpha,255,205,70));c.drawCircle(x,y+offset,h*.009f,p);}
-            if(progress>=.78f){float pulse=.5f+.5f*(float)Math.sin(elapsed/35.0);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(h*.008f);p.setColor(Color.argb((int)(220*pulse),105,225,255));c.drawCircle(targetX,y,h*(.045f+.018f*pulse),p);p.setStyle(Paint.Style.FILL);txt(c,"تم صد الهجوم",targetX,y-h*.075f,h*.025f,Color.rgb(255,230,135),true);}
-            postInvalidateDelayed(25);
+            float attackerX=radarBlockAttackerSide==1?w*.86f:w*.14f;
+            float weaponX=radarBlockAttackerSide==1?w*.14f:w*.86f;
+            float direction=weaponX>attackerX?1f:-1f;
+            float interceptX=weaponX-direction*w*.115f;
+            int count=Math.min(6,Math.max(1,radarBlockAmount));
+            float incomingX=attackerX+(interceptX-attackerX)*flight;
+            float interceptorX=weaponX+(interceptX-weaponX)*flight;
+            p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeCap(Paint.Cap.ROUND);
+            p.setStrokeWidth(h*.006f);p.setColor(Color.argb(190,255,160,65));
+            c.drawLine(attackerX,y,incomingX,y,p);
+            p.setStrokeWidth(h*.007f);p.setColor(Color.argb(230,80,255,125));
+            c.drawLine(weaponX,y,interceptorX,y,p);
+            p.setStyle(Paint.Style.FILL);
+            for(int i=0;i<count;i++){
+                float offset=(i-(count-1)*.5f)*h*.012f;
+                p.setColor(Color.rgb(255,190,70));c.drawCircle(incomingX,y+offset,h*.008f,p);
+            }
+            for(int i=-1;i<=1;i++){
+                float offset=i*h*.014f;
+                p.setColor(Color.rgb(45,255,105));c.drawCircle(interceptorX,y+offset,h*.009f,p);
+                p.setColor(Color.argb(170,70,255,130));c.drawCircle(interceptorX-direction*h*.018f,y+offset,h*.004f,p);
+            }
+            if(elapsed>=780L){
+                float pulse=.5f+.5f*(float)Math.sin((elapsed-780L)/32.0);
+                float radius=h*(.018f+.035f*pulse);
+                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(h*.007f);
+                p.setColor(Color.argb((int)(235*(1f-pulse*.35f)),40,255,105));
+                c.drawCircle(interceptX,y,radius,p);c.drawCircle(interceptX,y,radius*.58f,p);
+                p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(120,255,150));
+                for(int i=0;i<8;i++){double angle=Math.PI*2*i/8.0;float d=radius*(.7f+(i%2)*.35f);c.drawCircle(interceptX+(float)Math.cos(angle)*d,y+(float)Math.sin(angle)*d,h*.003f,p);}
+                txt(c,"تم اعتراض الصواريخ",interceptX,y-h*.075f,h*.022f,Color.rgb(95,255,140),true);
+            }
+            p.setStyle(Paint.Style.FILL);postInvalidateDelayed(25);
         }
         private void finishRadarResponseTurn(int attackingSide) {
             if(mode==4){die=0;choosing=false;afterTurn();return;}
@@ -3231,8 +3274,14 @@ public class MainActivity extends Activity {
                     invalidate();return true;
                 }
                 if(historyScreen || progressScreen || helpScreen || inventoryScreen || missionsScreen) {
-                    if((x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f)||(x>=w*.38f&&x<=w*.62f&&y>=h*.91f&&y<=h*.995f)) {
-                        historyScreen=false;progressScreen=false;helpScreen=false;inventoryScreen=false;missionsScreen=false;
+                    if(helpScreen && helpSection>=0 && x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f) {
+                        helpSection=-1;helpScrollY=0;
+                    } else if(helpScreen && helpSection<0 && y>=h*.23f&&y<=h*.78f) {
+                        int row=(int)((y-h*.23f)/(h*.20f));int col=x<w*.5f?0:1;
+                        if(row>=0&&row<3){helpSection=row*2+col;helpScrollY=0;}
+                    } else if((x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f)||(x>=w*.32f&&x<=w*.68f&&y>=h*.91f&&y<=h*.995f)) {
+                        if(helpScreen && helpSection>=0){helpSection=-1;helpScrollY=0;}
+                        else {historyScreen=false;progressScreen=false;helpScreen=false;inventoryScreen=false;missionsScreen=false;helpSection=-1;}
                     } else if(y>=h*.065f&&y<=h*.155f&&x>=w*.145f&&x<=w*.245f)showSettingsDialog();
                     else if(y>=h*.065f&&y<=h*.155f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
                 }
