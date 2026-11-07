@@ -1954,8 +1954,8 @@ public class MainActivity extends Activity {
             c.drawRoundRect(new RectF(left+h*.006f,top+h*.006f,right-h*.006f,bottom-h*.006f),h*.014f,h*.014f,p);
             p.setStyle(Paint.Style.FILL);
             float cx=(left+right)*.5f,cy=(top+bottom)*.5f;
-            txt(c,title,cx,cy-h*.004f,h*.026f,Color.rgb(245,204,112),true);
-            txt(c,subtitle,cx,cy+h*.030f,h*.016f,Color.rgb(225,231,216),false);
+            txt(c,title,cx,cy-h*.004f,h*.019f,Color.rgb(245,204,112),true);
+            txt(c,subtitle,cx,cy+h*.030f,h*.012f,Color.rgb(225,231,216),false);
         }
         private void drawHelpBitmap(Canvas c,Bitmap bitmap,float cx,float cy,float width,float height) {
             if(bitmap==null)return;p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
@@ -1970,10 +1970,10 @@ public class MainActivity extends Activity {
             float imageCx=right-w*.075f,imageCy=(top+bottom)*.5f;
             if(image!=null)drawHelpBitmap(c,image,imageCx,imageCy,w*.075f,height*.66f);
             float textX=w*.51f;
-            txt(c,title,textX,top+height*.31f,h*.020f,Color.rgb(245,204,112),true);
-            p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.145f);p.setFakeBoldText(false);p.setColor(Color.rgb(225,231,216));
+            txt(c,title,textX,top+height*.31f,h*.014f,Color.rgb(245,204,112),true);
+            p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.092f);p.setFakeBoldText(false);p.setColor(Color.rgb(225,231,216));
             String[] words=detail.split(" ");String line="";float yy=top+height*.61f;
-            for(String word:words){String next=line.isEmpty()?word:line+" "+word;if(p.measureText(next)>w*.66f&&!line.isEmpty()){c.drawText(line,textX,yy,p);yy+=h*.19f;line=word;}else line=next;}
+            for(String word:words){String next=line.isEmpty()?word:line+" "+word;if(p.measureText(next)>w*.66f&&!line.isEmpty()){c.drawText(line,textX,yy,p);yy+=h*.14f;line=word;}else line=next;}
             if(!line.isEmpty())c.drawText(line,textX,yy,p);p.setTextAlign(Paint.Align.CENTER);
         }
         private void drawHelp(Canvas c) {
@@ -1984,7 +1984,7 @@ public class MainActivity extends Activity {
             c.drawRoundRect(new RectF(w*.035f,h*.085f,w*.965f,h*.99f),h*.025f,h*.025f,p);p.setStrokeWidth(Math.max(2,h*.002f));p.setColor(gold);
             c.drawRoundRect(new RectF(w*.045f,h*.095f,w*.955f,h*.98f),h*.020f,h*.020f,p);p.setStyle(Paint.Style.FILL);
             String[] titles={"طريقة اللعب","الأسلحة","البطاقات","المهمات","النقاط والرتب","اللعب الجماعي"};
-            txt(c,helpSection<0?"دليل جنيرال":titles[Math.min(5,helpSection)],w*.5f,h*.15f,h*.034f,Color.rgb(245,200,105),true);
+            txt(c,helpSection<0?"دليل جنيرال":titles[Math.min(5,helpSection)],w*.5f,h*.15f,h*.025f,Color.rgb(245,200,105),true);
             c.save();c.clipRect(w*.065f,h*.19f,w*.935f,h*.875f);
             if(helpSection<0) {
                 String[] subs={"الحرب والأدوار والفوز","الدبابة والطائرة والمدفع","البطاقات العشر واستخدامها","اليومية والأسبوعية","الترقيات والمكافآت","محلي وشبكة وإنترنت"};
