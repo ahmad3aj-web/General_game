@@ -3,6 +3,8 @@ name: Build GENERAL Android APK
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [ "feature/cards-system-design" ]
   push:
     branches: [ "main", "feature/cards-system-design" ]
 
