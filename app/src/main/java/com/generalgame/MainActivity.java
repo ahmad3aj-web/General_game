@@ -1954,8 +1954,8 @@ public class MainActivity extends Activity {
             c.drawRoundRect(new RectF(left+h*.006f,top+h*.006f,right-h*.006f,bottom-h*.006f),h*.014f,h*.014f,p);
             p.setStyle(Paint.Style.FILL);
             float cx=(left+right)*.5f,cy=(top+bottom)*.5f;
-            txt(c,title,cx,cy-h*.004f,h*.019f,Color.rgb(245,204,112),true);
-            txt(c,subtitle,cx,cy+h*.030f,h*.012f,Color.rgb(225,231,216),false);
+            txt(c,title,cx,cy-h*.006f,h*.027f,Color.rgb(245,204,112),true);
+            txt(c,subtitle,cx,cy+h*.034f,h*.016f,Color.rgb(225,231,216),false);
         }
         private void drawHelpBitmap(Canvas c,Bitmap bitmap,float cx,float cy,float width,float height) {
             if(bitmap==null)return;p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
@@ -1968,7 +1968,21 @@ public class MainActivity extends Activity {
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1.5f,h*.0018f));p.setColor(Color.rgb(123,39,55));
             c.drawRoundRect(new RectF(left,top,right,bottom),h*.012f,h*.012f,p);p.setStyle(Paint.Style.FILL);
             float imageCx=right-w*.075f,imageCy=(top+bottom)*.5f;
-            if(image!=null)drawHelpBitmap(c,image,imageCx,imageCy,w*.075f,height*.66f);
+            if(image!=null) {
+                drawHelpBitmap(c,image,imageCx,imageCy,w*.075f,height*.66f);
+            } else {
+                // لا تترك أي بطاقة بلا رمز مرئي إذا تعذر تحميل ملف صورتها.
+                for(int i=0;i<CardInventory.CARD_TYPES;i++) {
+                    if(cardNames[i].equals(title)) {
+                        p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.rgb(31,48,39));
+                        c.drawCircle(imageCx,imageCy,w*.043f,p);
+                        p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0025f));p.setColor(gold);
+                        c.drawCircle(imageCx,imageCy,w*.043f,p);p.setStyle(Paint.Style.FILL);
+                        txt(c,cardIcons[i],imageCx,imageCy+h*.018f,h*.060f,Color.WHITE,true);
+                        break;
+                    }
+                }
+            }
             float textX=w*.51f;
             txt(c,title,textX,top+height*.31f,h*.014f,Color.rgb(245,204,112),true);
             p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.042f);p.setFakeBoldText(false);p.setColor(Color.rgb(225,231,216));
