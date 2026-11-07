@@ -1790,8 +1790,11 @@ public class MainActivity extends Activity {
             RectF rect=new RectF(l,t,r,b);
             p.setShader(new LinearGradient(l,t,r,b,Color.rgb(55,67,55),Color.rgb(17,28,25),Shader.TileMode.CLAMP));
             p.setStyle(Paint.Style.FILL);c.drawRoundRect(rect,h*.035f,h*.035f,p);p.setShader(null);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.009f));p.setColor(Color.rgb(105,27,48));
-            c.drawRoundRect(rect,h*.035f,h*.035f,p);p.setStyle(Paint.Style.FILL);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(5,h*.014f));p.setColor(Color.rgb(105,27,48));
+            c.drawRoundRect(rect,h*.035f,h*.035f,p);
+            p.setStrokeWidth(Math.max(2,h*.004f));p.setColor(Color.rgb(255,211,112));
+            c.drawRoundRect(new RectF(l+h*.008f,t+h*.008f,r-h*.008f,b-h*.008f),h*.030f,h*.030f,p);
+            p.setStyle(Paint.Style.FILL);
             txt(c,glyph,(l+r)*.5f,(t+b)*.49f,h*.105f,Color.rgb(242,196,94),true);
             txt(c,label,(l+r)*.5f,b-h*.045f,h*.052f,Color.rgb(242,196,94),true);
         }
@@ -3022,23 +3025,23 @@ public class MainActivity extends Activity {
                     txt(c,"المقر الرئيسي",w*.5f,h*.205f,h*.060f,Color.rgb(242,196,94),true);
                     iconButton(c,w*.035f,h*.065f,w*.125f,h*.155f,dark,"⚙");
                     iconButton(c,w*.875f,h*.065f,w*.965f,h*.155f,Color.rgb(91,24,43),"⏻");
-                    // واجهة المقر مقسومة بوضوح إلى قسم الحرب وقسم الخدمات.
+                    // الخدمات والملفات يساراً، وزر الحرب الكبير يميناً.
                     p.setShader(null);p.setStyle(Paint.Style.FILL);
                     p.setColor(Color.argb(205,12,22,20));
-                    c.drawRoundRect(new RectF(w*.035f,h*.285f,w*.385f,h*.865f),h*.035f,h*.035f,p);
-                    c.drawRoundRect(new RectF(w*.415f,h*.285f,w*.965f,h*.865f),h*.035f,h*.035f,p);
+                    c.drawRoundRect(new RectF(w*.035f,h*.285f,w*.585f,h*.865f),h*.035f,h*.035f,p);
+                    c.drawRoundRect(new RectF(w*.615f,h*.285f,w*.965f,h*.865f),h*.035f,h*.035f,p);
                     p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.006f));p.setColor(Color.rgb(105,27,48));
-                    c.drawRoundRect(new RectF(w*.035f,h*.285f,w*.385f,h*.865f),h*.035f,h*.035f,p);
-                    c.drawRoundRect(new RectF(w*.415f,h*.285f,w*.965f,h*.865f),h*.035f,h*.035f,p);
+                    c.drawRoundRect(new RectF(w*.035f,h*.285f,w*.585f,h*.865f),h*.035f,h*.035f,p);
+                    c.drawRoundRect(new RectF(w*.615f,h*.285f,w*.965f,h*.865f),h*.035f,h*.035f,p);
                     p.setStyle(Paint.Style.FILL);
-                    txt(c,"ساحة المعركة",w*.21f,h*.355f,h*.030f,Color.rgb(242,196,94),true);
-                    wideMenuButton(c,"⚔","الحرب",w*.075f,h*.405f,w*.345f,h*.785f);
-                    txt(c,"الخدمات والملفات",w*.69f,h*.355f,h*.030f,Color.rgb(242,196,94),true);
-                    miniMenuButton(c,"⚑","المهمات",w*.535f,h*.425f,Color.rgb(55,48,37));
-                    miniMenuButton(c,"▣","البطاقات",w*.715f,h*.425f,Color.rgb(55,48,37));
-                    miniMenuButton(c,"▤","السجل",w*.895f,h*.425f,Color.rgb(55,48,37));
-                    miniMenuButton(c,"♜","التقدم",w*.625f,h*.665f,Color.rgb(55,48,37));
-                    miniMenuButton(c,"?","الشرح",w*.805f,h*.665f,Color.rgb(55,48,37));
+                    txt(c,"الخدمات والملفات",w*.31f,h*.355f,h*.030f,Color.rgb(242,196,94),true);
+                    miniMenuButton(c,"⚑","المهمات",w*.155f,h*.425f,Color.rgb(55,48,37));
+                    miniMenuButton(c,"▣","البطاقات",w*.335f,h*.425f,Color.rgb(55,48,37));
+                    miniMenuButton(c,"▤","السجل",w*.515f,h*.425f,Color.rgb(55,48,37));
+                    miniMenuButton(c,"♜","التقدم",w*.245f,h*.665f,Color.rgb(55,48,37));
+                    miniMenuButton(c,"?","الشرح",w*.425f,h*.665f,Color.rgb(55,48,37));
+                    txt(c,"ساحة المعركة",w*.79f,h*.355f,h*.030f,Color.rgb(242,196,94),true);
+                    wideMenuButton(c,"⚔","الحرب",w*.655f,h*.405f,w*.925f,h*.785f);
                     p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(true);
                     p.setTextSize(h*.020f);p.setColor(Color.WHITE);
                     c.drawText("© 2026 أحمد جرادات",w*.5f,h*.945f,p);
@@ -3144,12 +3147,14 @@ public class MainActivity extends Activity {
                 // اللاعب الأزرق يميناً يطلق يساراً، والخصم الأحمر يساراً يطلق يميناً.
                 float bulletW=trackW/17f, bulletH=h*.048f;
                 float leftStart=trackL+bulletW*.65f, rightStart=trackR-bulletW*.65f;
-                for(int i=0;i<15;i++) {
-                    float bx=rightStart-i*(trackW*.92f/14f);
-                    float rx=leftStart+i*(trackW*.92f/14f);
-                    // إظهار الذخيرة المتبقية فقط؛ الطلقات التي وصلت سابقاً تختفي من المسار.
-                    if(!dead1[lane] && i>=pos1[lane])drawBullet(c,bx,y-gap,bulletW,bulletH,blue,false,false);
-                    if(!dead2[lane] && i>=pos2[lane])drawBullet(c,rx,y+gap,bulletW,bulletH,red,false,true);
+                // لا تظهر أي ذخيرة بين السلاحين قبل انطلاق الحرب فعلياً.
+                if(stage>=2) {
+                    for(int i=0;i<15;i++) {
+                        float bx=rightStart-i*(trackW*.92f/14f);
+                        float rx=leftStart+i*(trackW*.92f/14f);
+                        if(!dead1[lane] && i>=pos1[lane])drawBullet(c,bx,y-gap,bulletW,bulletH,blue,false,false);
+                        if(!dead2[lane] && i>=pos2[lane])drawBullet(c,rx,y+gap,bulletW,bulletH,red,false,true);
+                    }
                 }
                 drawAmmoCounter(c,w*.84f,y,15-pos2[lane]);
                 drawAmmoCounter(c,w*.16f,y,15-pos1[lane]);
@@ -3253,12 +3258,12 @@ public class MainActivity extends Activity {
                 }
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
-                else if(y>=h*.38f&&y<=h*.82f&&x>=w*.055f&&x<=w*.365f)warMenuScreen=true;
-                else if(y>=h*.405f&&y<=h*.59f&&x>=w*.47f&&x<=w*.60f)missionsScreen=true;
-                else if(y>=h*.405f&&y<=h*.59f&&x>=w*.65f&&x<=w*.78f)inventoryScreen=true;
-                else if(y>=h*.405f&&y<=h*.59f&&x>=w*.83f&&x<=w*.96f)historyScreen=true;
-                else if(y>=h*.65f&&y<=h*.83f&&x>=w*.56f&&x<=w*.69f)progressScreen=true;
-                else if(y>=h*.65f&&y<=h*.83f&&x>=w*.74f&&x<=w*.87f){helpScreen=true;helpScrollY=0;}
+                else if(y>=h*.38f&&y<=h*.82f&&x>=w*.635f&&x<=w*.945f)warMenuScreen=true;
+                else if(y>=h*.405f&&y<=h*.59f&&x>=w*.08f&&x<=w*.23f)missionsScreen=true;
+                else if(y>=h*.405f&&y<=h*.59f&&x>=w*.26f&&x<=w*.41f)inventoryScreen=true;
+                else if(y>=h*.405f&&y<=h*.59f&&x>=w*.44f&&x<=w*.58f)historyScreen=true;
+                else if(y>=h*.65f&&y<=h*.83f&&x>=w*.17f&&x<=w*.32f)progressScreen=true;
+                else if(y>=h*.65f&&y<=h*.83f&&x>=w*.35f&&x<=w*.50f){helpScreen=true;helpScrollY=0;}
                 invalidate();return true;
             }
             if(setup) {
