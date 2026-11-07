@@ -3422,7 +3422,9 @@ public class MainActivity extends Activity {
                         float[] centers={w*.18f,w*.50f,w*.82f};
                         boolean[] hit=new boolean[3];
                         for(int i=0;i<3;i++)hit[i]=x>=centers[i]-side*.5f&&x<=centers[i]+side*.5f
-                                && y>=top&&y<=top+side+h*.075f;
+                                && y>=top&&y<=top+side+h*.075f
+                                && touchDownX>=centers[i]-side*.5f&&touchDownX<=centers[i]+side*.5f
+                                && touchDownY>=top&&touchDownY<=top+side+h*.075f;
                         if(hit[0]){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
                         else if(hit[1]){cardInventory.prepareNewMatchSetup();mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
                         else if(hit[2])showOnlineModeDialog();
