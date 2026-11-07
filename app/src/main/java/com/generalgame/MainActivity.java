@@ -76,6 +76,7 @@ public class MainActivity extends Activity {
         private long airstrikeStartedAt=0;
         private int airstrikeTargetSide=2;
         private final long[][] repairEffectUntil = new long[3][3];
+        private final long[][] repairedStarBlinkUntil = new long[3][3];
         private final boolean[] blueWinEffect = {false,false,false};
         private final boolean[] redWinEffect = {false,false,false};
         private long fireStartedAt = System.currentTimeMillis();
@@ -769,6 +770,49 @@ public class MainActivity extends Activity {
             while(p.measureText(name)>width*.88f && size>h*.018f){size*=.94f;p.setTextSize(size);}
             txt(c,name,cx,cy+h*.003f,size,Color.WHITE,true);
         }
+        private void drawSevenPointStar(Canvas c,float cx,float cy,float radius,int alpha) {
+            Path star=new Path();
+            for(int i=0;i<14;i++) {
+                double angle=-Math.PI/2.0+i*Math.PI/7.0;
+                float r=radius*(i%2==0?1f:.46f);
+                float x=cx+(float)Math.cos(angle)*r;
+                float y=cy+(float)Math.sin(angle)*r;
+                if(i==0)star.moveTo(x,y);else star.lineTo(x,y);
+            }
+            star.close();
+            p.setShader(null);p.setStyle(Paint.Style.FILL);
+            p.setColor(Color.argb(alpha,247,190,54));c.drawPath(star,p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1.2f,radius*.12f));
+            p.setColor(Color.argb(alpha,105,65,20));c.drawPath(star,p);
+            p.setStyle(Paint.Style.FILL);
+        }
+        private void drawDestroyedStars(Canvas c,int attackingSide,String displayName,float cx) {
+            long now=System.currentTimeMillis();
+            boolean[] targetDestroyed=destroyed(attackingSide==1?2:1);
+            int count=0;
+            for(int lane=0;lane<3;lane++)
+                if(targetDestroyed[lane] || now<repairedStarBlinkUntil[attackingSide][lane])count++;
+            if(count==0)return;
+            p.setTextSize(h*.034f);p.setFakeBoldText(true);
+            float nameWidth=Math.min(w*.16f,Math.max(w*.12f,p.measureText(displayName)*1.12f));
+            float radius=Math.min(h*.0125f,nameWidth/(count*2.7f));
+            float spacing=radius*2.35f;
+            float total=(count-1)*spacing;
+            int slot=0;
+            for(int lane=0;lane<3;lane++) {
+                boolean destroyedNow=targetDestroyed[lane];
+                long blinkUntil=repairedStarBlinkUntil[attackingSide][lane];
+                if(!destroyedNow && now>=blinkUntil)continue;
+                int alpha=255;
+                if(!destroyedNow) {
+                    float phase=(1100f-(blinkUntil-now))/150f;
+                    alpha=(int)(70+185*(.5f+.5f*(float)Math.sin(phase*Math.PI*2)));
+                    postInvalidateDelayed(45);
+                }
+                drawSevenPointStar(c,cx-total*.5f+slot*spacing,h*.023f,radius,alpha);
+                slot++;
+            }
+        }
         private void iconButton(Canvas c,float l,float t,float r,float b,int color,String glyph) {
             float radius=Math.min(b-t,r-l)*.22f;
             p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(90,0,0,0));
@@ -973,6 +1017,7 @@ public class MainActivity extends Activity {
                 boolean wasDestroyed=destroyed(1)[lane];
                 destroyed(1)[lane]=false;
                 if(wasDestroyed) {
+                    repairedStarBlinkUntil[2][lane]=System.currentTimeMillis()+1100L;
                     positions(1)[lane]=0;
                     positions(2)[lane]=0;
                     blueWinEffect[lane]=false;redWinEffect[lane]=false;
@@ -1058,7 +1103,7 @@ public class MainActivity extends Activity {
                 message=(local?"الإمداد العسكري":"إمداد الخصم العسكري")+" — أضيفت "+value+" إلى النرد";
             } else if(type==CardInventory.REPAIR) {
                 boolean wasDestroyed=destroyed(side)[lane];destroyed(side)[lane]=false;
-                if(wasDestroyed){positions(side)[lane]=0;positions(opponent)[lane]=0;blueWinEffect[lane]=false;redWinEffect[lane]=false;}
+                if(wasDestroyed){repairedStarBlinkUntil[opponent][lane]=System.currentTimeMillis()+1100L;positions(side)[lane]=0;positions(opponent)[lane]=0;blueWinEffect[lane]=false;redWinEffect[lane]=false;}
                 cyberDisabled[side][lane]=false;cyberTurns[side][lane]=0;
                 repairEffectUntil[side][lane]=System.currentTimeMillis()+1000L;
                 message=(local?"أصلحت":"أصلح الخصم")+" "+names[lane]+" وأعاده إلى العمل";
@@ -3176,10 +3221,8 @@ public class MainActivity extends Activity {
             if(mode==2) drawGeneralAvatar(c,w*.035f,h*.075f,h*.060f,false,false); else drawAvatar(c,avatars[1],w*.035f,h*.075f,h*.060f,false);
             namePlate(c,rankedPlayerName(playerNames[0]),w*.835f,h*.075f,blue);
             namePlate(c,mode==2?"جنيرال":rankedPlayerName(playerNames[1]),w*.165f,h*.075f,red);
-            int blueDestroyed=0,redDestroyed=0;
-            for(int i=0;i<3;i++){if(dead2[i])blueDestroyed++;if(dead1[i])redDestroyed++;}
-            txt(c,"أسلحة مدمرة: "+blueDestroyed,w*.835f,h*.235f,h*.019f,Color.WHITE,true);
-            txt(c,"أسلحة مدمرة: "+redDestroyed,w*.165f,h*.235f,h*.019f,Color.WHITE,true);
+            drawDestroyedStars(c,1,rankedPlayerName(playerNames[0]),w*.835f);
+            drawDestroyedStars(c,2,mode==2?"جنيرال":rankedPlayerName(playerNames[1]),w*.165f);
             if(openingToss){
                 float ds=h*.075f;
                 // اللاعب الأول (الأزرق) على اليمين، والثاني (الأحمر) على اليسار.
