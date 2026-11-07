@@ -2947,7 +2947,7 @@ public class MainActivity extends Activity {
             super.onDraw(c); w=getWidth(); h=getHeight();
             c.drawColor(Color.rgb(23,34,29));
             if(titleScreen) { drawIntroScreen(c); return; }
-            txt(c,"GENERAL  •  جنيرال",w*.5f,h*.075f,h*.06f,Color.rgb(238,224,190),true);
+            txt(c,"GENERAL  •  جنيرال",w*.5f,h*.075f,h*.06f,mode==0?Color.rgb(242,196,94):Color.rgb(238,224,190),true);
             if(battleIntro){drawBattleIntro(c);return;}
             if(setup) { drawSetup(c); return; }
             if(mode==0) {
