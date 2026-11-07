@@ -1971,9 +1971,9 @@ public class MainActivity extends Activity {
             if(image!=null)drawHelpBitmap(c,image,imageCx,imageCy,w*.075f,height*.66f);
             float textX=w*.51f;
             txt(c,title,textX,top+height*.31f,h*.014f,Color.rgb(245,204,112),true);
-            p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.092f);p.setFakeBoldText(false);p.setColor(Color.rgb(225,231,216));
+            p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.042f);p.setFakeBoldText(false);p.setColor(Color.rgb(225,231,216));
             String[] words=detail.split(" ");String line="";float yy=top+height*.61f;
-            for(String word:words){String next=line.isEmpty()?word:line+" "+word;if(p.measureText(next)>w*.66f&&!line.isEmpty()){c.drawText(line,textX,yy,p);yy+=h*.14f;line=word;}else line=next;}
+            for(String word:words){String next=line.isEmpty()?word:line+" "+word;if(p.measureText(next)>w*.66f&&!line.isEmpty()){c.drawText(line,textX,yy,p);yy+=h*.058f;line=word;}else line=next;}
             if(!line.isEmpty())c.drawText(line,textX,yy,p);p.setTextAlign(Paint.Align.CENTER);
         }
         private void drawHelp(Canvas c) {
