@@ -218,6 +218,7 @@ public class MainActivity extends Activity {
         private boolean onlineQuickMatch=false;
         private boolean onlineInvitePending=false;
         private boolean onlineWaitingForPeer=false;
+        private boolean resultRevealReady=false;
         private final boolean[] onlineCards = new boolean[CardInventory.CARD_TYPES];
         private final boolean[][] onlineCardsUsedBySide = new boolean[3][CardInventory.CARD_TYPES];
         private boolean onlineLoadoutReady=false, onlinePeerLoadoutReady=false, onlineLoadoutDialogShown=false;
@@ -1244,24 +1245,29 @@ public class MainActivity extends Activity {
                 .setNeutralButton("إلغاء",null).show();
         }
         private void showOnlineModeDialog() {
-            final String[] choices={"⚔  لعب سريع — ابحث عن لاعب","✉  دعوة صديق عبر واتساب","⌨  اللعب برمز غرفة"};
-            new AlertDialog.Builder(MainActivity.this)
+            final String[] choices={"⚔  لعب سريع — ابحث عن لاعب","🏠  إنشاء غرفة جديدة","✉  دعوة صديق عبر واتساب","⌨  الانضمام برمز غرفة"};
+            AlertDialog dialog=new AlertDialog.Builder(MainActivity.this)
                 .setTitle("اللعب أون لاين")
-                .setItems(choices,(dialog,which)->{
+                .setItems(choices,(d,which)->{
                     mode=4; setup=true; setupSide=1; onlineJoinCode=null;
                     playerNames[0]=savedPlayerName(0); avatars[0]=0;
+                    onlineLocalSide=1; onlineQuickMatch=false; onlineInvitePending=false;
                     if(which==0) {
-                        onlineLocalSide=1; onlineQuickMatch=true; onlineInvitePending=false;
+                        onlineQuickMatch=true;
                     } else if(which==1) {
-                        onlineLocalSide=1; onlineQuickMatch=false; onlineInvitePending=true;
+                        message="إنشاء غرفة جديدة — سيظهر رمز الغرفة بعد الاتصال";
+                    } else if(which==2) {
+                        onlineInvitePending=true;
                     } else {
-                        setup=false; onlineQuickMatch=false; onlineInvitePending=false;
+                        setup=false;
                         showOnlineSetupNotice(false);
                         return;
                     }
                     invalidate();
                 })
-                .setNegativeButton("إلغاء",null).show();
+                .setNegativeButton("إلغاء",null).create();
+            dialog.setOnShowListener(d->styleOnlineDialog(dialog));
+            dialog.show();
         }
 
         private void handleInviteIntent(android.content.Intent intent) {
@@ -1394,6 +1400,38 @@ public class MainActivity extends Activity {
                 @Override public void onProtocolError(String reason){runOnUiThread(()->{message=reason;invalidate();});}
             });
         }
+        private void styleOnlineDialog(AlertDialog dialog) {
+            int burgundy=Color.rgb(105,27,48), gold=Color.rgb(242,196,94);
+            android.graphics.drawable.GradientDrawable buttonBg=new android.graphics.drawable.GradientDrawable();
+            buttonBg.setColor(Color.rgb(38,43,35));buttonBg.setCornerRadius(18f);
+            buttonBg.setStroke(2,burgundy);
+            for(int which:new int[]{-1,-2,-3}) {
+                android.widget.Button button=dialog.getButton(which);
+                if(button!=null){button.setTextColor(gold);button.setBackground(buttonBg.getConstantState().newDrawable().mutate());}
+            }
+            android.widget.TextView title=dialog.findViewById(androidx.appcompat.R.id.alertTitle);
+            if(title!=null)title.setTextColor(gold);
+            int titleId=getResources().getIdentifier("alertTitle","id","android");
+            android.widget.TextView platformTitle=dialog.findViewById(titleId);
+            if(platformTitle!=null)platformTitle.setTextColor(gold);
+            android.view.Window window=dialog.getWindow();
+            if(window!=null) {
+                android.graphics.drawable.GradientDrawable panel=new android.graphics.drawable.GradientDrawable();
+                panel.setColor(Color.rgb(24,35,29));panel.setCornerRadius(22f);panel.setStroke(3,burgundy);
+                window.setBackgroundDrawable(panel);
+            }
+            android.widget.ListView list=dialog.getListView();
+            if(list!=null) {
+                list.setBackgroundColor(Color.rgb(24,35,29));
+                list.setDivider(new android.graphics.drawable.ColorDrawable(burgundy));list.setDividerHeight(2);
+                list.post(()->{
+                    for(int i=0;i<list.getChildCount();i++) {
+                        android.view.View child=list.getChildAt(i);
+                        if(child instanceof android.widget.TextView)((android.widget.TextView)child).setTextColor(gold);
+                    }
+                });
+            }
+        }
         private void showOnlineCardSelectionDialog() {
             if(onlineLoadoutDialogShown || onlineLoadoutReady || mode!=4)return;
             onlineLoadoutDialogShown=true;
@@ -1426,6 +1464,7 @@ public class MainActivity extends Activity {
                     message="تم إلغاء المباراة";invalidate();
                 }).setCancelable(false).create();
             loadoutDialog.setOnShowListener(dialog->{
+                styleOnlineDialog(loadoutDialog);
                 android.widget.ListView list=loadoutDialog.getListView();
                 if(list!=null) {
                     list.setDivider(new android.graphics.drawable.ColorDrawable(Color.rgb(205,190,150)));
@@ -1876,9 +1915,11 @@ public class MainActivity extends Activity {
             p.setStyle(Paint.Style.FILL);
             c.drawRoundRect(tile,side*.13f,side*.13f,p);
             p.setShader(null);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,side*.025f));
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,side*.035f));
             p.setColor(Color.rgb(105,27,48));
             c.drawRoundRect(tile,side*.13f,side*.13f,p);
+            p.setStrokeWidth(Math.max(1.5f,side*.012f));p.setColor(Color.rgb(242,196,94));
+            c.drawRoundRect(new RectF(tile.left+side*.025f,tile.top+side*.025f,tile.right-side*.025f,tile.bottom-side*.025f),side*.11f,side*.11f,p);
             p.setStyle(Paint.Style.FILL);
             txt(c,glyph,cx,top+side*.68f,side*.56f,Color.rgb(242,196,94),true);
             txt(c,label,cx,top+side+h*.032f,h*.024f,Color.rgb(242,196,94),true);
@@ -1938,10 +1979,17 @@ public class MainActivity extends Activity {
                 cardMatchSettled=true;
                 clearBattleCardEffects();
             }
-            bonusAttempt=false;battleIntro=false;die=0;choosing=false;
+            bonusAttempt=false;battleIntro=false;die=0;choosing=false;resultRevealReady=false;
             if(mode==2)message=winner==1?"انتهت المباراة — أنت الفائز!":"انتهت المباراة — فاز جنيرال!";
             else message="انتهت المباراة — الفائز: "+(winner==1?playerNames[0]:playerNames[1]);
-            saveMatchResult();invalidate();
+            saveMatchResult();
+            final int finishedEpoch=matchEpoch;
+            postDelayed(()->{
+                if(finishedEpoch==matchEpoch && winner!=0 && !bonusAttempt) {
+                    resultRevealReady=true;invalidate();
+                }
+            },2000L);
+            invalidate();
         }
         private void beginBonusAttempt() {
             bonusAttempt=true;player=1;die=0;choosing=false;
@@ -2407,7 +2455,7 @@ public class MainActivity extends Activity {
             for(int i=0;i<CardInventory.CARD_TYPES;i++)matchRewardCounts[i]=0;
             for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}clearWinEffects();
             activeProjectiles.clear();impactEffects.clear();muzzleFlashAt=0;
-            stage=0; firstRoll=0; player=1; die=0; winner=0; choosing=false; recorded=false; explosionAt=0;airstrikeStartedAt=0;
+            stage=0; firstRoll=0; player=1; die=0; winner=0; resultRevealReady=false; choosing=false; recorded=false; explosionAt=0;airstrikeStartedAt=0;
             bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
             clearBattleCardEffects();
             if(mode==2)prepareGeneralCards();
@@ -3161,7 +3209,7 @@ public class MainActivity extends Activity {
                 drawRewardPopup(c);
                 return;
             }
-            if(winner!=0 && !bonusAttempt) {
+            if(winner!=0 && !bonusAttempt && resultRevealReady) {
                 box(c,w*.12f,h*.19f,w*.88f,h*.88f,Color.rgb(245,249,239));
                 String winnerName=winner==1?playerNames[0]:(mode==2?"جنيرال":playerNames[1]);
                 int blueWins=0,redWins=0;
@@ -3352,9 +3400,16 @@ public class MainActivity extends Activity {
                     if(y>=h*.065f&&y<=h*.155f&&x>=w*.025f&&x<=w*.125f)warMenuScreen=false;
                     else if(y>=h*.065f&&y<=h*.155f&&x>=w*.145f&&x<=w*.245f)showSettingsDialog();
                     else if(y>=h*.065f&&y<=h*.155f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
-                    else if(y>=h*.32f&&y<=h*.72f&&x>=w*.03f&&x<=w*.33f){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
-                    else if(y>=h*.32f&&y<=h*.72f&&x>=w*.35f&&x<=w*.65f){cardInventory.prepareNewMatchSetup();mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
-                    else if(y>=h*.32f&&y<=h*.72f&&x>=w*.67f&&x<=w*.97f)showOnlineModeDialog();
+                    else {
+                        float side=Math.min(w*.205f,h*.145f), top=h*(.32f+.08f*.40f);
+                        float[] centers={w*.18f,w*.50f,w*.82f};
+                        boolean[] hit=new boolean[3];
+                        for(int i=0;i<3;i++)hit[i]=x>=centers[i]-side*.5f&&x<=centers[i]+side*.5f
+                                && y>=top&&y<=top+side+h*.075f;
+                        if(hit[0]){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
+                        else if(hit[1]){cardInventory.prepareNewMatchSetup();mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
+                        else if(hit[2])showOnlineModeDialog();
+                    }
                 }
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
@@ -3466,7 +3521,8 @@ public class MainActivity extends Activity {
                 }
                 invalidate();return true;
             }
-            if(winner!=0 && !bonusAttempt) {
+            if(winner!=0 && !bonusAttempt && !resultRevealReady) return true;
+            if(winner!=0 && !bonusAttempt && resultRevealReady) {
                 if(y>=h*.885f&&y<=h*.985f) {
                     if(x>=w*.36f&&x<=w*.64f) { matchEpoch++; timerlessCloseLan(); timerlessCloseOnline(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; battleIntro=false; progressScreen=false; explosionAt=0; message="اختر طريقة اللعب"; }
                 }
