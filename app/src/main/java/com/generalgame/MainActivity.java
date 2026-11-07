@@ -143,9 +143,13 @@ public class MainActivity extends Activity {
         private class Projectile {
             final float startX,startY,endX,endY,controlY;
             final long startedAt,duration;
+            final int color;
             Projectile(float sx,float sy,float ex,float ey,float cy,long duration) {
+                this(sx,sy,ex,ey,cy,duration,Color.rgb(238,166,58));
+            }
+            Projectile(float sx,float sy,float ex,float ey,float cy,long duration,int color) {
                 startX=sx;startY=sy;endX=ex;endY=ey;controlY=cy;
-                startedAt=System.currentTimeMillis();this.duration=duration;
+                this.color=color;startedAt=System.currentTimeMillis();this.duration=duration;
             }
         }
         private class ImpactEffect {
@@ -1945,36 +1949,31 @@ public class MainActivity extends Activity {
             RectF r=new RectF(left,top,right,bottom);
             p.setShader(new LinearGradient(left,top,right,bottom,Color.rgb(43,61,48),Color.rgb(17,29,25),Shader.TileMode.CLAMP));
             p.setStyle(Paint.Style.FILL);c.drawRoundRect(r,h*.018f,h*.018f,p);p.setShader(null);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.004f));p.setColor(Color.rgb(126,37,55));
-            c.drawRoundRect(r,h*.018f,h*.018f,p);p.setStrokeWidth(Math.max(1,h*.0018f));p.setColor(gold);
-            c.drawRoundRect(new RectF(left+h*.006f,top+h*.006f,right-h*.006f,bottom-h*.006f),h*.014f,h*.014f,p);p.setStyle(Paint.Style.FILL);
-            float cx=(left+right)*.5f,cy=top+(bottom-top)*.39f;
-            if(icon==0){drawWeapon(c,0,cx-w*.055f,cy,blue,false);drawWeapon(c,1,cx,cy,blue,false);drawWeapon(c,2,cx+w*.055f,cy,blue,false);}
-            else if(icon==1){drawWeapon(c,0,cx-w*.04f,cy,blue,false);drawWeapon(c,1,cx+w*.04f,cy,blue,false);}
-            else if(icon==2){Bitmap b=cardImageForType(7);if(b!=null)drawHelpBitmap(c,b,cx,cy,w*.105f,h*.09f);}
-            else if(icon==3){txt(c,"★",cx,cy+h*.025f,h*.075f,Color.rgb(245,190,65),true);}
-            else if(icon==4){txt(c,"🏅",cx,cy+h*.025f,h*.070f,Color.rgb(245,190,65),true);}
-            else {drawArt(c,"vs_emblem.png",cx-w*.045f,cy-h*.045f,cx+w*.045f,cy+h*.045f,false);}
-            txt(c,title,cx,bottom-h*.040f,h*.030f,Color.rgb(245,204,112),true);
-            txt(c,subtitle,cx,bottom-h*.014f,h*.016f,Color.rgb(225,231,216),false);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0025f));p.setColor(Color.rgb(126,37,55));
+            c.drawRoundRect(r,h*.018f,h*.018f,p);p.setStrokeWidth(Math.max(1,h*.0012f));p.setColor(gold);
+            c.drawRoundRect(new RectF(left+h*.006f,top+h*.006f,right-h*.006f,bottom-h*.006f),h*.014f,h*.014f,p);
+            p.setStyle(Paint.Style.FILL);
+            float cx=(left+right)*.5f,cy=(top+bottom)*.5f;
+            txt(c,title,cx,cy-h*.004f,h*.026f,Color.rgb(245,204,112),true);
+            txt(c,subtitle,cx,cy+h*.030f,h*.016f,Color.rgb(225,231,216),false);
         }
         private void drawHelpBitmap(Canvas c,Bitmap bitmap,float cx,float cy,float width,float height) {
             if(bitmap==null)return;p.setShader(null);p.setStyle(Paint.Style.FILL);p.setAlpha(255);p.setFilterBitmap(true);
             c.drawBitmap(bitmap,null,new RectF(cx-width*.5f,cy-height*.5f,cx+width*.5f,cy+height*.5f),p);
         }
         private void drawHelpInfoCard(Canvas c,String title,String detail,Bitmap image,float y,float height) {
-            float left=w*.095f,right=w*.905f,top=y,bottom=y+height;
+            float left=w*.075f,right=w*.925f,top=y,bottom=y+height;
             p.setShader(new LinearGradient(left,top,right,bottom,Color.rgb(38,54,44),Color.rgb(18,29,25),Shader.TileMode.CLAMP));
             p.setStyle(Paint.Style.FILL);c.drawRoundRect(new RectF(left,top,right,bottom),h*.012f,h*.012f,p);p.setShader(null);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.003f));p.setColor(Color.rgb(123,39,55));
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1.5f,h*.0018f));p.setColor(Color.rgb(123,39,55));
             c.drawRoundRect(new RectF(left,top,right,bottom),h*.012f,h*.012f,p);p.setStyle(Paint.Style.FILL);
-            float imageCx=right-w*.105f,imageCy=(top+bottom)*.5f;
-            if(image!=null)drawHelpBitmap(c,image,imageCx,imageCy,w*.13f,height*.78f);
-            float textX=w*.50f;
-            txt(c,title,textX,top+height*.34f,h*.026f,Color.rgb(245,204,112),true);
-            p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.17f);p.setColor(Color.rgb(225,231,216));
-            String[] words=detail.split(" ");String line="";float yy=top+height*.65f;
-            for(String word:words){String next=line.isEmpty()?word:line+" "+word;if(p.measureText(next)>w*.58f&&!line.isEmpty()){c.drawText(line,textX,yy,p);yy+=h*.20f;line=word;}else line=next;}
+            float imageCx=right-w*.075f,imageCy=(top+bottom)*.5f;
+            if(image!=null)drawHelpBitmap(c,image,imageCx,imageCy,w*.075f,height*.66f);
+            float textX=w*.51f;
+            txt(c,title,textX,top+height*.31f,h*.020f,Color.rgb(245,204,112),true);
+            p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.145f);p.setFakeBoldText(false);p.setColor(Color.rgb(225,231,216));
+            String[] words=detail.split(" ");String line="";float yy=top+height*.61f;
+            for(String word:words){String next=line.isEmpty()?word:line+" "+word;if(p.measureText(next)>w*.66f&&!line.isEmpty()){c.drawText(line,textX,yy,p);yy+=h*.19f;line=word;}else line=next;}
             if(!line.isEmpty())c.drawText(line,textX,yy,p);p.setTextAlign(Paint.Align.CENTER);
         }
         private void drawHelp(Canvas c) {
@@ -1985,7 +1984,7 @@ public class MainActivity extends Activity {
             c.drawRoundRect(new RectF(w*.035f,h*.085f,w*.965f,h*.99f),h*.025f,h*.025f,p);p.setStrokeWidth(Math.max(2,h*.002f));p.setColor(gold);
             c.drawRoundRect(new RectF(w*.045f,h*.095f,w*.955f,h*.98f),h*.020f,h*.020f,p);p.setStyle(Paint.Style.FILL);
             String[] titles={"طريقة اللعب","الأسلحة","البطاقات","المهمات","النقاط والرتب","اللعب الجماعي"};
-            txt(c,helpSection<0?"دليل جنيرال":titles[Math.min(5,helpSection)],w*.5f,h*.15f,h*.046f,Color.rgb(245,200,105),true);
+            txt(c,helpSection<0?"دليل جنيرال":titles[Math.min(5,helpSection)],w*.5f,h*.15f,h*.034f,Color.rgb(245,200,105),true);
             c.save();c.clipRect(w*.065f,h*.19f,w*.935f,h*.875f);
             if(helpSection<0) {
                 String[] subs={"الحرب والأدوار والفوز","الدبابة والطائرة والمدفع","البطاقات العشر واستخدامها","اليومية والأسبوعية","الترقيات والمكافآت","محلي وشبكة وإنترنت"};
@@ -2478,65 +2477,47 @@ public class MainActivity extends Activity {
             }},850);
         }
         private void startRadarBlockedAttack(final int attackingSide,final int lane,final int amount) {
-            radarBlockStartedAt=System.currentTimeMillis();radarBlockLane=lane;
-            radarBlockAttackerSide=attackingSide;radarBlockAmount=Math.max(1,Math.min(12,amount));
-            invalidate();postInvalidateDelayed(25);final int epoch=matchEpoch;
-            postDelayed(()->{if(epoch!=matchEpoch||radarBlockStartedAt==0)return;
+            // الرادار لا يغيّر شكل الطلقات: نستخدم نفس مقذوفات المعركة المعتادة،
+            // ويطلق السلاح المستهدف رشقة مضادة من فوهته بالاتجاه المعاكس.
+            final int epoch=matchEpoch;
+            final int shots=Math.max(1,Math.min(12,amount));
+            final float laneY=new float[]{h*.29f,h*.49f,h*.69f}[lane];
+            final float attackerMuzzle=attackingSide==1?w*.875f:w*.125f;
+            final float defenderMuzzle=attackingSide==1?w*.125f:w*.875f;
+            final float meetingX=w*.5f;
+            final long flight=560L,gap=105L;
+            final ArrayList<Projectile> volley=new ArrayList<>();
+            choosing=false;playGameSound(lane);
+            message="الرادار رصد الهجوم — إطلاق طلقات مضادة!";
+            for(int i=0;i<shots;i++) {
+                final int shot=i;
+                postDelayed(()->{
+                    if(epoch!=matchEpoch)return;
+                    muzzleFlashAt=System.currentTimeMillis();
+                    muzzleFlashX=attackerMuzzle;muzzleFlashY=laneY;
+                    float arc=((shot%3)-1)*h*.009f;
+                    Projectile incoming=new Projectile(attackerMuzzle,laneY,meetingX,laneY,
+                            laneY-h*.115f+arc,flight);
+                    Projectile counter=new Projectile(defenderMuzzle,laneY,meetingX,laneY,
+                            laneY-h*.115f-arc,flight,Color.rgb(65,220,105));
+                    volley.add(incoming);volley.add(counter);
+                    activeProjectiles.add(incoming);activeProjectiles.add(counter);
+                    invalidate();
+                    postDelayed(()->{
+                        if(epoch!=matchEpoch)return;
+                        activeProjectiles.remove(incoming);activeProjectiles.remove(counter);
+                        impactEffects.add(new ImpactEffect(meetingX,laneY));
+                        invalidate();
+                    },flight);
+                },shot*gap);
+            }
+            long total=(shots-1)*gap+flight+80L;
+            postDelayed(()->{
+                if(epoch!=matchEpoch)return;
+                activeProjectiles.removeAll(volley);
                 radarBlockStartedAt=0;radarBlockLane=-1;radarBlockAttackerSide=0;radarBlockAmount=0;
-                finishRadarResponseTurn(attackingSide);invalidate();},1250L);
-        }
-        private void drawRadarRound(Canvas c,float x,float y,float angle,int color,float scale) {
-            float length=h*.030f*scale,thickness=h*.009f*scale;
-            c.save();c.rotate(angle,x,y);
-            p.setShader(null);p.setStyle(Paint.Style.FILL);
-            p.setColor(Color.argb(85,Color.red(color),Color.green(color),Color.blue(color)));
-            c.drawOval(new RectF(x-length*.9f,y-thickness*1.15f,x+length*.9f,y+thickness*1.15f),p);
-            p.setColor(color);
-            c.drawRoundRect(new RectF(x-length*.5f,y-thickness*.5f,x+length*.30f,y+thickness*.5f),thickness*.35f,thickness*.35f,p);
-            Path tip=new Path();tip.moveTo(x+length*.30f,y-thickness*.5f);tip.lineTo(x+length*.72f,y);tip.lineTo(x+length*.30f,y+thickness*.5f);tip.close();c.drawPath(tip,p);
-            p.setColor(Color.rgb(255,235,175));
-            c.drawRoundRect(new RectF(x-length*.40f,y-thickness*.22f,x+length*.12f,y+thickness*.22f),thickness*.2f,thickness*.2f,p);
-            p.setColor(Color.argb(220,Color.red(color),Color.green(color),Color.blue(color)));
-            c.drawOval(new RectF(x-length*.85f,y-thickness*.23f,x-length*.55f,y+thickness*.23f),p);
-            c.restore();
-        }
-        private void drawRadarBlockedAttack(Canvas c) {
-            if(radarBlockStartedAt<=0||radarBlockLane<0)return;
-            long elapsed=System.currentTimeMillis()-radarBlockStartedAt;
-            float flight=Math.min(1f,elapsed/900f);
-            float[] rows={h*.29f,h*.49f,h*.69f};float y=rows[radarBlockLane];
-            float attackerX=radarBlockAttackerSide==1?w*.86f:w*.14f;
-            float defenderX=radarBlockAttackerSide==1?w*.14f:w*.86f;
-            float direction=defenderX>attackerX?1f:-1f;
-            // يخرج كل مقذوف من فوهة السلاح المهاجم، وتخرج المقذوفات الخضراء من فوهة السلاح المدافع.
-            float attackMuzzle=attackerX+direction*w*.043f;
-            float defendMuzzle=defenderX-direction*w*.043f;
-            float interceptX=defenderX-direction*w*.13f;
-            float incomingX=attackMuzzle+(interceptX-attackMuzzle)*flight;
-            float counterX=defendMuzzle+(interceptX-defendMuzzle)*flight;
-            int count=Math.min(6,Math.max(1,radarBlockAmount));
-            float angle=direction>0?0f:180f;
-            for(int i=0;i<count;i++) {
-                float offset=(i-(count-1)*.5f)*h*.012f;
-                drawRadarRound(c,incomingX,y+offset,angle,Color.rgb(239,166,55),.9f);
-                drawRadarRound(c,counterX,y+offset,angle+180f,Color.rgb(42,238,92),.9f);
-            }
-            if(elapsed>=900L) {
-                float age=Math.min(1f,(elapsed-900L)/360f);
-                float radius=h*(.012f+.048f*age);
-                int alpha=(int)(245*(1f-age));
-                p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(alpha,65,255,105));
-                c.drawCircle(interceptX,y,radius*.62f,p);
-                p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(h*.006f);
-                p.setColor(Color.argb(alpha,105,255,135));c.drawCircle(interceptX,y,radius,p);
-                p.setStyle(Paint.Style.FILL);
-                for(int i=0;i<10;i++){
-                    double a=Math.PI*2*i/10.0;float d=radius*(.75f+(i%2)*.35f);
-                    c.drawCircle(interceptX+(float)Math.cos(a)*d,y+(float)Math.sin(a)*d,Math.max(1,h*.0035f*(1f-age)),p);
-                }
-                txt(c,"تم اعتراض الطلقات",interceptX,y-h*.075f,h*.021f,Color.rgb(95,255,140),true);
-            }
-            p.setStyle(Paint.Style.FILL);postInvalidateDelayed(25);
+                finishRadarResponseTurn(attackingSide);invalidate();
+            },total);
         }
         private void finishRadarResponseTurn(int attackingSide) {
             if(mode==4){die=0;choosing=false;afterTurn();return;}
@@ -2963,15 +2944,16 @@ public class MainActivity extends Activity {
                 float angle=(float)Math.toDegrees(Math.atan2(dy,dx));
                 float radius=h*.009f;
                 c.save();c.rotate(angle,x,y);
-                p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(65,255,177,63));
+                int base=projectile.color;
+                p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(65,Color.red(base),Color.green(base),Color.blue(base)));
                 c.drawCircle(x,y,radius*2.1f,p);
-                p.setColor(Color.rgb(238,166,58));
+                p.setColor(base);
                 c.drawRoundRect(new RectF(x-radius*1.65f,y-radius*.48f,x+radius*1.65f,y+radius*.48f),
                         radius*.42f,radius*.42f,p);
                 p.setColor(Color.rgb(255,238,185));
                 c.drawRoundRect(new RectF(x-radius*.65f,y-radius*.27f,x+radius*.85f,y+radius*.27f),
                         radius*.24f,radius*.24f,p);
-                p.setColor(Color.argb(190,255,202,105));
+                p.setColor(Color.argb(190,Color.red(base),Color.green(base),Color.blue(base)));
                 c.drawCircle(x-radius*1.45f,y,radius*.34f,p);
                 c.restore();
             }
@@ -3224,7 +3206,6 @@ public class MainActivity extends Activity {
             drawMuzzleFlash(c);
             drawExplosion(c);
             drawBattleDialogue(c);
-            drawRadarBlockedAttack(c);
             float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
             boolean localRollTurn=(mode==1 || (mode==2 && player==1)
                     || (mode==3 && player==lanLocalSide && lanSession!=null && lanSession.isConnected())
