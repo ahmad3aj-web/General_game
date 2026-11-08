@@ -469,7 +469,7 @@ public class MainActivity extends Activity {
             vibrationBox.setText("اهتزاز الهاتف عند تدمير السلاح");vibrationBox.setChecked(vibrationEnabled);
             final android.widget.CheckBox shakeBox=new android.widget.CheckBox(MainActivity.this);
             shakeBox.setText("اهتزاز الشاشة عند تدمير السلاح");shakeBox.setChecked(screenShakeEnabled);
-            int settingsGold=Color.rgb(150,105,0);
+            int settingsGold=Color.rgb(245,190,65);
             android.graphics.Typeface settingsBold=android.graphics.Typeface.DEFAULT_BOLD;
             soundBox.setTextColor(settingsGold);soundBox.setTypeface(settingsBold);
             musicBox.setTextColor(settingsGold);musicBox.setTypeface(settingsBold);
@@ -520,7 +520,7 @@ public class MainActivity extends Activity {
             nameInput.setHintTextColor(Color.rgb(184,145,73));
             nameInput.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(105,27,48)));
             final android.widget.TextView avatarLabel=new android.widget.TextView(MainActivity.this);
-            avatarLabel.setGravity(android.view.Gravity.CENTER);avatarLabel.setTextColor(Color.rgb(150,105,0));
+            avatarLabel.setGravity(android.view.Gravity.CENTER);avatarLabel.setTextColor(Color.rgb(245,190,65));
             avatarLabel.setText("الشخصية "+(draftAvatar[0]+1)+" من 17");avatarLabel.setTextSize(18);
             final View preview=new View(MainActivity.this) {
                 @Override protected void onDraw(Canvas canvas) {
@@ -538,9 +538,9 @@ public class MainActivity extends Activity {
             android.widget.LinearLayout panel=new android.widget.LinearLayout(MainActivity.this);panel.setOrientation(android.widget.LinearLayout.VERTICAL);
             int pad=(int)(16*getResources().getDisplayMetrics().density);panel.setPadding(pad,pad,pad,pad);
             android.widget.TextView nameLabel=new android.widget.TextView(MainActivity.this);
-            nameLabel.setText("اسم المستخدم الثابت");nameLabel.setTextColor(Color.rgb(150,105,0));nameLabel.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            nameLabel.setText("اسم المستخدم الثابت");nameLabel.setTextColor(Color.rgb(245,190,65));nameLabel.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
             android.widget.TextView avatarTitle=new android.widget.TextView(MainActivity.this);
-            avatarTitle.setText("الشخصية الثابتة");avatarTitle.setTextColor(Color.rgb(150,105,0));avatarTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);avatarTitle.setGravity(android.view.Gravity.CENTER);
+            avatarTitle.setText("الشخصية الثابتة");avatarTitle.setTextColor(Color.rgb(245,190,65));avatarTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);avatarTitle.setGravity(android.view.Gravity.CENTER);
             panel.addView(nameLabel);panel.addView(nameInput);panel.addView(avatarTitle);panel.addView(preview);panel.addView(chooser);
             new AlertDialog.Builder(MainActivity.this).setTitle("هوية المستخدم").setView(panel)
                 .setPositiveButton("حفظ الهوية",(d,which)->{
@@ -774,7 +774,7 @@ public class MainActivity extends Activity {
             String visible=text.substring(0,finish);
             p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.027f);p.setFakeBoldText(true);
             while(p.measureText(visible)>right-left-h*.045f && p.getTextSize()>h*.018f)p.setTextSize(p.getTextSize()*.96f);
-            p.setColor(isBlue?Color.rgb(160,207,255):Color.rgb(255,177,162));
+            p.setColor(Color.rgb(245,190,65));
             c.drawText(visible,(left+right)*.5f,top+h*.050f,p);
             p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(false);p.setStyle(Paint.Style.FILL);
         }
@@ -2147,7 +2147,7 @@ public class MainActivity extends Activity {
             p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);
             p.setTextSize(Math.max(size,h*.024f));p.setFakeBoldText(bold);
             while(p.measureText(text)>w*.82f && p.getTextSize()>h*.017f)p.setTextSize(p.getTextSize()*.94f);
-            p.setColor(color);c.drawText(text,w*.5f,y,p);
+            p.setColor(Color.rgb(245,190,65));c.drawText(text,w*.5f,y,p);
             p.setFakeBoldText(false);
             return y+h*.043f;
         }
@@ -2196,7 +2196,7 @@ public class MainActivity extends Activity {
             }
             float textX=w*.51f;
             txt(c,title,textX,top+height*.31f,h*.014f,Color.rgb(245,204,112),true);
-            p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.042f);p.setFakeBoldText(false);p.setColor(Color.rgb(225,231,216));
+            p.setTextAlign(Paint.Align.CENTER);p.setTextSize(h*.042f);p.setFakeBoldText(false);p.setColor(Color.rgb(245,190,65));
             String[] words=detail.split(" ");String line="";float yy=top+height*.61f;
             for(String word:words){String next=line.isEmpty()?word:line+" "+word;if(p.measureText(next)>w*.66f&&!line.isEmpty()){c.drawText(line,textX,yy,p);yy+=h*.058f;line=word;}else line=next;}
             if(!line.isEmpty())c.drawText(line,textX,yy,p);p.setTextAlign(Paint.Align.CENTER);
@@ -3304,7 +3304,7 @@ public class MainActivity extends Activity {
                     txt(c,"ساحة المعركة",w*.79f,h*.355f,h*.030f,Color.rgb(242,196,94),true);
                     wideMenuButton(c,"⚔","الحرب",w*.655f,h*.405f,w*.925f,h*.785f);
                     p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(true);
-                    p.setTextSize(h*.020f);p.setColor(Color.WHITE);
+                    p.setTextSize(h*.020f);p.setColor(Color.rgb(245,190,65));
                     c.drawText("© 2026 أحمد جرادات",w*.5f,h*.945f,p);
                     p.setTextSize(h*.018f);
                     c.drawText("ahmad3aj@gmail.com",w*.5f,h*.975f,p);
