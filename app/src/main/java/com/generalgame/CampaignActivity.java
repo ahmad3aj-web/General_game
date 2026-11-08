@@ -243,18 +243,34 @@ public class CampaignActivity extends Activity {
             CampaignActivity.this.startActivityForResult(battle,701);
         }
         private boolean adjacent(int a,int b) {
-            // حدود الدول مرسومة بخلايا Voronoi؛ نعتمد الجيران الأقرب هندسياً
-            // بدل شبكة الصفوف والأعمدة القديمة حتى تتوافق الهجمات مع شكل الخريطة.
-            if(a==b)return false;
+            // افحص خط التماس الفعلي بين خليتي الدولتين على الخريطة.
+            if(a==b||countryHitRegions[a]==null||countryHitRegions[b]==null)return false;
             float[][] sites=countrySites(continent);
-            float target=(float)Math.hypot(sites[a][0]-sites[b][0],sites[a][1]-sites[b][1]);
-            int closer=0;
-            for(int k=0;k<sites.length;k++)if(k!=a&&k!=b) {
-                float da=(float)Math.hypot(sites[a][0]-sites[k][0],sites[a][1]-sites[k][1]);
-                float db=(float)Math.hypot(sites[b][0]-sites[k][0],sites[b][1]-sites[k][1]);
-                if(da<target*.72f && db<target*.72f)closer++;
+            float dx=sites[b][0]-sites[a][0],dy=sites[b][1]-sites[a][1];
+            float len=(float)Math.hypot(dx,dy);
+            if(len<.0001f)return false;
+            float mx=(sites[a][0]+sites[b][0])*.5f,my=(sites[a][1]+sites[b][1])*.5f;
+            float px=-dy/len,py=dx/len;
+            float left=w*.075f,top=h*.225f,mapW=w*.85f,mapH=h*.61f;
+            for(int n=-100;n<=100;n++) {
+                float t=n*.012f;
+                float nx=mx+px*t,ny=my+py*t;
+                if(nx<0||nx>1||ny<0||ny>1)continue;
+                float sx=left+nx*mapW,sy=top+ny*mapH;
+                float da=0,db=0;
+                for(int k=0;k<sites.length;k++) {
+                    float dd=(nx-sites[k][0])*(nx-sites[k][0])+(ny-sites[k][1])*(ny-sites[k][1]);
+                    if(k==a)da=dd;if(k==b)db=dd;
+                }
+                if(Math.abs(da-db)>.0005f)continue;
+                boolean nearest=true;
+                for(int k=0;k<sites.length;k++)if(k!=a&&k!=b) {
+                    float dd=(nx-sites[k][0])*(nx-sites[k][0])+(ny-sites[k][1])*(ny-sites[k][1]);
+                    if(dd<Math.min(da,db)-.0005f){nearest=false;break;}
+                }
+                if(nearest&&(countryHitRegions[a].contains((int)sx,(int)sy)||countryHitRegions[b].contains((int)sx,(int)sy)))return true;
             }
-            return closer<=1;
+            return false;
         }
         @Override public boolean onTouchEvent(MotionEvent e) {
             if(e.getAction()!=MotionEvent.ACTION_UP)return true;
