@@ -3214,6 +3214,7 @@ public class MainActivity extends Activity {
                     miniMenuButton(c,"▤","السجل",w*.515f,h*.425f,Color.rgb(55,48,37));
                     miniMenuButton(c,"♜","التقدم",w*.245f,h*.665f,Color.rgb(55,48,37));
                     miniMenuButton(c,"?","الشرح",w*.425f,h*.665f,Color.rgb(55,48,37));
+                    miniMenuButton(c,"🌍","الحملة",w*.515f,h*.665f,Color.rgb(55,48,37));
                     txt(c,"ساحة المعركة",w*.79f,h*.355f,h*.030f,Color.rgb(242,196,94),true);
                     wideMenuButton(c,"⚔","الحرب",w*.655f,h*.405f,w*.925f,h*.785f);
                     p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(true);
@@ -3438,6 +3439,7 @@ public class MainActivity extends Activity {
                 else if(y>=h*.405f&&y<=h*.59f&&x>=w*.44f&&x<=w*.58f)historyScreen=true;
                 else if(y>=h*.65f&&y<=h*.83f&&x>=w*.17f&&x<=w*.32f)progressScreen=true;
                 else if(y>=h*.65f&&y<=h*.83f&&x>=w*.35f&&x<=w*.50f){helpScreen=true;helpScrollY=0;}
+                else if(y>=h*.65f&&y<=h*.83f&&x>=w*.50f&&x<=w*.59f){startActivity(new android.content.Intent(MainActivity.this,CampaignActivity.class));}
                 invalidate();return true;
             }
             if(setup) {
