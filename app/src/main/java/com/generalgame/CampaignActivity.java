@@ -81,8 +81,13 @@ public class CampaignActivity extends Activity {
             e.apply();
         }
         private int colorFor(int owner) { return owner==BLUE?Color.rgb(39,112,205):owner==RED?Color.rgb(202,62,55):Color.rgb(135,139,133); }
+        private int shade(int color,float factor) {
+            return Color.rgb(Math.min(255,Math.max(0,(int)(Color.red(color)*factor))),
+                Math.min(255,Math.max(0,(int)(Color.green(color)*factor))),
+                Math.min(255,Math.max(0,(int)(Color.blue(color)*factor))));
+        }
         private void text(Canvas c,String value,float x,float y,float size,int color) {
-            paint.setStyle(Paint.Style.FILL);paint.setColor(color);paint.setTextSize(size);
+            paint.setStyle(Paint.Style.FILL);paint.setColor(Color.rgb(245,190,65));paint.setTextSize(size);
             paint.setTextAlign(Paint.Align.CENTER);paint.setFakeBoldText(true);c.drawText(value,x,y,paint);paint.setFakeBoldText(false);
         }
         private void panel(Canvas c,float l,float t,float r,float b,int color) {
@@ -122,8 +127,8 @@ public class CampaignActivity extends Activity {
             } else {
                 for(int r=0;r<5;r++) for(int col=0;col<3;col++) {
                     int i=r*3+col;
-                    float spread=(r==0||r==4)?.16f:.27f;
-                    sites[i][0]=.5f+(col-1)*spread+(float)Math.sin((i+1)*1.9)*.025f;
+                    float spread=(r==0)?.07f:(r==4)?.045f:(r==1||r==3)?.20f:.26f;
+                    sites[i][0]=.5f+(col-1)*spread+(float)Math.sin((i+1)*1.9)*.012f;
                     sites[i][1]=.10f+r*.20f+(float)Math.cos(i*1.3)*.018f;
                 }
             }
