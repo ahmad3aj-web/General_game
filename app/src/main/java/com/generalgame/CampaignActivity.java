@@ -7,6 +7,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.Path;
+import android.graphics.Region;
+import android.graphics.LinearGradient;
+import android.graphics.Shader;
 import android.view.MotionEvent;
 import android.view.View;
 import android.content.SharedPreferences;
@@ -63,7 +67,7 @@ public class CampaignActivity extends Activity {
         private int unlocked=prefs.getInt("unlocked",0);
         private int[][] owners=new int[4][15];
         private float w,h;
-        private final RectF[] countryRects=new RectF[15];
+        private final Region[] countryHitRegions=new Region[15];
 
         CampaignView() {
             super(CampaignActivity.this);
@@ -105,26 +109,116 @@ public class CampaignActivity extends Activity {
             panel(c,w*.42f,h*.925f,w*.58f,h*.985f,Color.rgb(95,53,43));
             text(c,"عودة",w*.5f,h*.965f,h*.027f,Color.WHITE);
         }
+        private float[][] countrySites(int continentIndex) {
+            float[][] sites=new float[15][2];
+            if(continentIndex==1 || continentIndex==2) {
+                for(int r=0;r<3;r++) for(int col=0;col<5;col++) {
+                    int i=r*5+col;
+                    float x=.12f+col*.19f;
+                    float y=.20f+r*.30f;
+                    float jitter=(float)Math.sin((i+2)*2.13)*.025f;
+                    sites[i][0]=x+jitter;sites[i][1]=y+(float)Math.cos(i*1.7)*.025f;
+                }
+            } else {
+                for(int r=0;r<5;r++) for(int col=0;col<3;col++) {
+                    int i=r*3+col;
+                    float spread=(r==0||r==4)?.16f:.27f;
+                    sites[i][0]=.5f+(col-1)*spread+(float)Math.sin((i+1)*1.9)*.025f;
+                    sites[i][1]=.10f+r*.20f+(float)Math.cos(i*1.3)*.018f;
+                }
+            }
+            return sites;
+        }
+        private Path continentOutline(RectF b) {
+            Path path=new Path();
+            float[][] pts;
+            if(continent==0) pts=new float[][]{{.43f,.02f},{.61f,.08f},{.75f,.22f},{.71f,.39f},{.64f,.56f},{.56f,.77f},{.46f,.98f},{.35f,.82f},{.27f,.64f},{.18f,.43f},{.25f,.20f}};
+            else if(continent==1) pts=new float[][]{{.05f,.25f},{.16f,.12f},{.34f,.16f},{.48f,.04f},{.66f,.10f},{.83f,.17f},{.98f,.30f},{.90f,.48f},{.80f,.60f},{.73f,.78f},{.55f,.92f},{.40f,.80f},{.25f,.74f},{.12f,.56f}};
+            else if(continent==2) pts=new float[][]{{.20f,.15f},{.35f,.07f},{.48f,.12f},{.60f,.05f},{.78f,.15f},{.90f,.30f},{.82f,.45f},{.93f,.57f},{.77f,.72f},{.62f,.67f},{.53f,.89f},{.39f,.78f},{.25f,.83f},{.14f,.62f},{.08f,.42f}};
+            else pts=new float[][]{{.18f,.05f},{.40f,.08f},{.57f,.17f},{.69f,.27f},{.62f,.40f},{.53f,.49f},{.58f,.61f},{.51f,.76f},{.43f,.98f},{.33f,.83f},{.28f,.66f},{.20f,.52f},{.10f,.34f}};
+            path.moveTo(b.left+pts[0][0]*b.width(),b.top+pts[0][1]*b.height());
+            for(int i=1;i<pts.length;i++)path.lineTo(b.left+pts[i][0]*b.width(),b.top+pts[i][1]*b.height());
+            path.close();return path;
+        }
+        private java.util.ArrayList<float[]> clipPolygon(java.util.ArrayList<float[]> poly,float nx,float ny,float limit) {
+            java.util.ArrayList<float[]> out=new java.util.ArrayList<>();
+            if(poly.isEmpty())return out;
+            for(int i=0;i<poly.size();i++) {
+                float[] a=poly.get(i),z=poly.get((i+1)%poly.size());
+                float da=nx*a[0]+ny*a[1]-limit,dz=nx*z[0]+ny*z[1]-limit;
+                boolean ina=da<=.00001f,inz=dz<=.00001f;
+                if(ina)out.add(new float[]{a[0],a[1]});
+                if(ina!=inz) {
+                    float t=da/(da-dz);
+                    out.add(new float[]{a[0]+(z[0]-a[0])*t,a[1]+(z[1]-a[1])*t});
+                }
+            }
+            return out;
+        }
+        private Path countryPath(RectF b,float[][] sites,int index) {
+            java.util.ArrayList<float[]> poly=new java.util.ArrayList<>();
+            poly.add(new float[]{0,0});poly.add(new float[]{1,0});poly.add(new float[]{1,1});poly.add(new float[]{0,1});
+            float sx=sites[index][0],sy=sites[index][1];
+            for(int j=0;j<sites.length&&!poly.isEmpty();j++)if(j!=index) {
+                float nx=2*(sites[j][0]-sx),ny=2*(sites[j][1]-sy);
+                float limit=sites[j][0]*sites[j][0]+sites[j][1]*sites[j][1]-sx*sx-sy*sy;
+                poly=clipPolygon(poly,nx,ny,limit);
+            }
+            Path path=new Path();
+            if(poly.size()>0) {
+                path.moveTo(b.left+poly.get(0)[0]*b.width(),b.top+poly.get(0)[1]*b.height());
+                for(int i=1;i<poly.size();i++)path.lineTo(b.left+poly.get(i)[0]*b.width(),b.top+poly.get(i)[1]*b.height());
+                path.close();
+            }
+            return path;
+        }
         private void drawContinent(Canvas c) {
             text(c,CONTINENTS[continent]+"  •  "+THEMES[continent],w*.5f,h*.145f,h*.040f,Color.WHITE);
             text(c,"أزرق: اللاعب     أحمر: جنيرال     رمادي: محايد",w*.5f,h*.205f,h*.023f,Color.LTGRAY);
-            float left=w*.08f, top=h*.27f, gapX=w*.012f, gapY=h*.025f;
-            float cw=w*.158f,ch=h*.155f;
+            RectF map=new RectF(w*.14f,h*.245f,w*.86f,h*.805f);
+            Path outline=continentOutline(map);
+            Region clip=new Region((int)map.left,(int)map.top,(int)map.right,(int)map.bottom);
+            Region land=new Region();land.setPath(outline,clip);
+            paint.setShader(null);paint.setStyle(Paint.Style.FILL);paint.setColor(Color.argb(145,0,0,0));
+            c.save();c.translate(h*.012f,h*.018f);c.drawPath(outline,paint);c.restore();
+            paint.setShader(new LinearGradient(map.left,map.top,map.right,map.bottom,
+                Color.rgb(89,112,91),Color.rgb(31,55,46),Shader.TileMode.CLAMP));
+            paint.setStyle(Paint.Style.FILL);c.drawPath(outline,paint);paint.setShader(null);
+            c.save();c.clipPath(outline);
+            float[][] sites=countrySites(continent);
             for(int i=0;i<15;i++) {
-                int row=i/5,col=i%5;
-                float x=left+col*(cw+gapX),y=top+row*(ch+gapY);
-                countryRects[i]=new RectF(x,y,x+cw,y+ch);
-                panel(c,x,y,x+cw,y+ch,colorFor(owners[continent][i]));
-                text(c,COUNTRIES[continent][i],x+cw/2,y+ch*.48f,h*.026f,Color.WHITE);
+                Path country=countryPath(map,sites,i);
+                Region hit=new Region();hit.setPath(country,land);countryHitRegions[i]=hit;
+                paint.setShader(new LinearGradient(map.left,map.top,map.right,map.bottom,
+                    shade(colorFor(owners[continent][i]),1.22f),shade(colorFor(owners[continent][i]),.72f),Shader.TileMode.CLAMP));
+                paint.setStyle(Paint.Style.FILL);c.drawPath(country,paint);paint.setShader(null);
+                paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(Math.max(2,h*.003f));
+                paint.setColor(Color.rgb(105,27,48));c.drawPath(country,paint);
+                paint.setStyle(Paint.Style.FILL);
+                float tx=map.left+sites[i][0]*map.width(),ty=map.top+sites[i][1]*map.height();
+                paint.setTextAlign(Paint.Align.CENTER);paint.setTextSize(h*.020f);paint.setFakeBoldText(true);
+                paint.setColor(Color.rgb(245,190,65));
+                c.drawText(COUNTRIES[continent][i],tx,ty,paint);
                 if(selected==i) {
-                    paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(h*.006f);paint.setColor(Color.YELLOW);
-                    c.drawRoundRect(countryRects[i],h*.018f,h*.018f,paint);paint.setStyle(Paint.Style.FILL);
+                    paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(h*.008f);paint.setColor(Color.rgb(255,219,110));
+                    c.drawPath(country,paint);paint.setStyle(Paint.Style.FILL);
                 }
             }
+            // Relief contours and mountain ridges give the map a raised military-terrain appearance.
+            paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(h*.0022f);paint.setColor(Color.argb(75,236,202,126));
+            for(int i=0;i<7;i++) {
+                Path ridge=new Path();float yy=map.top+map.height()*(.12f+i*.115f);
+                ridge.moveTo(map.left+map.width()*.18f,yy);
+                ridge.cubicTo(map.left+map.width()*.34f,yy-h*.045f,map.left+map.width()*.56f,yy+h*.035f,map.left+map.width()*.80f,yy-h*.018f);
+                c.drawPath(ridge,paint);
+            }
+            c.restore();
+            paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(h*.009f);paint.setColor(Color.rgb(105,27,48));c.drawPath(outline,paint);
+            paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(h*.0025f);paint.setColor(Color.rgb(231,190,105));c.drawPath(outline,paint);paint.setStyle(Paint.Style.FILL);
             if(selected>=0) {
                 String owner=owners[continent][selected]==BLUE?"ملك اللاعب":owners[continent][selected]==RED?"ملك جنيرال":"دولة محايدة";
-                panel(c,w*.30f,h*.835f,w*.70f,h*.91f,Color.rgb(232,235,222));
-                text(c,COUNTRIES[continent][selected]+"  •  "+owner,w*.5f,h*.88f,h*.027f,Color.rgb(31,52,43));
+                panel(c,w*.30f,h*.825f,w*.70f,h*.91f,Color.rgb(49,35,32));
+                text(c,COUNTRIES[continent][selected]+"  •  "+owner,w*.5f,h*.88f,h*.027f,Color.rgb(245,190,65));
             }
             panel(c,w*.025f,h*.925f,w*.17f,h*.985f,Color.rgb(75,79,74));
             text(c,"القارات",w*.097f,h*.965f,h*.024f,Color.WHITE);
@@ -160,7 +254,7 @@ public class CampaignActivity extends Activity {
             } else {
                 if(y>=h*.925f&&x>=w*.40f&&x<=w*.60f){screen=0;selected=-1;invalidate();return true;}
                 if(y>=h*.925f&&x<=w*.18f){screen=0;selected=-1;invalidate();return true;}
-                for(int i=0;i<15;i++) if(countryRects[i]!=null&&countryRects[i].contains(x,y)) {
+                for(int i=0;i<15;i++) if(countryHitRegions[i]!=null&&countryHitRegions[i].contains((int)x,(int)y)) {
                     selected=i;
                     if(owners[continent][i]!=BLUE) {
                         final int targetCountry=i;
