@@ -1993,8 +1993,8 @@ public class MainActivity extends Activity {
             p.setStyle(Paint.Style.FILL);c.drawRoundRect(rect,h*.022f,h*.022f,p);p.setShader(null);
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.008f));p.setColor(Color.rgb(105,27,48));
             c.drawRoundRect(rect,h*.022f,h*.022f,p);p.setStyle(Paint.Style.FILL);
-            txt(c,glyph,(l+r)*.5f,t+(b-t)*.48f,h*.026f,Color.rgb(245,190,65),true);
-            txt(c,label,(l+r)*.5f,b-h*.018f,h*.013f,Color.rgb(245,190,65),true);
+            txt(c,glyph,(l+r)*.5f,t+(b-t)*.43f,h*.052f,Color.rgb(245,190,65),true);
+            txt(c,label,(l+r)*.5f,b-h*.030f,h*.026f,Color.rgb(245,190,65),true);
         }
         private void wideMenuButton(Canvas c,String glyph,String label,float l,float t,float r,float b) {
             RectF rect=new RectF(l,t,r,b);
@@ -3280,9 +3280,9 @@ public class MainActivity extends Activity {
                     iconButton(c,w*.145f,h*.065f,w*.245f,h*.155f,dark,"⚙");
                     iconButton(c,w*.875f,h*.065f,w*.965f,h*.155f,Color.rgb(91,24,43),"⏻");
                     // ثلاثة خيارات جانبية، ومواجهة جنيرال هي الخيار الأبرز على اليمين.
-                    compactWarButton(c,"⚔","لاعبين",w*.075f,h*.315f,w*.365f,h*.425f);
-                    compactWarButton(c,"◎","أون لاين",w*.075f,h*.495f,w*.365f,h*.605f);
-                    compactWarButton(c,"🌍","الحملة",w*.075f,h*.675f,w*.365f,h*.785f);
+                    compactWarButton(c,"⚔","لاعبين",w*.055f,h*.285f,w*.535f,h*.465f);
+                    compactWarButton(c,"◎","أون لاين",w*.055f,h*.495f,w*.535f,h*.675f);
+                    compactWarButton(c,"🌍","الحملة",w*.055f,h*.705f,w*.535f,h*.885f);
                     wideMenuButton(c,"★","حرب ضد جنيرال",w*.605f,h*.295f,w*.945f,h*.875f);
                 } else {
                     txt(c,"المقر الرئيسي",w*.5f,h*.205f,h*.060f,Color.rgb(242,196,94),true);
@@ -3510,17 +3510,12 @@ public class MainActivity extends Activity {
                     else if(y>=h*.065f&&y<=h*.155f&&x>=w*.145f&&x<=w*.245f)showSettingsDialog();
                     else if(y>=h*.065f&&y<=h*.155f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
                     else {
-                        boolean sameDevice=x>=w*.075f&&x<=w*.365f&&y>=h*.315f&&y<=h*.425f
-
-                                &&touchDownX>=w*.075f&&touchDownX<=w*.365f&&touchDownY>=h*.315f&&touchDownY<=h*.425f;
-
-                        boolean online=x>=w*.075f&&x<=w*.365f&&y>=h*.495f&&y<=h*.605f
-
-                                &&touchDownX>=w*.075f&&touchDownX<=w*.365f&&touchDownY>=h*.495f&&touchDownY<=h*.605f;
-
-                        boolean campaign=x>=w*.075f&&x<=w*.365f&&y>=h*.675f&&y<=h*.785f
-
-                                &&touchDownX>=w*.075f&&touchDownX<=w*.365f&&touchDownY>=h*.675f&&touchDownY<=h*.785f;
+                        boolean sameDevice=x>=w*.055f&&x<=w*.535f&&y>=h*.285f&&y<=h*.465f
+                                 &&touchDownX>=w*.055f&&touchDownX<=w*.535f&&touchDownY>=h*.285f&&touchDownY<=h*.465f;
+                         boolean online=x>=w*.055f&&x<=w*.535f&&y>=h*.495f&&y<=h*.675f
+                                 &&touchDownX>=w*.055f&&touchDownX<=w*.535f&&touchDownY>=h*.495f&&touchDownY<=h*.675f;
+                         boolean campaign=x>=w*.055f&&x<=w*.535f&&y>=h*.705f&&y<=h*.885f
+                                 &&touchDownX>=w*.055f&&touchDownX<=w*.535f&&touchDownY>=h*.705f&&touchDownY<=h*.885f;
                         boolean vsGeneral=x>=w*.605f&&x<=w*.945f&&y>=h*.295f&&y<=h*.875f
                                 &&touchDownX>=w*.605f&&touchDownX<=w*.945f&&touchDownY>=h*.295f&&touchDownY<=h*.875f;
                         if(sameDevice){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=savedPlayerAvatar();avatars[1]=1;}
