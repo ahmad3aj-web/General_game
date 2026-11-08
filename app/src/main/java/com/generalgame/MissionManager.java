@@ -178,7 +178,7 @@ public final class MissionManager {
         if(!prefs.getBoolean("login_reward_pending",false))return;
         int type=prefs.getInt("login_reward_type",-1);
         if(type>=0 && type<CardInventory.CARD_TYPES) {
-            int[] grant=new int[4];grant[type]=1;
+            int[] grant=new int[CardInventory.CARD_TYPES];grant[type]=1;
             inventory.addCardsOnce("daily-login-"+prefs.getString("login_reward_day",""),grant);
         }
     }
