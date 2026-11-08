@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.os.Bundle;
 import android.graphics.Canvas;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -91,6 +93,7 @@ public class CampaignActivity extends Activity {
         private final int[][] flashFrom=new int[4][15];
         private final int[][] flashTo=new int[4][15];
         private String campaignReport="تمت إعادة ضبط القارات — اختر دولة مجاورة للبدء";
+        private int pendingCelebrationContinent=-1;
         private float w,h;
         private final Region[] countryHitRegions=new Region[15];
 
@@ -140,6 +143,17 @@ public class CampaignActivity extends Activity {
                 campaignReport=completedInOrder<4
                     ? "تم التحقق من السيطرة وفتح قارة "+CONTINENTS[completedInOrder]
                     : "مبروك! أكملت حملة السيطرة على العالم";
+                int completed=completedInOrder-1;
+                if(!prefs.getBoolean("celebration_seen_"+completed,false)) {
+                    pendingCelebrationContinent=completed;
+                    post(() -> {
+                        if(pendingCelebrationContinent>=0) {
+                            int celebrate=pendingCelebrationContinent;
+                            pendingCelebrationContinent=-1;
+                            showContinentCelebration(celebrate);
+                        }
+                    });
+                }
             }
         }
         private int initialOwner(int i) { return i==0?BLUE:(i==14?RED:NEUTRAL); }
@@ -184,21 +198,117 @@ public class CampaignActivity extends Activity {
                 unlocked=c+1;
                 save();
                 campaignReport="مبروك! سيطرت على "+CONTINENTS[c]+" وفتحت قارة "+CONTINENTS[c+1];
-                new AlertDialog.Builder(CampaignActivity.this)
-                    .setTitle("تم فتح القارة التالية!")
-                    .setMessage("أحسنت! أكملت السيطرة على "+CONTINENTS[c]+". أصبحت قارة "+CONTINENTS[c+1]+" متاحة الآن.")
-                    .setPositiveButton("موافق",null)
-                    .show();
+                showContinentCelebration(c);
             } else if(c==3) {
                 save();
                 campaignReport="مبروك! أكملت حملة السيطرة على العالم";
-                new AlertDialog.Builder(CampaignActivity.this)
-                    .setTitle("انتصار الحملة!")
-                    .setMessage("سيطرت على جميع القارات وأكملت الحملة.")
-                    .setPositiveButton("ممتاز",null)
-                    .show();
+                showContinentCelebration(c);
             }
         }
+
+        private void showContinentCelebration(final int completedContinent) {
+            if(completedContinent<0 || completedContinent>=4)return;
+            String seenKey="celebration_seen_"+completedContinent;
+            if(prefs.getBoolean(seenKey,false))return;
+            prefs.edit().putBoolean(seenKey,true).apply();
+            final boolean worldComplete=completedContinent==3;
+            final String playerName=getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE)
+                .getString("player_name_1","القائد");
+            final int avatarIndex=getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE)
+                .getInt("player_avatar",0);
+            final CelebrationView celebration=new CelebrationView(
+                worldComplete?"بطل العالم":"فاتح القارات",
+                worldComplete?"أكملت السيطرة على العالم!":"أحسنت! سيطرت على "+CONTINENTS[completedContinent],
+                worldComplete?"لا توجد قارات متبقية":"تم فتح "+CONTINENTS[completedContinent+1],
+                playerName,avatarIndex,worldComplete);
+            new AlertDialog.Builder(CampaignActivity.this)
+                .setView(celebration)
+                .setPositiveButton(worldComplete?"إنجاز عظيم!":"إلى القارة التالية",null)
+                .setCancelable(false)
+                .show();
+        }
+
+        private final class CelebrationView extends View {
+            private final Paint fx=new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final String title,subtitle,unlockLine,playerName;
+            private final boolean worldComplete;
+            private final Bitmap avatar;
+            private final long started=System.currentTimeMillis();
+            private final int[] colors={Color.rgb(255,205,72),Color.rgb(255,92,72),
+                Color.rgb(72,190,255),Color.rgb(160,105,255),Color.rgb(95,225,155),Color.WHITE};
+            CelebrationView(String title,String subtitle,String unlockLine,String playerName,int avatarIndex,boolean worldComplete) {
+                super(CampaignActivity.this);
+                this.title=title;this.subtitle=subtitle;this.unlockLine=unlockLine;
+                this.playerName=(playerName==null||playerName.trim().isEmpty())?"القائد":playerName.trim();
+                this.worldComplete=worldComplete;
+                Bitmap loaded=null;
+                try {
+                    String file=String.format(java.util.Locale.US,"character_%02d.png",Math.floorMod(avatarIndex,18)+1);
+                    loaded=BitmapFactory.decodeStream(getAssets().open(file));
+                } catch(Exception ignored) {}
+                avatar=loaded;
+                setLayerType(View.LAYER_TYPE_SOFTWARE,null);
+            }
+            private void centered(Canvas c,String value,float x,float y,float size,int color) {
+                fx.setShader(null);fx.setStyle(Paint.Style.FILL);fx.setColor(color);
+                fx.setTextAlign(Paint.Align.CENTER);fx.setTextSize(size);fx.setFakeBoldText(true);
+                c.drawText(value,x,y,fx);fx.setFakeBoldText(false);
+            }
+            private void burst(Canvas c,float cx,float cy,float radius,int color,float phase) {
+                fx.setColor(color);fx.setStrokeWidth(Math.max(2,radius*.018f));
+                for(int i=0;i<28;i++) {
+                    double a=(Math.PI*2*i)/28.0+phase*.12;
+                    float inner=radius*(.16f+.10f*(float)Math.sin(i*2.1+phase));
+                    float outer=radius*(.62f+.32f*(float)Math.abs(Math.sin(phase*.8+i)));
+                    float x1=cx+(float)Math.cos(a)*inner;
+                    float y1=cy+(float)Math.sin(a)*inner;
+                    float x2=cx+(float)Math.cos(a)*outer;
+                    float y2=cy+(float)Math.sin(a)*outer;
+                    fx.setAlpha(225);c.drawLine(x1,y1,x2,y2,fx);
+                    fx.setStyle(Paint.Style.FILL);c.drawCircle(x2,y2,Math.max(2,radius*.018f),fx);
+                }
+                fx.setAlpha(255);
+            }
+            @Override protected void onDraw(Canvas c) {
+                super.onDraw(c);
+                float ww=getWidth(),hh=getHeight();
+                long elapsed=System.currentTimeMillis()-started;
+                c.drawColor(Color.rgb(10,22,24));
+                fx.setShader(new LinearGradient(0,0,ww,hh,Color.rgb(20,48,49),Color.rgb(38,25,43),Shader.TileMode.CLAMP));
+                c.drawRect(0,0,ww,hh,fx);fx.setShader(null);
+                for(int b=0;b<4;b++) {
+                    float age=((elapsed+b*720)%2900)/2900f;
+                    float radius=Math.min(ww,hh)*(.035f+age*.19f);
+                    float x=ww*(.16f+(b%2)*.68f);
+                    float y=hh*(.17f+(b/2)*.20f);
+                    burst(c,x,y,radius,colors[(b+(int)(elapsed/700))%colors.length],age);
+                }
+                fx.setStyle(Paint.Style.STROKE);fx.setStrokeWidth(Math.max(2,hh*.006f));
+                fx.setColor(Color.rgb(226,178,66));
+                c.drawRoundRect(new RectF(ww*.035f,hh*.035f,ww*.965f,hh*.965f),hh*.035f,hh*.035f,fx);
+                fx.setStyle(Paint.Style.FILL);
+                centered(c,worldComplete?"🏆 انتصار أسطوري":"🏅 إنجاز جديد",ww*.5f,hh*.16f,hh*.075f,Color.rgb(255,213,105));
+                float cx=ww*.5f,cy=hh*.39f,rad=Math.min(ww,hh)*.125f;
+                fx.setColor(Color.rgb(190,137,38));c.drawCircle(cx,cy,rad*1.18f,fx);
+                fx.setStyle(Paint.Style.STROKE);fx.setStrokeWidth(Math.max(3,hh*.009f));
+                fx.setColor(Color.rgb(255,226,132));c.drawCircle(cx,cy,rad*1.18f,fx);fx.setStyle(Paint.Style.FILL);
+                if(avatar!=null) {
+                    RectF dst=new RectF(cx-rad*.88f,cy-rad*.98f,cx+rad*.88f,cy+rad*.98f);
+                    fx.setFilterBitmap(true);c.drawBitmap(avatar,null,dst,fx);
+                } else {
+                    fx.setColor(Color.rgb(45,103,139));c.drawCircle(cx,cy,rad*.88f,fx);
+                    fx.setColor(Color.rgb(225,190,145));c.drawCircle(cx,cy-rad*.12f,rad*.42f,fx);
+                    fx.setColor(Color.rgb(45,55,50));c.drawArc(new RectF(cx-rad*.55f,cy-rad*.70f,cx+rad*.55f,cy+rad*.10f),180,180,true,fx);
+                }
+                centered(c,playerName,ww*.5f,hh*.62f,hh*.060f,Color.WHITE);
+                centered(c,title,ww*.5f,hh*.72f,hh*.060f,Color.rgb(255,210,95));
+                centered(c,subtitle,ww*.5f,hh*.81f,hh*.040f,Color.WHITE);
+                centered(c,unlockLine,ww*.5f,hh*.89f,hh*.034f,Color.rgb(135,232,170));
+                centered(c,"✦  ✦  ✦",ww*.5f,hh*.96f,hh*.040f,Color.rgb(255,211,95));
+                postInvalidateDelayed(40);
+            }
+        }
+
         private void runGeneralCampaignAttacks(int c) {
             // Every battle consumes only the attacker's turn: General gets one attack,
             // then the turn passes to blue. A blue-owned target requires a real defense.
