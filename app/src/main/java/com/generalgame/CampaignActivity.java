@@ -38,10 +38,23 @@ public class CampaignActivity extends Activity {
             int country=data.getIntExtra("campaign_country",-1);
             if(c>=0&&c<4&&country>=0&&country<15) {
                 CampaignView view=(CampaignView)((android.view.ViewGroup)findViewById(android.R.id.content)).getChildAt(0);
+                boolean defense=data.getBooleanExtra("campaign_defense",false);
                 boolean playerWon=data.getBooleanExtra("campaign_won",false);
-                if(playerWon)view.captureCountry(c,country,BLUE,"انتصرت واحتللت "+COUNTRIES[c][country]);
-                else {view.selected=country;view.campaignReport="لم تنجح في احتلال "+COUNTRIES[c][country];}
-                view.runGeneralCampaignAttacks(c);
+                if(defense) {
+                    // The blue player has just defended during General's turn.
+                    // Defense does not start another General turn or consume blue's turn.
+                    if(playerWon) {
+                        view.selected=country;
+                        view.campaignReport="نجحت في صد هجوم جنيرال على "+COUNTRIES[c][country];
+                    } else {
+                        view.captureCountry(c,country,RED,"خسرت معركة الدفاع وانتقلت "+COUNTRIES[c][country]+" إلى جنيرال");
+                    }
+                } else {
+                    if(playerWon)view.captureCountry(c,country,BLUE,"انتصرت واحتللت "+COUNTRIES[c][country]);
+                    else {view.selected=country;view.campaignReport="لم تنجح في احتلال "+COUNTRIES[c][country];}
+                    // Blue was the attacker, so General now takes exactly one turn.
+                    view.runGeneralCampaignAttacks(c);
+                }
                 view.invalidate();
             }
         }
@@ -141,32 +154,36 @@ public class CampaignActivity extends Activity {
             changeOwnerWithFlash(c,country,owner);selected=country;campaignReport=report;invalidate();
         }
         private void runGeneralCampaignAttacks(int c) {
-            int attacks=c==3?2:1;
-            boolean[] attempted=new boolean[15];
-            StringBuilder report=new StringBuilder("جنيرال: ");
-            java.util.Random random=new java.util.Random();
-            int completed=0;
-            for(int turn=0;turn<attacks;turn++) {
-                ArrayList<Integer> targets=new ArrayList<>();
-                for(int target=0;target<15;target++)
-                    if(!attempted[target]&&owners[c][target]!=RED&&hasAdjacentOwnedCountry(target,RED))
-                        targets.add(target);
-                if(targets.isEmpty()) {
-                    if(completed==0)report.append("لا توجد دولة مجاورة متاحة للهجوم");
-                    else report.append("لا توجد دولة ثانية متاحة");
-                    break;
-                }
-                int target=targets.get(random.nextInt(targets.size()));
-                attempted[target]=true;
-                CampaignBattleSimulator.Result result=CampaignBattleSimulator.play(c,random);
-                completed++;
-                if(result.generalWon) {
-                    changeOwnerWithFlash(c,target,RED);
-                    report.append(COUNTRIES[c][target]).append(" احتلها");
-                } else report.append(COUNTRIES[c][target]).append(" صمدت أمام الهجوم");
-                if(turn<attacks-1)report.append(" | ");
+            // Every battle consumes only the attacker's turn: General gets one attack,
+            // then the turn passes to blue. A blue-owned target requires a real defense.
+            ArrayList<Integer> targets=new ArrayList<>();
+            for(int target=0;target<15;target++)
+                if(owners[c][target]!=RED&&hasAdjacentOwnedCountry(target,RED))
+                    targets.add(target);
+            if(targets.isEmpty()) {
+                campaignReport="جنيرال: لا توجد دولة مجاورة متاحة للهجوم";
+                invalidate();
+                return;
             }
-            campaignReport=report.toString();
+
+            java.util.Random random=new java.util.Random();
+            int target=targets.get(random.nextInt(targets.size()));
+            if(owners[c][target]==BLUE) {
+                campaignReport="استعد للدفاع! هناك هجوم على "+COUNTRIES[c][target];
+                selected=target;
+                invalidate();
+                launchCountryBattle(target,RED,true);
+                return;
+            }
+
+            // Neutral countries keep the existing automatic, unseen campaign battle.
+            CampaignBattleSimulator.Result result=CampaignBattleSimulator.play(c,random);
+            if(result.generalWon) {
+                changeOwnerWithFlash(c,target,RED);
+                campaignReport="جنيرال: "+COUNTRIES[c][target]+" احتلها";
+            } else {
+                campaignReport="جنيرال: "+COUNTRIES[c][target]+" صمدت أمام الهجوم";
+            }
             invalidate();
         }
         private int shade(int color,float factor) {
@@ -402,12 +419,13 @@ public class CampaignActivity extends Activity {
             panel(c,w*.42f,h*.925f,w*.58f,h*.985f,Color.rgb(95,53,43));
             text(c,"عودة",w*.5f,h*.965f,h*.027f,Color.WHITE);
         }
-        private void launchCountryBattle(int country,int owner) {
+        private void launchCountryBattle(int country,int owner,boolean defense) {
             android.content.Intent battle=new android.content.Intent(CampaignActivity.this,MainActivity.class);
             battle.putExtra("campaign_battle",true);
             battle.putExtra("campaign_continent",continent);
             battle.putExtra("campaign_country",country);
             battle.putExtra("campaign_general",owner==RED);
+            battle.putExtra("campaign_defense",defense);
             battle.putExtra("campaign_opponent_name",COUNTRIES[continent][country]);
             CampaignActivity.this.startActivityForResult(battle,701);
         }
@@ -478,7 +496,7 @@ public class CampaignActivity extends Activity {
                             .setTitle("الهجوم على "+COUNTRIES[continent][targetCountry])
                             .setMessage("ستبدأ معركة للسيطرة على هذه الدولة. هل أنت مستعد؟")
                             .setNegativeButton("إلغاء",null)
-                            .setPositiveButton("ابدأ الحرب",(d,which)->launchCountryBattle(targetCountry,owners[continent][targetCountry])).show();
+                            .setPositiveButton("ابدأ الحرب",(d,which)->launchCountryBattle(targetCountry,owners[continent][targetCountry],false)).show();
                         else new AlertDialog.Builder(CampaignActivity.this)
                             .setTitle(COUNTRIES[continent][i])
                             .setMessage("لا يمكنك مهاجمة هذه الدولة حالياً. يجب أن تكون مجاورة لدولة تسيطر عليها.")
