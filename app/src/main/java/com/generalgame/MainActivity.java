@@ -1964,10 +1964,10 @@ public class MainActivity extends Activity {
                 } else {
                     txt(c,setupSide==1?"المستخدم — الأزرق":"اللاعب الثاني — الأحمر",w*.5f,h*.20f,h*.040f,setupSide==1?blue:red,true);
                     float portraitY=h*.43f;drawAvatar(c,avatars[idx],w*.5f,portraitY,h*.125f,true);
-                    if(setupSide==2){arrowButton(c,w*.39f,portraitY,true);arrowButton(c,w*.61f,portraitY,false);}
+                    if(mode==1 && setupSide==2){arrowButton(c,w*.39f,portraitY,true);arrowButton(c,w*.61f,portraitY,false);}
                     txt(c,"الشخصية "+(avatars[idx]+1)+" من 17",w*.5f,portraitY+h*.16f,h*.027f,dark,true);
                     box(c,w*.27f,h*.62f,w*.73f,h*.71f,Color.rgb(248,250,239));txt(c,playerNames[idx],w*.5f,h*.675f,h*.043f,dark,true);
-                    txt(c,setupSide==1?"هويتك الثابتة":"اضغط على الاسم لتعديله",w*.5f,h*.745f,h*.024f,dark,false);
+                    txt(c,mode==1 && setupSide==2?"اضغط على الاسم لتعديله":"هويتك الثابتة",w*.5f,h*.745f,h*.024f,dark,false);
                 }
             }
             String startLabel=setupSide==1 && mode==1?"التالي":(mode==4 && onlineQuickMatch?"ابحث عن لاعب":(mode==4 && onlineInvitePending?"إنشاء الدعوة":(mode==4 && onlineLocalSide==1?"إنشاء الغرفة":"ابدأ المباراة")));
