@@ -1280,12 +1280,12 @@ public class MainActivity extends Activity {
                 .setMessage("يجب أن يكون الجهازان على شبكة Wi-Fi نفسها. اختر إنشاء مباراة أو الانضمام.")
                 .setPositiveButton("إنشاء مباراة", (d,which)->{
                     mode=3; lanLocalSide=1; setup=true; setupSide=1;
-                    playerNames[0]=savedPlayerName(0); playerNames[1]=savedPlayerName(1);
+                    playerNames[0]=savedPlayerName(0); playerNames[1]=savedPlayerName(1);avatars[0]=savedPlayerAvatar();
                     showLanHostAddress();
                 })
                 .setNegativeButton("انضمام لمباراة", (d,which)->{
                     mode=3; lanLocalSide=2; setup=true; setupSide=2;
-                    playerNames[0]=savedPlayerName(0); playerNames[1]=savedPlayerName(1);
+                    playerNames[0]=savedPlayerName(0); playerNames[1]=savedPlayerName(0);avatars[1]=savedPlayerAvatar();
                     showLanJoinDialog();
                 })
                 .setNeutralButton("إلغاء",null).show();
