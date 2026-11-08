@@ -138,12 +138,7 @@ public class CampaignActivity extends Activity {
             return sites;
         }
         private Path continentOutline(RectF b) {
-            Path path=new Path();
-            float[][] pts;
-            if(continent==0) pts=new float[][]{{.43f,.02f},{.61f,.08f},{.75f,.22f},{.71f,.39f},{.64f,.56f},{.56f,.77f},{.46f,.98f},{.35f,.82f},{.27f,.64f},{.18f,.43f},{.25f,.20f}};
-            else if(continent==1) pts=new float[][]{{.05f,.25f},{.16f,.12f},{.34f,.16f},{.48f,.04f},{.66f,.10f},{.83f,.17f},{.98f,.30f},{.90f,.48f},{.80f,.60f},{.73f,.78f},{.55f,.92f},{.40f,.80f},{.25f,.74f},{.12f,.56f}};
-            else if(continent==2) pts=new float[][]{{.20f,.15f},{.35f,.07f},{.48f,.12f},{.60f,.05f},{.78f,.15f},{.90f,.30f},{.82f,.45f},{.93f,.57f},{.77f,.72f},{.62f,.67f},{.53f,.89f},{.39f,.78f},{.25f,.83f},{.14f,.62f},{.08f,.42f}};
-            else pts=new float[][]{{.18f,.05f},{.40f,.08f},{.57f,.17f},{.69f,.27f},{.62f,.40f},{.53f,.49f},{.58f,.61f},{.51f,.76f},{.43f,.98f},{.33f,.83f},{.28f,.66f},{.20f,.52f},{.10f,.34f}};
+            float[][] pts=outlinePoints();Path path=new Path();
             path.moveTo(b.left+pts[0][0]*b.width(),b.top+pts[0][1]*b.height());
             for(int i=1;i<pts.length;i++)path.lineTo(b.left+pts[i][0]*b.width(),b.top+pts[i][1]*b.height());
             path.close();return path;
@@ -163,9 +158,16 @@ public class CampaignActivity extends Activity {
             }
             return out;
         }
+        private float[][] outlinePoints() {
+            if(continent==0)return new float[][]{{.43f,.02f},{.61f,.08f},{.75f,.22f},{.71f,.39f},{.64f,.56f},{.56f,.77f},{.46f,.98f},{.35f,.82f},{.27f,.64f},{.18f,.43f},{.25f,.20f}};
+            if(continent==1)return new float[][]{{.05f,.25f},{.16f,.12f},{.34f,.16f},{.48f,.04f},{.66f,.10f},{.83f,.17f},{.98f,.30f},{.90f,.48f},{.80f,.60f},{.73f,.78f},{.55f,.92f},{.40f,.80f},{.25f,.74f},{.12f,.56f}};
+            if(continent==2)return new float[][]{{.20f,.15f},{.35f,.07f},{.48f,.12f},{.60f,.05f},{.78f,.15f},{.90f,.30f},{.82f,.45f},{.93f,.57f},{.77f,.72f},{.62f,.67f},{.53f,.89f},{.39f,.78f},{.25f,.83f},{.14f,.62f},{.08f,.42f}};
+            return new float[][]{{.18f,.05f},{.40f,.08f},{.57f,.17f},{.69f,.27f},{.62f,.40f},{.53f,.49f},{.58f,.61f},{.51f,.76f},{.43f,.98f},{.33f,.83f},{.28f,.66f},{.20f,.52f},{.10f,.34f}};
+        }
         private Path countryPath(RectF b,float[][] sites,int index) {
+            float[][] edge=outlinePoints();
             java.util.ArrayList<float[]> poly=new java.util.ArrayList<>();
-            poly.add(new float[]{0,0});poly.add(new float[]{1,0});poly.add(new float[]{1,1});poly.add(new float[]{0,1});
+            for(float[] p:edge)poly.add(new float[]{p[0],p[1]});
             float sx=sites[index][0],sy=sites[index][1];
             for(int j=0;j<sites.length&&!poly.isEmpty();j++)if(j!=index) {
                 float nx=2*(sites[j][0]-sx),ny=2*(sites[j][1]-sy);
@@ -179,6 +181,28 @@ public class CampaignActivity extends Activity {
                 path.close();
             }
             return path;
+        }
+        private float[] countryLabelPoint(RectF b,float[][] sites,int index) {
+            float[][] edge=outlinePoints();
+            java.util.ArrayList<float[]> poly=new java.util.ArrayList<>();
+            for(float[] p:edge)poly.add(new float[]{p[0],p[1]});
+            float sx=sites[index][0],sy=sites[index][1];
+            for(int j=0;j<sites.length&&!poly.isEmpty();j++)if(j!=index) {
+                float nx=2*(sites[j][0]-sx),ny=2*(sites[j][1]-sy);
+                float limit=sites[j][0]*sites[j][0]+sites[j][1]*sites[j][1]-sx*sx-sy*sy;
+                poly=clipPolygon(poly,nx,ny,limit);
+            }
+            if(poly.size()<3)return new float[]{b.left+sx*b.width(),b.top+sy*b.height(),b.width()*.08f};
+            double area=0,cx=0,cy=0;float minX=1,maxX=0,minY=1,maxY=0;
+            for(int i=0;i<poly.size();i++) {
+                float[] p=poly.get(i),q=poly.get((i+1)%poly.size());
+                double cross=p[0]*q[1]-q[0]*p[1];area+=cross;
+                cx+=(p[0]+q[0])*cross;cy+=(p[1]+q[1])*cross;
+                minX=Math.min(minX,p[0]);maxX=Math.max(maxX,p[0]);minY=Math.min(minY,p[1]);maxY=Math.max(maxY,p[1]);
+            }
+            if(Math.abs(area)<1e-8)return new float[]{b.left+sx*b.width(),b.top+sy*b.height(),b.width()*.06f};
+            float x=(float)(cx/(3*area)),y=(float)(cy/(3*area));
+            return new float[]{b.left+x*b.width(),b.top+y*b.height(),(maxX-minX)*b.width()*.76f};
         }
         private void drawContinent(Canvas c) {
             text(c,CONTINENTS[continent]+"  •  "+THEMES[continent],w*.5f,h*.145f,h*.040f,Color.WHITE);
@@ -203,10 +227,17 @@ public class CampaignActivity extends Activity {
                 paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(Math.max(2,h*.003f));
                 paint.setColor(Color.rgb(105,27,48));c.drawPath(country,paint);
                 paint.setStyle(Paint.Style.FILL);
-                float tx=map.left+sites[i][0]*map.width(),ty=map.top+sites[i][1]*map.height();
-                paint.setTextAlign(Paint.Align.CENTER);paint.setTextSize(h*.020f);paint.setFakeBoldText(true);
-                paint.setColor(Color.rgb(245,190,65));
-                c.drawText(COUNTRIES[continent][i],tx,ty,paint);
+                float[] label=countryLabelPoint(map,sites,i);
+                float tx=label[0],ty=label[1];
+                paint.setTextAlign(Paint.Align.CENTER);paint.setFakeBoldText(true);
+                float labelSize=h*.020f;
+                paint.setTextSize(labelSize);
+                float measured=paint.measureText(COUNTRIES[continent][i]);
+                if(measured>label[2] && measured>0)labelSize*=Math.max(.58f,label[2]/measured);
+                paint.setTextSize(labelSize);
+                paint.setColor(Color.rgb(255,226,153));
+                c.drawText(COUNTRIES[continent][i],tx,ty+labelSize*.34f,paint);
+                paint.setFakeBoldText(false);
                 if(selected==i) {
                     paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(h*.008f);paint.setColor(Color.rgb(255,219,110));
                     c.drawPath(country,paint);paint.setStyle(Paint.Style.FILL);
