@@ -587,7 +587,7 @@ public class MainActivity extends Activity {
                         new AlertDialog.Builder(MainActivity.this)
                             .setTitle("تصفير بيانات اللعبة")
                             .setMessage("هل أنت متأكد من تصفير بيانات اللعبة والبدء من الصفر؟")
-                            .setPositiveButton("موافق",(confirm,which)->performDeveloperReset())
+                            .setPositiveButton("موافق",(confirm,confirmWhich)->performDeveloperReset())
                             .setNegativeButton("إلغاء",null)
                             .show();
                         return;
