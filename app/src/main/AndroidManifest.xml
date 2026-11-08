@@ -6,6 +6,7 @@
         android:label="War of Generals"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:supportsRtl="true">
+        <activity android:name=".CampaignActivity" android:screenOrientation="landscape" android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:screenOrientation="landscape"
