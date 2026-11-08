@@ -61,7 +61,11 @@ public class CampaignActivity extends Activity {
                 } else {
                     if(playerWon) {
                         view.captureCountry(c,country,BLUE,"انتصرت واحتللت "+COUNTRIES[c][country]);
-                        if(view.isPlayerGate(c,country)) view.prefs.edit().putBoolean("continent_closed_"+c,false).apply();
+                        if(view.isPlayerGate(c,country)) {
+                            view.prefs.edit().putBoolean("continent_closed_"+c,false).apply();
+                            view.unlocked=Math.max(view.unlocked,c);
+                            view.save();
+                        }
                     } else {view.selected=country;view.campaignReport="لم تنجح في احتلال "+COUNTRIES[c][country];}
                     if(!view.isContinentClosed(c)) view.runGeneralCampaignAttacks(c);
                 }
@@ -111,7 +115,7 @@ public class CampaignActivity extends Activity {
                 // Fresh campaign: first continent available, remaining continents locked.
                 SharedPreferences.Editor reset=prefs.edit().putInt("unlocked",0);
                 for(int c=0;c<4;c++) for(int i=0;i<15;i++)
-                    reset.putInt("owner_"+c+"_"+i,initialOwner(i));
+                    reset.putInt("owner_"+c+"_"+i,c==0?initialOwner(i):(i==RED_GATE?RED:NEUTRAL));
                 reset.putBoolean("campaign_new_start_reset_v3",true).commit();
                 unlocked=0;
 
@@ -131,7 +135,16 @@ public class CampaignActivity extends Activity {
                     .putInt("lastEarned",0).putInt("lastDifficulty",0).commit();
             }
             for(int c=0;c<4;c++) for(int i=0;i<15;i++)
-                owners[c][i]=prefs.getInt("owner_"+c+"_"+i, initialOwner(i));
+                owners[c][i]=prefs.getInt("owner_"+c+"_"+i,c==0?initialOwner(i):(i==RED_GATE?RED:NEUTRAL));
+            // Migrate untouched future continents from the older all-continents-blue start layout.
+            if(!prefs.getBoolean("campaign_gate_layout_v1",false)) {
+                for(int c=1;c<4;c++) if(c>unlocked) {
+                    if(owners[c][BLUE_GATE]==BLUE) owners[c][BLUE_GATE]=NEUTRAL;
+                    if(owners[c][RED_GATE]==NEUTRAL) owners[c][RED_GATE]=RED;
+                }
+                prefs.edit().putBoolean("campaign_gate_layout_v1",true).apply();
+                save();
+            }
             // Reconcile saved ownership on every campaign entry. This also repairs
             // older saves where all 15 countries were captured but the unlock check
             // was not triggered at the moment of the final battle.
@@ -145,6 +158,7 @@ public class CampaignActivity extends Activity {
                 if(!complete) break;
                 completedInOrder++;
             }
+            while(completedInOrder>0 && isContinentClosed(completedInOrder)) completedInOrder--;
             if(completedInOrder>unlocked) {
                 unlocked=completedInOrder;
                 save();
