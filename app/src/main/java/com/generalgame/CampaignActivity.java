@@ -182,8 +182,8 @@ public class CampaignActivity extends Activity {
         }
         private void drawContinent(Canvas c) {
             text(c,CONTINENTS[continent]+"  •  "+THEMES[continent],w*.5f,h*.145f,h*.040f,Color.WHITE);
-            text(c,"أزرق: اللاعب     أحمر: جنيرال     رمادي: محايد",w*.5f,h*.205f,h*.023f,Color.LTGRAY);
-            RectF map=new RectF(w*.14f,h*.245f,w*.86f,h*.805f);
+            text(c,"أزرق: أنت     أحمر: العدو (جنيرال)     رمادي: محايد",w*.5f,h*.205f,h*.023f,Color.LTGRAY);
+            RectF map=new RectF(w*.075f,h*.225f,w*.925f,h*.835f);
             Path outline=continentOutline(map);
             Region clip=new Region((int)map.left,(int)map.top,(int)map.right,(int)map.bottom);
             Region land=new Region();land.setPath(outline,clip);
@@ -243,8 +243,18 @@ public class CampaignActivity extends Activity {
             CampaignActivity.this.startActivityForResult(battle,701);
         }
         private boolean adjacent(int a,int b) {
-            int ar=a/5,ac=a%5,br=b/5,bc=b%5;
-            return Math.abs(ar-br)+Math.abs(ac-bc)==1;
+            // حدود الدول مرسومة بخلايا Voronoi؛ نعتمد الجيران الأقرب هندسياً
+            // بدل شبكة الصفوف والأعمدة القديمة حتى تتوافق الهجمات مع شكل الخريطة.
+            if(a==b)return false;
+            float[][] sites=countrySites(continent);
+            float target=(float)Math.hypot(sites[a][0]-sites[b][0],sites[a][1]-sites[b][1]);
+            int closer=0;
+            for(int k=0;k<sites.length;k++)if(k!=a&&k!=b) {
+                float da=(float)Math.hypot(sites[a][0]-sites[k][0],sites[a][1]-sites[k][1]);
+                float db=(float)Math.hypot(sites[b][0]-sites[k][0],sites[b][1]-sites[k][1]);
+                if(da<target*.72f && db<target*.72f)closer++;
+            }
+            return closer<=1;
         }
         @Override public boolean onTouchEvent(MotionEvent e) {
             if(e.getAction()!=MotionEvent.ACTION_UP)return true;
