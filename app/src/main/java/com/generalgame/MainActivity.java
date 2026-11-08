@@ -3190,11 +3190,11 @@ public class MainActivity extends Activity {
                     iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
                     iconButton(c,w*.145f,h*.065f,w*.245f,h*.155f,dark,"⚙");
                     iconButton(c,w*.875f,h*.065f,w*.965f,h*.155f,Color.rgb(91,24,43),"⏻");
-                    float c1=w*.18f,c2=w*.50f,c3=w*.82f;
-                    int modeTile=Color.rgb(43,42,31);
-                    menuButton(c,"⚔","لاعبان على نفس الجهاز",c1-w*.15f,h*.32f,c1+w*.15f,h*.72f,modeTile);
-                    menuButton(c,"★","ضد جنيرال",c2-w*.15f,h*.32f,c2+w*.15f,h*.72f,modeTile);
-                    menuButton(c,"◎","أون لاين",c3-w*.15f,h*.32f,c3+w*.15f,h*.72f,modeTile);
+                    // ثلاثة خيارات جانبية، ومواجهة جنيرال هي الخيار الأبرز على اليمين.
+                    wideMenuButton(c,"⚔","لاعبان على نفس الجهاز",w*.065f,h*.295f,w*.535f,h*.455f);
+                    wideMenuButton(c,"◎","أون لاين",w*.065f,h*.505f,w*.535f,h*.665f);
+                    wideMenuButton(c,"🌍","الحملة",w*.065f,h*.715f,w*.535f,h*.875f);
+                    wideMenuButton(c,"★","حرب ضد جنيرال",w*.605f,h*.295f,w*.945f,h*.875f);
                 } else {
                     txt(c,"المقر الرئيسي",w*.5f,h*.205f,h*.060f,Color.rgb(242,196,94),true);
                     iconButton(c,w*.035f,h*.065f,w*.125f,h*.155f,dark,"⚙");
@@ -3419,16 +3419,18 @@ public class MainActivity extends Activity {
                     else if(y>=h*.065f&&y<=h*.155f&&x>=w*.145f&&x<=w*.245f)showSettingsDialog();
                     else if(y>=h*.065f&&y<=h*.155f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
                     else {
-                        float side=Math.min(w*.205f,h*.145f), top=h*(.32f+.08f*.40f);
-                        float[] centers={w*.18f,w*.50f,w*.82f};
-                        boolean[] hit=new boolean[3];
-                        for(int i=0;i<3;i++)hit[i]=x>=centers[i]-side*.5f&&x<=centers[i]+side*.5f
-                                && y>=top&&y<=top+side+h*.075f
-                                && touchDownX>=centers[i]-side*.5f&&touchDownX<=centers[i]+side*.5f
-                                && touchDownY>=top&&touchDownY<=top+side+h*.075f;
-                        if(hit[0]){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
-                        else if(hit[1]){cardInventory.prepareNewMatchSetup();mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
-                        else if(hit[2])showOnlineModeDialog();
+                        boolean sameDevice=x>=w*.065f&&x<=w*.535f&&y>=h*.295f&&y<=h*.455f
+                                &&touchDownX>=w*.065f&&touchDownX<=w*.535f&&touchDownY>=h*.295f&&touchDownY<=h*.455f;
+                        boolean online=x>=w*.065f&&x<=w*.535f&&y>=h*.505f&&y<=h*.665f
+                                &&touchDownX>=w*.065f&&touchDownX<=w*.535f&&touchDownY>=h*.505f&&touchDownY<=h*.665f;
+                        boolean campaign=x>=w*.065f&&x<=w*.535f&&y>=h*.715f&&y<=h*.875f
+                                &&touchDownX>=w*.065f&&touchDownX<=w*.535f&&touchDownY>=h*.715f&&touchDownY<=h*.875f;
+                        boolean vsGeneral=x>=w*.605f&&x<=w*.945f&&y>=h*.295f&&y<=h*.875f
+                                &&touchDownX>=w*.605f&&touchDownX<=w*.945f&&touchDownY>=h*.295f&&touchDownY<=h*.875f;
+                        if(sameDevice){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
+                        else if(online)showOnlineModeDialog();
+                        else if(campaign)startActivity(new android.content.Intent(MainActivity.this,CampaignActivity.class));
+                        else if(vsGeneral){cardInventory.prepareNewMatchSetup();mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
                     }
                 }
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
