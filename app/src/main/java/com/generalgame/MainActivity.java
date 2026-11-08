@@ -476,9 +476,6 @@ public class MainActivity extends Activity {
             volumeLabel.setTextColor(settingsGold);volumeLabel.setTypeface(settingsBold);
             vibrationBox.setTextColor(settingsGold);vibrationBox.setTypeface(settingsBold);
             shakeBox.setTextColor(settingsGold);shakeBox.setTypeface(settingsBold);
-            final android.widget.Button profileButton=new android.widget.Button(MainActivity.this);
-            profileButton.setText("تحديد المستخدم والهوية الثابتة");profileButton.setTextColor(settingsGold);
-            panel.addView(profileButton);
             panel.addView(soundBox);panel.addView(musicBox);panel.addView(volumeLabel);panel.addView(volumeBar);
             panel.addView(vibrationBox);panel.addView(shakeBox);
             volumeBar.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener(){
@@ -499,7 +496,6 @@ public class MainActivity extends Activity {
             settingsTitle.setPadding(pad,pad,pad,pad);
             AlertDialog dialog=new AlertDialog.Builder(MainActivity.this).setCustomTitle(settingsTitle)
                 .setView(panel).setPositiveButton("حفظ",null).setNegativeButton("إلغاء",null).create();
-            profileButton.setOnClickListener(v->{dialog.dismiss();showProfileDialog();});
             dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
                 soundEnabled=soundBox.isChecked();musicEnabled=musicBox.isChecked();
                 vibrationEnabled=vibrationBox.isChecked();screenShakeEnabled=shakeBox.isChecked();
@@ -520,6 +516,9 @@ public class MainActivity extends Activity {
             final EditText nameInput=new EditText(MainActivity.this);
             nameInput.setSingleLine(true);nameInput.setHint("اسم المستخدم");nameInput.setText(savedPlayerName(0));
             nameInput.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+            nameInput.setTextColor(Color.rgb(245,190,65));
+            nameInput.setHintTextColor(Color.rgb(184,145,73));
+            nameInput.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(105,27,48)));
             final android.widget.TextView avatarLabel=new android.widget.TextView(MainActivity.this);
             avatarLabel.setGravity(android.view.Gravity.CENTER);avatarLabel.setTextColor(Color.rgb(150,105,0));
             avatarLabel.setText("الشخصية "+(draftAvatar[0]+1)+" من 17");avatarLabel.setTextSize(18);
@@ -800,7 +799,7 @@ public class MainActivity extends Activity {
         }
 
         private void txt(Canvas c,String s,float x,float y,float size,int color,boolean bold) {
-            p.setColor(color); p.setTextSize(size); p.setFakeBoldText(bold);
+            p.setColor(Color.rgb(245,190,65)); p.setTextSize(size); p.setFakeBoldText(bold);
             p.setTextAlign(Paint.Align.CENTER); p.setStyle(Paint.Style.FILL); c.drawText(s,x,y,p);
         }
         private void box(Canvas c,float l,float t,float r,float b,int color) {
@@ -1983,6 +1982,15 @@ public class MainActivity extends Activity {
             iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
             iconButton(c,w*.145f,h*.065f,w*.245f,h*.155f,dark,"⚙");
             iconButton(c,w*.875f,h*.065f,w*.965f,h*.155f,Color.rgb(91,24,43),"⏻");
+        }
+        private void compactWarButton(Canvas c,String glyph,String label,float l,float t,float r,float b) {
+            RectF rect=new RectF(l,t,r,b);
+            p.setShader(new LinearGradient(l,t,r,b,Color.rgb(55,67,55),Color.rgb(17,28,25),Shader.TileMode.CLAMP));
+            p.setStyle(Paint.Style.FILL);c.drawRoundRect(rect,h*.022f,h*.022f,p);p.setShader(null);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.008f));p.setColor(Color.rgb(105,27,48));
+            c.drawRoundRect(rect,h*.022f,h*.022f,p);p.setStyle(Paint.Style.FILL);
+            txt(c,glyph,(l+r)*.5f,t+(b-t)*.48f,h*.026f,Color.rgb(245,190,65),true);
+            txt(c,label,(l+r)*.5f,b-h*.018f,h*.013f,Color.rgb(245,190,65),true);
         }
         private void wideMenuButton(Canvas c,String glyph,String label,float l,float t,float r,float b) {
             RectF rect=new RectF(l,t,r,b);
@@ -3268,9 +3276,9 @@ public class MainActivity extends Activity {
                     iconButton(c,w*.145f,h*.065f,w*.245f,h*.155f,dark,"⚙");
                     iconButton(c,w*.875f,h*.065f,w*.965f,h*.155f,Color.rgb(91,24,43),"⏻");
                     // ثلاثة خيارات جانبية، ومواجهة جنيرال هي الخيار الأبرز على اليمين.
-                    wideMenuButton(c,"⚔","لاعبان على نفس الجهاز",w*.065f,h*.295f,w*.535f,h*.455f);
-                    wideMenuButton(c,"◎","أون لاين",w*.065f,h*.505f,w*.535f,h*.665f);
-                    wideMenuButton(c,"🌍","الحملة",w*.065f,h*.715f,w*.535f,h*.875f);
+                    compactWarButton(c,"⚔","لاعبين",w*.075f,h*.315f,w*.365f,h*.425f);
+                    compactWarButton(c,"◎","أون لاين",w*.075f,h*.495f,w*.365f,h*.605f);
+                    compactWarButton(c,"🌍","الحملة",w*.075f,h*.675f,w*.365f,h*.785f);
                     wideMenuButton(c,"★","حرب ضد جنيرال",w*.605f,h*.295f,w*.945f,h*.875f);
                 } else {
                     txt(c,"المقر الرئيسي",w*.5f,h*.205f,h*.060f,Color.rgb(242,196,94),true);
@@ -3291,6 +3299,7 @@ public class MainActivity extends Activity {
                     miniMenuButton(c,"▤","السجل",w*.515f,h*.425f,Color.rgb(55,48,37));
                     miniMenuButton(c,"♜","التقدم",w*.245f,h*.665f,Color.rgb(55,48,37));
                     miniMenuButton(c,"?","الشرح",w*.425f,h*.665f,Color.rgb(55,48,37));
+                    miniMenuButton(c,"♟","الملف الشخصي",w*.335f,h*.755f,Color.rgb(105,27,48));
                     
                     txt(c,"ساحة المعركة",w*.79f,h*.355f,h*.030f,Color.rgb(242,196,94),true);
                     wideMenuButton(c,"⚔","الحرب",w*.655f,h*.405f,w*.925f,h*.785f);
@@ -3497,12 +3506,17 @@ public class MainActivity extends Activity {
                     else if(y>=h*.065f&&y<=h*.155f&&x>=w*.145f&&x<=w*.245f)showSettingsDialog();
                     else if(y>=h*.065f&&y<=h*.155f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
                     else {
-                        boolean sameDevice=x>=w*.065f&&x<=w*.535f&&y>=h*.295f&&y<=h*.455f
-                                &&touchDownX>=w*.065f&&touchDownX<=w*.535f&&touchDownY>=h*.295f&&touchDownY<=h*.455f;
-                        boolean online=x>=w*.065f&&x<=w*.535f&&y>=h*.505f&&y<=h*.665f
-                                &&touchDownX>=w*.065f&&touchDownX<=w*.535f&&touchDownY>=h*.505f&&touchDownY<=h*.665f;
-                        boolean campaign=x>=w*.065f&&x<=w*.535f&&y>=h*.715f&&y<=h*.875f
-                                &&touchDownX>=w*.065f&&touchDownX<=w*.535f&&touchDownY>=h*.715f&&touchDownY<=h*.875f;
+                        boolean sameDevice=x>=w*.075f&&x<=w*.365f&&y>=h*.315f&&y<=h*.425f
+
+                                &&touchDownX>=w*.075f&&touchDownX<=w*.365f&&touchDownY>=h*.315f&&touchDownY<=h*.425f;
+
+                        boolean online=x>=w*.075f&&x<=w*.365f&&y>=h*.495f&&y<=h*.605f
+
+                                &&touchDownX>=w*.075f&&touchDownX<=w*.365f&&touchDownY>=h*.495f&&touchDownY<=h*.605f;
+
+                        boolean campaign=x>=w*.075f&&x<=w*.365f&&y>=h*.675f&&y<=h*.785f
+
+                                &&touchDownX>=w*.075f&&touchDownX<=w*.365f&&touchDownY>=h*.675f&&touchDownY<=h*.785f;
                         boolean vsGeneral=x>=w*.605f&&x<=w*.945f&&y>=h*.295f&&y<=h*.875f
                                 &&touchDownX>=w*.605f&&touchDownX<=w*.945f&&touchDownY>=h*.295f&&touchDownY<=h*.875f;
                         if(sameDevice){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=savedPlayerAvatar();avatars[1]=1;}
@@ -3514,6 +3528,7 @@ public class MainActivity extends Activity {
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
                 else if(y>=h*.38f&&y<=h*.82f&&x>=w*.635f&&x<=w*.945f)warMenuScreen=true;
+                else if(x>=w*.285f&&x<=w*.385f&&y>=h*.755f&&y<=h*.885f)showProfileDialog();
                 else if(y>=h*.405f&&y<=h*.59f&&x>=w*.08f&&x<=w*.23f)missionsScreen=true;
                 else if(y>=h*.405f&&y<=h*.59f&&x>=w*.26f&&x<=w*.41f)inventoryScreen=true;
                 else if(y>=h*.405f&&y<=h*.59f&&x>=w*.44f&&x<=w*.58f)historyScreen=true;
