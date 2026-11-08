@@ -77,7 +77,7 @@ public class CampaignActivity extends Activity {
             if(screen==0) drawWorld(c); else drawContinent(c);
         }
         private void drawWorld(Canvas c) {
-            text(c,"اختر ساحة conquest",w*.5f,h*.17f,h*.038f,Color.WHITE);
+            text(c,"اختر القارة",w*.5f,h*.17f,h*.038f,Color.WHITE);
             for(int i=0;i<4;i++) {
                 float left=w*(.08f+(i%2)*.44f), top=h*(.25f+(i/2)*.30f);
                 float right=left+w*.40f,bottom=top+h*.23f;
