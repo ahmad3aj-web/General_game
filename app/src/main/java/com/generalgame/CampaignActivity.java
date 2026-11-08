@@ -91,7 +91,10 @@ public class CampaignActivity extends Activity {
             paint.setTextAlign(Paint.Align.CENTER);paint.setFakeBoldText(true);c.drawText(value,x,y,paint);paint.setFakeBoldText(false);
         }
         private void panel(Canvas c,float l,float t,float r,float b,int color) {
-            paint.setStyle(Paint.Style.FILL);paint.setColor(color);c.drawRoundRect(new RectF(l,t,r,b),h*.018f,h*.018f,paint);
+            RectF rect=new RectF(l,t,r,b);
+            paint.setStyle(Paint.Style.FILL);paint.setColor(color);c.drawRoundRect(rect,h*.018f,h*.018f,paint);
+            paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(Math.max(2,h*.0035f));paint.setColor(Color.rgb(105,27,48));
+            c.drawRoundRect(rect,h*.018f,h*.018f,paint);paint.setStyle(Paint.Style.FILL);
         }
         @Override protected void onDraw(Canvas c) {
             super.onDraw(c);w=getWidth();h=getHeight();
