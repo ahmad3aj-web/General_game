@@ -103,14 +103,19 @@ final class CampaignBattleSimulator {
                 &&!smoke[other][lane]&&pos[side][lane]+die<=15;
     }
     private int chooseLane(int side,int die) {
+        if(difficulty==0) {
+            int count=0;for(int i=0;i<3;i++)if(canMove(side,i,die))count++;
+            if(count==0)return -1;
+            int pick=random.nextInt(count);
+            for(int i=0;i<3;i++)if(canMove(side,i,die)&&pick--==0)return i;
+            return -1;
+        }
         int pick=-1,best=Integer.MIN_VALUE;
         for(int i=0;i<3;i++)if(canMove(side,i,die)) {
             int score=pos[side][i]*10;
-            if(pos[side][i]+die>=15)score+=(difficulty==0?15:(difficulty==1?30:100));
+            if(pos[side][i]+die>=15)score+=(difficulty==1?15:(difficulty==2?80:120));
             if(difficulty==3)score+=Math.min(14,die*2);
-            if(difficulty==0) {
-                if(random.nextBoolean())return i;
-            } else if(score>best){best=score;pick=i;}
+            if(score>best){best=score;pick=i;}
         }
         return pick;
     }
@@ -128,7 +133,7 @@ final class CampaignBattleSimulator {
         if(has(side,REPAIR))for(int i=0;i<3;i++)if(dead[side][i]||cyber[side][i]) {
             if(take(side,REPAIR)) {
                 boolean destroyed=dead[side][i];dead[side][i]=false;
-                if(destroyed){pos[side][i]=0;pos[other][i]=0;dead[other][i]=false;}
+                if(destroyed){pos[side][i]=0;pos[other][i]=0;}
                 cyber[side][i]=false;cyberTurns[side][i]=0;break;
             }
         }
