@@ -135,7 +135,25 @@ public class CampaignActivity extends Activity {
                     sites[i][1]=.10f+r*.20f+(float)Math.cos(i*1.3)*.018f;
                 }
             }
+            float[][] edge=outlinePoints();
+            float centerX=0,centerY=0;
+            for(float[] p:edge){centerX+=p[0];centerY+=p[1];}
+            centerX/=edge.length;centerY/=edge.length;
+            for(int i=0;i<sites.length;i++) {
+                for(int attempt=0;attempt<40&&!insideOutline(sites[i][0],sites[i][1],edge);attempt++) {
+                    sites[i][0]=sites[i][0]*.88f+centerX*.12f;
+                    sites[i][1]=sites[i][1]*.88f+centerY*.12f;
+                }
+            }
             return sites;
+        }
+        private boolean insideOutline(float x,float y,float[][] poly) {
+            boolean inside=false;
+            for(int i=0,j=poly.length-1;i<poly.length;j=i++) {
+                float xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];
+                if(((yi>y)!=(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside;
+            }
+            return inside;
         }
         private Path continentOutline(RectF b) {
             float[][] pts=outlinePoints();Path path=new Path();
@@ -303,6 +321,12 @@ public class CampaignActivity extends Activity {
             }
             return false;
         }
+        // Identical adjacency rule for the player (BLUE) and جنيرال (RED).
+        private boolean hasAdjacentOwnedCountry(int target,int owner) {
+            for(int j=0;j<15;j++)
+                if(owners[continent][j]==owner&&adjacent(target,j))return true;
+            return false;
+        }
         @Override public boolean onTouchEvent(MotionEvent e) {
             if(e.getAction()!=MotionEvent.ACTION_UP)return true;
             float x=e.getX(),y=e.getY();
@@ -323,8 +347,7 @@ public class CampaignActivity extends Activity {
                     selected=i;
                     if(owners[continent][i]!=BLUE) {
                         final int targetCountry=i;
-                        boolean canAttack=false;
-                        for(int j=0;j<15;j++)if(owners[continent][j]==BLUE&&adjacent(targetCountry,j))canAttack=true;
+                        boolean canAttack=hasAdjacentOwnedCountry(targetCountry,BLUE);
                         if(canAttack) new AlertDialog.Builder(CampaignActivity.this)
                             .setTitle("الهجوم على "+COUNTRIES[continent][targetCountry])
                             .setMessage("ستبدأ معركة للسيطرة على هذه الدولة. هل أنت مستعد؟")
