@@ -83,12 +83,28 @@ public class CampaignActivity extends Activity {
 
         CampaignView() {
             super(CampaignActivity.this);
-            if(!prefs.getBoolean("campaign_locked_reset_v2",false)) {
-                SharedPreferences.Editor reset=prefs.edit().putInt("unlocked",-1);
+            if(!prefs.getBoolean("campaign_new_start_reset_v3",false)) {
+                // Fresh campaign: first continent available, remaining continents locked.
+                SharedPreferences.Editor reset=prefs.edit().putInt("unlocked",0);
                 for(int c=0;c<4;c++) for(int i=0;i<15;i++)
                     reset.putInt("owner_"+c+"_"+i,initialOwner(i));
-                reset.putBoolean("campaign_locked_reset_v2",true).commit();
-                unlocked=-1;
+                reset.putBoolean("campaign_new_start_reset_v3",true).commit();
+                unlocked=0;
+
+                // Reset the player's card stock to exactly two of every type.
+                SharedPreferences cards=getSharedPreferences("GENERAL_CARD_INVENTORY",MODE_PRIVATE);
+                String[] cardKeys={"count_repair","count_double_dice","count_cyber_warfare","count_shield",
+                    "count_airstrike","count_smoke_screen","count_military_supply","count_radar","count_minefield","count_mine_detector"};
+                SharedPreferences.Editor cardReset=cards.edit();
+                for(String key:cardKeys) cardReset.putInt(key,2);
+                cardReset.putString("pending_selection","").putString("active_match_cards","")
+                    .putString("used_match_cards","").putBoolean("match_active",false)
+                    .putString("rank_claims","").commit();
+
+                // Zero progress points so the player starts at the lowest rank.
+                SharedPreferences progress=getSharedPreferences("GENERAL_PROGRESS",MODE_PRIVATE);
+                progress.edit().putInt("points",0).putInt("wins",0).putInt("perfectWins",0)
+                    .putInt("lastEarned",0).putInt("lastDifficulty",0).commit();
             }
             for(int c=0;c<4;c++) for(int i=0;i<15;i++)
                 owners[c][i]=prefs.getInt("owner_"+c+"_"+i, initialOwner(i));
@@ -184,7 +200,8 @@ public class CampaignActivity extends Activity {
                 panel(c,left,top,right,bottom,Color.rgb(43,49,48));
                 drawContinentButtonShape(c,i,tile);
                 text(c,CONTINENTS[i],(left+right)/2,top+h*.155f,h*.035f,Color.WHITE);
-                text(c,"مغلقة حالياً",(left+right)/2,top+h*.202f,h*.021f,Color.LTGRAY);
+                text(c,i==0?"متاحة — ابدأ حملتك":"مغلقة حالياً",(left+right)/2,top+h*.202f,h*.021f,
+                    i==0?Color.rgb(125,220,145):Color.LTGRAY);
             }
             text(c,"القارات تُفتح بالتتابع بعد إكمال القارة السابقة",w*.5f,h*.90f,h*.025f,Color.LTGRAY);
             panel(c,w*.42f,h*.925f,w*.58f,h*.985f,Color.rgb(95,53,43));
@@ -210,7 +227,8 @@ public class CampaignActivity extends Activity {
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(Color.argb(145,12,17,17));
             c.drawCircle(cx,cy,Math.min(tile.width(),tile.height())*.075f,paint);
-            text(c,"🔒",cx,cy+h*.012f,h*.030f,Color.WHITE);
+            if(index!=0) text(c,"🔒",cx,cy+h*.012f,h*.030f,Color.WHITE);
+            else text(c,"▶",cx,cy+h*.012f,h*.030f,Color.WHITE);
         }
         private float[][] countrySites(int continentIndex) {
             float[][] sites=new float[15][2];
@@ -437,9 +455,14 @@ public class CampaignActivity extends Activity {
                 for(int i=0;i<4;i++) {
                     float l=w*(.08f+(i%2)*.44f),t=h*(.25f+(i/2)*.30f);
                     if(x>=l&&x<=l+w*.40f&&y>=t&&y<=t+h*.23f) {
-                        new AlertDialog.Builder(CampaignActivity.this)
-                            .setMessage("هذه القارة مغلقة حالياً، وسيتم فتحها لاحقاً.")
-                            .setPositiveButton("حسناً",null).show();
+                        if(i==0 && unlocked>=0) {
+                            continent=0;screen=1;selected=-1;campaignReport="ابدأ حملتك من أزمارا";
+                            invalidate();
+                        } else {
+                            new AlertDialog.Builder(CampaignActivity.this)
+                                .setMessage("هذه القارة مغلقة حالياً، أكمل القارة الأولى لفتحها.")
+                                .setPositiveButton("حسناً",null).show();
+                        }
                         return true;
                     }
                 }
