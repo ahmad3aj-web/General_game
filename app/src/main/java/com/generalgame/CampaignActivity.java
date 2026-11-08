@@ -131,11 +131,13 @@ public class CampaignActivity extends Activity {
             panel(c,w*.42f,h*.925f,w*.58f,h*.985f,Color.rgb(95,53,43));
             text(c,"عودة",w*.5f,h*.965f,h*.027f,Color.WHITE);
         }
-        private void launchCountryBattle(int country) {
+        private void launchCountryBattle(int country,int owner) {
             android.content.Intent battle=new android.content.Intent(CampaignActivity.this,MainActivity.class);
             battle.putExtra("campaign_battle",true);
             battle.putExtra("campaign_continent",continent);
             battle.putExtra("campaign_country",country);
+            battle.putExtra("campaign_general",owner==RED);
+            battle.putExtra("campaign_opponent_name",COUNTRIES[continent][country]);
             CampaignActivity.this.startActivityForResult(battle,701);
         }
         private boolean adjacent(int a,int b) {
@@ -166,9 +168,9 @@ public class CampaignActivity extends Activity {
                         for(int j=0;j<15;j++)if(owners[continent][j]==BLUE&&adjacent(targetCountry,j))canAttack=true;
                         if(canAttack) new AlertDialog.Builder(CampaignActivity.this)
                             .setTitle("الهجوم على "+COUNTRIES[continent][targetCountry])
-                            .setMessage("ستبدأ معركة ضد جنيرال للسيطرة على هذه الدولة. هل أنت مستعد؟")
+                            .setMessage("ستبدأ معركة للسيطرة على هذه الدولة. هل أنت مستعد؟")
                             .setNegativeButton("إلغاء",null)
-                            .setPositiveButton("ابدأ الحرب",(d,which)->launchCountryBattle(targetCountry)).show();
+                            .setPositiveButton("ابدأ الحرب",(d,which)->launchCountryBattle(targetCountry,owners[continent][targetCountry])).show();
                         else new AlertDialog.Builder(CampaignActivity.this)
                             .setTitle(COUNTRIES[continent][i])
                             .setMessage("لا يمكنك مهاجمة هذه الدولة حالياً. يجب أن تكون مجاورة لدولة تسيطر عليها.")
