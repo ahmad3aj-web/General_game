@@ -38,10 +38,7 @@ public class CampaignActivity extends Activity {
             int country=data.getIntExtra("campaign_country",-1);
             if(c>=0&&c<4&&country>=0&&country<15) {
                 CampaignView view=(CampaignView)((android.view.ViewGroup)findViewById(android.R.id.content)).getChildAt(0);
-                view.owners[c][country]=BLUE;
-                view.save();
-                view.selected=country;
-                view.invalidate();
+                view.captureCountry(c,country,BLUE,"انتصار اللاعب واحتلال "+COUNTRIES[c][country]);
             }
         }
     }
@@ -60,6 +57,12 @@ public class CampaignActivity extends Activity {
         {"كاردون","دراكون","أورغاس","فالدار","ميركون","تيرغال","أركوس","دولمار","غارون","إلدراك","كارثا","رومار","زيركون","أوردام","ثاروس"}
     };
     private static final int BLUE=1, RED=2, NEUTRAL=0;
+    static {
+        java.util.HashSet<String> uniqueNames=new java.util.HashSet<>();
+        for(String[] continentNames:COUNTRIES) for(String countryName:continentNames) {
+            if(!uniqueNames.add(countryName)) throw new IllegalStateException("اسم دولة مكرر: "+countryName);
+        }
+    }
     private final class CampaignView extends View {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
@@ -68,11 +71,22 @@ public class CampaignActivity extends Activity {
         // معاينة مؤقتة: اعرض كل القارات دون تغيير تقدم الفتح المحفوظ.
         private final boolean previewAllContinents=true;
         private int[][] owners=new int[4][15];
+        private final long[][] flashUntil=new long[4][15];
+        private final int[][] flashFrom=new int[4][15];
+        private final int[][] flashTo=new int[4][15];
+        private String campaignReport="تمت إعادة ضبط القارات — اختر دولة مجاورة للبدء";
         private float w,h;
         private final Region[] countryHitRegions=new Region[15];
 
         CampaignView() {
             super(CampaignActivity.this);
+            if(!prefs.getBoolean("campaign_reset_before_general_ai_v1",false)) {
+                SharedPreferences.Editor reset=prefs.edit().putInt("unlocked",0);
+                for(int c=0;c<4;c++) for(int i=0;i<15;i++)
+                    reset.putInt("owner_"+c+"_"+i,initialOwner(i));
+                reset.putBoolean("campaign_reset_before_general_ai_v1",true).commit();
+                unlocked=0;
+            }
             for(int c=0;c<4;c++) for(int i=0;i<15;i++)
                 owners[c][i]=prefs.getInt("owner_"+c+"_"+i, initialOwner(i));
         }
@@ -83,6 +97,30 @@ public class CampaignActivity extends Activity {
             e.apply();
         }
         private int colorFor(int owner) { return owner==BLUE?Color.rgb(39,112,205):owner==RED?Color.rgb(202,62,55):Color.rgb(135,139,133); }
+        private int mixColor(int a,int b,float t) {
+            t=Math.max(0f,Math.min(1f,t));
+            return Color.rgb((int)(Color.red(a)+(Color.red(b)-Color.red(a))*t),
+                (int)(Color.green(a)+(Color.green(b)-Color.green(a))*t),
+                (int)(Color.blue(a)+(Color.blue(b)-Color.blue(a))*t));
+        }
+        private int displayedCountryColor(int c,int country,long now) {
+            if(now>=flashUntil[c][country])return colorFor(owners[c][country]);
+            long elapsed=1500L-(flashUntil[c][country]-now);
+            float phase=(elapsed%300L)/300f;
+            float blend=phase<.5f?phase*2f:(1f-phase)*2f;
+            return mixColor(colorFor(flashFrom[c][country]),colorFor(flashTo[c][country]),blend);
+        }
+        private void changeOwnerWithFlash(int c,int country,int newOwner) {
+            int oldOwner=owners[c][country];
+            if(oldOwner==newOwner)return;
+            flashFrom[c][country]=oldOwner;flashTo[c][country]=newOwner;
+            flashUntil[c][country]=System.currentTimeMillis()+1500L;
+            owners[c][country]=newOwner;save();postInvalidateOnAnimation();
+        }
+        private void captureCountry(int c,int country,int owner,String report) {
+            if(c<0||c>=4||country<0||country>=15)return;
+            changeOwnerWithFlash(c,country,owner);selected=country;campaignReport=report;invalidate();
+        }
         private int shade(int color,float factor) {
             return Color.rgb(Math.min(255,Math.max(0,(int)(Color.red(color)*factor))),
                 Math.min(255,Math.max(0,(int)(Color.green(color)*factor))),
@@ -241,8 +279,10 @@ public class CampaignActivity extends Activity {
             for(int i=0;i<15;i++) {
                 Path country=countryPath(map,sites,i);
                 Region hit=new Region();hit.setPath(country,land);countryHitRegions[i]=hit;
+                long now=System.currentTimeMillis();
+                int countryColor=displayedCountryColor(continent,i,now);
                 paint.setShader(new LinearGradient(map.left,map.top,map.right,map.bottom,
-                    shade(colorFor(owners[continent][i]),1.22f),shade(colorFor(owners[continent][i]),.72f),Shader.TileMode.CLAMP));
+                    shade(countryColor,1.22f),shade(countryColor,.72f),Shader.TileMode.CLAMP));
                 paint.setStyle(Paint.Style.FILL);c.drawPath(country,paint);paint.setShader(null);
                 paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(Math.max(2,h*.003f));
                 paint.setColor(Color.rgb(105,27,48));c.drawPath(country,paint);
@@ -250,10 +290,10 @@ public class CampaignActivity extends Activity {
                 float[] label=countryLabelPoint(map,sites,i);
                 float tx=label[0],ty=label[1];
                 paint.setTextAlign(Paint.Align.CENTER);paint.setFakeBoldText(true);
-                float labelSize=h*.020f;
+                float labelSize=h*.023f;
                 paint.setTextSize(labelSize);
                 float measured=paint.measureText(COUNTRIES[continent][i]);
-                if(measured>label[2] && measured>0)labelSize*=Math.max(.58f,label[2]/measured);
+                if(measured>label[2] && measured>0)labelSize*=Math.max(.68f,label[2]/measured);
                 paint.setTextSize(labelSize);
                 paint.setColor(Color.rgb(255,226,153));
                 c.drawText(COUNTRIES[continent][i],tx,ty+labelSize*.34f,paint);
@@ -279,6 +319,8 @@ public class CampaignActivity extends Activity {
                 panel(c,w*.30f,h*.825f,w*.70f,h*.91f,Color.rgb(49,35,32));
                 text(c,COUNTRIES[continent][selected]+"  •  "+owner,w*.5f,h*.88f,h*.027f,Color.rgb(245,190,65));
             }
+            panel(c,w*.19f,h*.925f,w*.81f,h*.985f,Color.rgb(35,48,43));
+            text(c,campaignReport,w*.5f,h*.965f,h*.020f,Color.WHITE);
             panel(c,w*.025f,h*.925f,w*.17f,h*.985f,Color.rgb(75,79,74));
             text(c,"القارات",w*.097f,h*.965f,h*.024f,Color.WHITE);
             panel(c,w*.42f,h*.925f,w*.58f,h*.985f,Color.rgb(95,53,43));
