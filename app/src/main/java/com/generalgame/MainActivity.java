@@ -985,13 +985,28 @@ public class MainActivity extends Activity {
         }
         private void showSupplyChoice() {
             final String[] choices={"0 — إلغاء البطاقة","1 — إضافة طلقة","2 — إضافة طلقتين","3 — إضافة 3 طلقات"};
-            new AlertDialog.Builder(MainActivity.this).setTitle("الإمداد العسكري")
+            AlertDialog supplyDialog=new AlertDialog.Builder(MainActivity.this).setTitle("الإمداد العسكري")
                 .setItems(choices,(dialog,which)->{
                     if(which==0){selectedBattleCard=-1;cardTargeting=false;message="تم إلغاء الإمداد دون استهلاك البطاقة";invalidate();return;}
                     if(!useCard(CardInventory.MILITARY_SUPPLY))return;
                     die+=which;message="الإمداد العسكري: أُضيفت "+which+" إلى نتيجة النرد — المجموع "+die;
                     choosing=true;selectedBattleCard=-1;cardTargeting=false;invalidate();
-                }).setOnCancelListener(d->{selectedBattleCard=-1;cardTargeting=false;invalidate();}).show();
+                }).setOnCancelListener(d->{selectedBattleCard=-1;cardTargeting=false;invalidate();}).create();
+            supplyDialog.setOnShowListener(d->{
+                android.widget.ListView list=supplyDialog.getListView();
+                if(list!=null){list.setBackgroundColor(Color.rgb(24,39,32));list.setDivider(new android.graphics.drawable.ColorDrawable(Color.rgb(105,27,48)));list.setDividerHeight(1);
+                    list.setSelector(android.R.color.transparent);
+                    list.setAdapter(new android.widget.ArrayAdapter<String>(MainActivity.this,android.R.layout.simple_list_item_1,choices){
+                        @Override public android.view.View getView(int position,android.view.View convertView,android.view.ViewGroup parent){
+                            android.view.View row=super.getView(position,convertView,parent);
+                            android.widget.TextView label=(android.widget.TextView)row.findViewById(android.R.id.text1);
+                            label.setTextColor(Color.rgb(245,204,112));label.setTextSize(18);label.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                            label.setPadding(28,22,28,22);return row;
+                        }
+                    });
+                }
+            });
+            supplyDialog.show();
         }
         private boolean triggerMineByCardAttempt(int side,int lane) {
             if(mineTargetSide!=side || mineLane!=lane)return false;
@@ -1110,8 +1125,22 @@ public class MainActivity extends Activity {
         }
         private void showOnlineSupplyChoice() {
             final String[] choices={"إلغاء البطاقة","إضافة طلقة","إضافة طلقتين","إضافة 3 طلقات"};
-            new AlertDialog.Builder(MainActivity.this).setTitle("الإمداد العسكري")
-                .setItems(choices,(dialog,which)->{if(which>0)applyOnlineCardEffect(onlineLocalSide,CardInventory.MILITARY_SUPPLY,-1,which,true);}).show();
+            AlertDialog supplyDialog=new AlertDialog.Builder(MainActivity.this).setTitle("الإمداد العسكري")
+                .setItems(choices,(dialog,which)->{if(which>0)applyOnlineCardEffect(onlineLocalSide,CardInventory.MILITARY_SUPPLY,-1,which,true);}).create();
+            supplyDialog.setOnShowListener(d->{
+                android.widget.ListView list=supplyDialog.getListView();
+                if(list!=null){list.setBackgroundColor(Color.rgb(24,39,32));list.setDivider(new android.graphics.drawable.ColorDrawable(Color.rgb(105,27,48)));list.setDividerHeight(1);
+                    list.setAdapter(new android.widget.ArrayAdapter<String>(MainActivity.this,android.R.layout.simple_list_item_1,choices){
+                        @Override public android.view.View getView(int position,android.view.View convertView,android.view.ViewGroup parent){
+                            android.view.View row=super.getView(position,convertView,parent);
+                            android.widget.TextView label=(android.widget.TextView)row.findViewById(android.R.id.text1);
+                            label.setTextColor(Color.rgb(245,204,112));label.setTextSize(18);label.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                            label.setPadding(28,22,28,22);return row;
+                        }
+                    });
+                }
+            });
+            supplyDialog.show();
         }
         private boolean applyOnlineCardEffect(int side,int type,int lane,int value,boolean send) {
             if(mode!=4 || side<1 || side>2 || type<0 || type>=CardInventory.CARD_TYPES
@@ -3298,12 +3327,15 @@ public class MainActivity extends Activity {
                     c.drawRoundRect(new RectF(w*.615f,h*.285f,w*.965f,h*.865f),h*.035f,h*.035f,p);
                     p.setStyle(Paint.Style.FILL);
                     txt(c,"الخدمات والملفات",w*.31f,h*.355f,h*.030f,Color.rgb(242,196,94),true);
-                    miniMenuButton(c,"⚑","المهمات",w*.155f,h*.425f,Color.rgb(55,48,37));
-                    miniMenuButton(c,"▣","البطاقات",w*.335f,h*.425f,Color.rgb(55,48,37));
-                    miniMenuButton(c,"▤","السجل",w*.515f,h*.425f,Color.rgb(55,48,37));
-                    miniMenuButton(c,"♜","التقدم",w*.245f,h*.665f,Color.rgb(55,48,37));
-                    miniMenuButton(c,"?","الشرح",w*.425f,h*.665f,Color.rgb(55,48,37));
-                    miniMenuButton(c,"♟","الملف الشخصي",w*.335f,h*.755f,Color.rgb(105,27,48));
+                    // ستة أزرار متساوية في شبكة مرتبة: ثلاثة أعمدة وصفّان.
+                    float[] serviceX={w*.135f,w*.310f,w*.485f};
+                    float[] serviceY={h*.425f,h*.665f};
+                    miniMenuButton(c,"⚑","المهمات",serviceX[0],serviceY[0],Color.rgb(55,48,37));
+                    miniMenuButton(c,"▣","البطاقات",serviceX[1],serviceY[0],Color.rgb(55,48,37));
+                    miniMenuButton(c,"▤","السجل",serviceX[2],serviceY[0],Color.rgb(55,48,37));
+                    miniMenuButton(c,"♜","التقدم",serviceX[0],serviceY[1],Color.rgb(55,48,37));
+                    miniMenuButton(c,"?","الشرح",serviceX[1],serviceY[1],Color.rgb(55,48,37));
+                    miniMenuButton(c,"♟","الملف الشخصي",serviceX[2],serviceY[1],Color.rgb(105,27,48));
                     
                     txt(c,"ساحة المعركة",w*.79f,h*.355f,h*.030f,Color.rgb(242,196,94),true);
                     wideMenuButton(c,"⚔","الحرب",w*.655f,h*.405f,w*.925f,h*.785f);
@@ -3527,12 +3559,12 @@ public class MainActivity extends Activity {
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.875f&&x<=w*.965f)showExitConfirmation();
                 else if(y>=h*.38f&&y<=h*.82f&&x>=w*.635f&&x<=w*.945f)warMenuScreen=true;
-                else if(x>=w*.285f&&x<=w*.385f&&y>=h*.755f&&y<=h*.885f)showProfileDialog();
-                else if(y>=h*.405f&&y<=h*.59f&&x>=w*.08f&&x<=w*.23f)missionsScreen=true;
-                else if(y>=h*.405f&&y<=h*.59f&&x>=w*.26f&&x<=w*.41f)inventoryScreen=true;
-                else if(y>=h*.405f&&y<=h*.59f&&x>=w*.44f&&x<=w*.58f)historyScreen=true;
-                else if(y>=h*.65f&&y<=h*.83f&&x>=w*.17f&&x<=w*.32f)progressScreen=true;
-                else if(y>=h*.65f&&y<=h*.83f&&x>=w*.35f&&x<=w*.50f){helpScreen=true;helpScrollY=0;}
+                else if(x>=w*.085f&&x<=w*.185f&&y>=h*.415f&&y<=h*.555f)missionsScreen=true;
+                else if(x>=w*.260f&&x<=w*.360f&&y>=h*.415f&&y<=h*.555f)inventoryScreen=true;
+                else if(x>=w*.435f&&x<=w*.535f&&y>=h*.415f&&y<=h*.555f)historyScreen=true;
+                else if(x>=w*.085f&&x<=w*.185f&&y>=h*.655f&&y<=h*.795f)progressScreen=true;
+                else if(x>=w*.260f&&x<=w*.360f&&y>=h*.655f&&y<=h*.795f){helpScreen=true;helpScrollY=0;}
+                else if(x>=w*.435f&&x<=w*.535f&&y>=h*.655f&&y<=h*.795f)showProfileDialog();
                 
                 invalidate();return true;
             }
