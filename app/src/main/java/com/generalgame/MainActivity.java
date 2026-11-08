@@ -44,9 +44,22 @@ public class MainActivity extends Activity {
             View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
             View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-        gameView = new GameView();
-        setContentView(gameView);
-        gameView.handleInviteIntent(getIntent());
+        try {
+            gameView = new GameView();
+            setContentView(gameView);
+            gameView.handleInviteIntent(getIntent());
+        } catch (Throwable error) {
+            android.widget.TextView report = new android.widget.TextView(MainActivity.this);
+            report.setTextColor(Color.WHITE);
+            report.setTextSize(12);
+            report.setPadding(24, 24, 24, 24);
+            report.setBackgroundColor(Color.rgb(25, 25, 25));
+            report.setTextIsSelectable(true);
+            report.setMovementMethod(new android.text.method.ScrollingMovementMethod());
+            report.setText("تعذر تشغيل اللعبة. أرسل هذه الشاشة للمطوّر:\n\n"
+                + android.util.Log.getStackTraceString(error));
+            setContentView(report);
+        }
     }
 
     @Override protected void onNewIntent(android.content.Intent intent) {
