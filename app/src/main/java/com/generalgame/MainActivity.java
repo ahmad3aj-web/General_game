@@ -65,6 +65,8 @@ public class MainActivity extends Activity {
         private boolean missionsScreen=false;
         private boolean warMenuScreen=false;
         private boolean campaignBattle=false;
+        private boolean campaignGeneralOpponent=false;
+        private String campaignOpponentName="جنيرال";
         private boolean weeklyMissionTab=false;
         private final HashMap<String,Bitmap> art = new HashMap<>();
         private Movie fireMovie;
@@ -171,6 +173,10 @@ public class MainActivity extends Activity {
             MainActivity.this.getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE).edit()
                 .putString("player_name_"+(index+1),name).apply();
         }
+        private int savedPlayerAvatar() { return MainActivity.this.getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE).getInt("player_avatar",0); }
+        private void savePlayerAvatar(int avatar) { MainActivity.this.getSharedPreferences("GENERAL_SETTINGS",MODE_PRIVATE).edit().putInt("player_avatar",avatar).apply(); }
+        private boolean isGeneralOpponent() { return mode==2 && (!campaignBattle || campaignGeneralOpponent); }
+        private String computerOpponentName() { return campaignBattle?campaignOpponentName:"جنيرال"; }
         private final int[] avatars = {0,1};
         private final int[] avatarColors = {Color.rgb(35,112,205),Color.rgb(205,69,54),Color.rgb(45,145,105),Color.rgb(142,85,180),Color.rgb(225,145,45),Color.rgb(65,115,155),Color.rgb(176,91,119),Color.rgb(105,137,91),Color.rgb(48,96,133),Color.rgb(166,91,61),Color.rgb(67,119,83),Color.rgb(116,82,145),Color.rgb(185,126,54),Color.rgb(54,124,132),Color.rgb(151,79,104),Color.rgb(112,125,73)};
         private int stage = 0; // opening toss: 0 or 1; 2 means game
@@ -470,6 +476,9 @@ public class MainActivity extends Activity {
             volumeLabel.setTextColor(settingsGold);volumeLabel.setTypeface(settingsBold);
             vibrationBox.setTextColor(settingsGold);vibrationBox.setTypeface(settingsBold);
             shakeBox.setTextColor(settingsGold);shakeBox.setTypeface(settingsBold);
+            final android.widget.Button profileButton=new android.widget.Button(MainActivity.this);
+            profileButton.setText("تحديد المستخدم والهوية الثابتة");profileButton.setTextColor(settingsGold);
+            panel.addView(profileButton);
             panel.addView(soundBox);panel.addView(musicBox);panel.addView(volumeLabel);panel.addView(volumeBar);
             panel.addView(vibrationBox);panel.addView(shakeBox);
             volumeBar.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener(){
@@ -490,6 +499,7 @@ public class MainActivity extends Activity {
             settingsTitle.setPadding(pad,pad,pad,pad);
             AlertDialog dialog=new AlertDialog.Builder(MainActivity.this).setCustomTitle(settingsTitle)
                 .setView(panel).setPositiveButton("حفظ",null).setNegativeButton("إلغاء",null).create();
+            profileButton.setOnClickListener(v->{dialog.dismiss();showProfileDialog();});
             dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
                 soundEnabled=soundBox.isChecked();musicEnabled=musicBox.isChecked();
                 vibrationEnabled=vibrationBox.isChecked();screenShakeEnabled=shakeBox.isChecked();
@@ -504,6 +514,41 @@ public class MainActivity extends Activity {
                 if(backgroundMusic!=null)backgroundMusic.setVolume(musicVolume,musicVolume);
             });
             dialog.show();
+        }
+        private void showProfileDialog() {
+            final int[] draftAvatar={savedPlayerAvatar()};
+            final EditText nameInput=new EditText(MainActivity.this);
+            nameInput.setSingleLine(true);nameInput.setHint("اسم المستخدم");nameInput.setText(savedPlayerName(0));
+            nameInput.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+            final android.widget.TextView avatarLabel=new android.widget.TextView(MainActivity.this);
+            avatarLabel.setGravity(android.view.Gravity.CENTER);avatarLabel.setTextColor(Color.rgb(150,105,0));
+            avatarLabel.setText("الشخصية "+(draftAvatar[0]+1)+" من 17");avatarLabel.setTextSize(18);
+            final View preview=new View(MainActivity.this) {
+                @Override protected void onDraw(Canvas canvas) {
+                    super.onDraw(canvas);float radius=Math.min(getWidth(),getHeight())*.43f;
+                    drawAvatar(canvas,draftAvatar[0],getWidth()*.5f,getHeight()*.5f,radius,true);
+                }
+            };
+            preview.setLayoutParams(new android.widget.LinearLayout.LayoutParams(-1,(int)(150*getResources().getDisplayMetrics().density)));
+            android.widget.LinearLayout chooser=new android.widget.LinearLayout(MainActivity.this);chooser.setGravity(android.view.Gravity.CENTER);
+            android.widget.Button previous=new android.widget.Button(MainActivity.this);previous.setText("◀");
+            android.widget.Button next=new android.widget.Button(MainActivity.this);next.setText("▶");
+            chooser.addView(previous);chooser.addView(avatarLabel,new android.widget.LinearLayout.LayoutParams(0,-2,1));chooser.addView(next);
+            previous.setOnClickListener(v->{draftAvatar[0]=nextAvatar(draftAvatar[0],-1);avatarLabel.setText("الشخصية "+(draftAvatar[0]+1)+" من 17");preview.invalidate();});
+            next.setOnClickListener(v->{draftAvatar[0]=nextAvatar(draftAvatar[0],1);avatarLabel.setText("الشخصية "+(draftAvatar[0]+1)+" من 17");preview.invalidate();});
+            android.widget.LinearLayout panel=new android.widget.LinearLayout(MainActivity.this);panel.setOrientation(android.widget.LinearLayout.VERTICAL);
+            int pad=(int)(16*getResources().getDisplayMetrics().density);panel.setPadding(pad,pad,pad,pad);
+            android.widget.TextView nameLabel=new android.widget.TextView(MainActivity.this);
+            nameLabel.setText("اسم المستخدم الثابت");nameLabel.setTextColor(Color.rgb(150,105,0));nameLabel.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            android.widget.TextView avatarTitle=new android.widget.TextView(MainActivity.this);
+            avatarTitle.setText("الشخصية الثابتة");avatarTitle.setTextColor(Color.rgb(150,105,0));avatarTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);avatarTitle.setGravity(android.view.Gravity.CENTER);
+            panel.addView(nameLabel);panel.addView(nameInput);panel.addView(avatarTitle);panel.addView(preview);panel.addView(chooser);
+            new AlertDialog.Builder(MainActivity.this).setTitle("هوية المستخدم").setView(panel)
+                .setPositiveButton("حفظ الهوية",(d,which)->{
+                    String value=nameInput.getText().toString().trim();
+                    if(!value.isEmpty()){savePlayerName(0,value);playerNames[0]=value;}
+                    savePlayerAvatar(draftAvatar[0]);avatars[0]=draftAvatar[0];invalidate();
+                }).setNegativeButton("إلغاء",null).show();
         }
         private void showExitConfirmation() {
             boolean surrender=mode==2 && winner==0 && cardInventory.isMatchActive();
@@ -1275,10 +1320,16 @@ public class MainActivity extends Activity {
             if(intent==null)return;
             if(intent.getBooleanExtra("campaign_battle",false)) {
                 campaignBattle=true;
+                campaignGeneralOpponent=intent.getBooleanExtra("campaign_general",false);
+                campaignOpponentName=intent.getStringExtra("campaign_opponent_name");
+                if(campaignOpponentName==null||campaignOpponentName.trim().isEmpty())campaignOpponentName="خصم الحملة";
+                int campaignContinent=intent.getIntExtra("campaign_continent",0);
+                difficulty=campaignGeneralOpponent?Math.max(0,Math.min(3,campaignContinent)):0;
                 titleScreen=false;
                 mode=2;setup=true;setupSide=1;
-                playerNames[0]=savedPlayerName(0);playerNames[1]="جنيرال";
-                avatars[0]=0;avatars[1]=1;
+                cardInventory.prepareNewMatchSetup();
+                playerNames[0]=savedPlayerName(0);playerNames[1]=campaignOpponentName;
+                avatars[0]=savedPlayerAvatar();avatars[1]=1;
                 message="حرب الحملة — استعد للمعركة";
                 invalidate();
                 return;
@@ -3226,7 +3277,7 @@ public class MainActivity extends Activity {
                     miniMenuButton(c,"▤","السجل",w*.515f,h*.425f,Color.rgb(55,48,37));
                     miniMenuButton(c,"♜","التقدم",w*.245f,h*.665f,Color.rgb(55,48,37));
                     miniMenuButton(c,"?","الشرح",w*.425f,h*.665f,Color.rgb(55,48,37));
-                    miniMenuButton(c,"🌍","الحملة",w*.515f,h*.665f,Color.rgb(55,48,37));
+                    
                     txt(c,"ساحة المعركة",w*.79f,h*.355f,h*.030f,Color.rgb(242,196,94),true);
                     wideMenuButton(c,"⚔","الحرب",w*.655f,h*.405f,w*.925f,h*.785f);
                     p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(true);
@@ -3439,10 +3490,10 @@ public class MainActivity extends Activity {
                                 &&touchDownX>=w*.065f&&touchDownX<=w*.535f&&touchDownY>=h*.715f&&touchDownY<=h*.875f;
                         boolean vsGeneral=x>=w*.605f&&x<=w*.945f&&y>=h*.295f&&y<=h*.875f
                                 &&touchDownX>=w*.605f&&touchDownX<=w*.945f&&touchDownY>=h*.295f&&touchDownY<=h*.875f;
-                        if(sameDevice){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
+                        if(sameDevice){mode=1;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=savedPlayerAvatar();avatars[1]=1;}
                         else if(online)showOnlineModeDialog();
                         else if(campaign)startActivity(new android.content.Intent(MainActivity.this,CampaignActivity.class));
-                        else if(vsGeneral){cardInventory.prepareNewMatchSetup();mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=0;avatars[1]=1;}
+                        else if(vsGeneral){cardInventory.prepareNewMatchSetup();mode=2;setup=true;setupSide=1;playerNames[0]=savedPlayerName(0);playerNames[1]=savedPlayerName(1);avatars[0]=savedPlayerAvatar();avatars[1]=1;}
                     }
                 }
                 else if(y>=h*.065f&&y<=h*.165f&&x>=w*.035f&&x<=w*.125f)showSettingsDialog();
@@ -3453,7 +3504,7 @@ public class MainActivity extends Activity {
                 else if(y>=h*.405f&&y<=h*.59f&&x>=w*.44f&&x<=w*.58f)historyScreen=true;
                 else if(y>=h*.65f&&y<=h*.83f&&x>=w*.17f&&x<=w*.32f)progressScreen=true;
                 else if(y>=h*.65f&&y<=h*.83f&&x>=w*.35f&&x<=w*.50f){helpScreen=true;helpScrollY=0;}
-                else if(y>=h*.65f&&y<=h*.83f&&x>=w*.50f&&x<=w*.59f){startActivity(new android.content.Intent(MainActivity.this,CampaignActivity.class));}
+                
                 invalidate();return true;
             }
             if(setup) {
