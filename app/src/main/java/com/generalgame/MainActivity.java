@@ -803,14 +803,16 @@ public class MainActivity extends Activity {
             p.setTextAlign(Paint.Align.CENTER); p.setStyle(Paint.Style.FILL); c.drawText(s,x,y,p);
         }
         private void box(Canvas c,float l,float t,float r,float b,int color) {
-            p.setColor(color); p.setStyle(Paint.Style.FILL);
-            c.drawRoundRect(new RectF(l,t,r,b),16,16,p);
+            RectF rect=new RectF(l,t,r,b);
+            p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawRoundRect(rect,16,16,p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1.5f,h*.0025f));p.setColor(Color.rgb(105,27,48));
+            c.drawRoundRect(rect,16,16,p);p.setStyle(Paint.Style.FILL);
         }
         private void namePlate(Canvas c,String name,float cx,float cy,int color) {
             float width=Math.min(w*.16f,Math.max(w*.12f,p.measureText(name)*1.12f));
             float top=cy-h*.030f,bottom=cy+h*.012f;
             box(c,cx-width*.5f,top,cx+width*.5f,bottom,Color.argb(235,15,23,21));
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0028f));p.setColor(color);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.0028f));p.setColor(Color.rgb(105,27,48));
             c.drawRoundRect(new RectF(cx-width*.5f,top,cx+width*.5f,bottom),h*.014f,h*.014f,p);p.setStyle(Paint.Style.FILL);
             float size=h*.034f;p.setTextSize(size);p.setFakeBoldText(true);
             while(p.measureText(name)>width*.88f && size>h*.018f){size*=.94f;p.setTextSize(size);}
@@ -864,6 +866,8 @@ public class MainActivity extends Activity {
             p.setShader(null);p.setStyle(Paint.Style.FILL);p.setColor(Color.argb(90,0,0,0));
             c.drawRoundRect(new RectF(l,t+h*.004f,r,b+h*.004f),radius,radius,p);
             p.setColor(color);c.drawRoundRect(new RectF(l,t,r,b),radius,radius,p);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(2,h*.003f));p.setColor(Color.rgb(105,27,48));
+            c.drawRoundRect(new RectF(l,t,r,b),radius,radius,p);p.setStyle(Paint.Style.FILL);
             txt(c,glyph,(l+r)*.5f,(t+b)*.5f+h*.018f,(b-t)*.52f,Color.WHITE,true);
         }
         private void btn(Canvas c,String s,float l,float t,float r,float b,int color) {
@@ -883,7 +887,7 @@ public class MainActivity extends Activity {
             c.drawRoundRect(face,radius*.82f,radius*.82f,p);p.setShader(null);
             // Avoid overlaying unrelated image fragments on button faces.
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(1.5f,h*.0022f));
-            p.setColor(Color.argb(165,255,255,255));
+            p.setColor(Color.rgb(105,27,48));
             c.drawRoundRect(face,radius*.82f,radius*.82f,p);p.setStyle(Paint.Style.FILL);
             float textSize=Math.min(h*.043f,(r-l)*.105f);
             p.setTextSize(textSize);p.setFakeBoldText(true);
