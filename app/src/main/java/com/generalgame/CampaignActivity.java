@@ -161,13 +161,14 @@ public class CampaignActivity extends Activity {
                 for(int i=0;i<15;i++) if(countryRects[i]!=null&&countryRects[i].contains(x,y)) {
                     selected=i;
                     if(owners[continent][i]!=BLUE) {
+                        final int targetCountry=i;
                         boolean canAttack=false;
-                        for(int j=0;j<15;j++)if(owners[continent][j]==BLUE&&adjacent(i,j))canAttack=true;
+                        for(int j=0;j<15;j++)if(owners[continent][j]==BLUE&&adjacent(targetCountry,j))canAttack=true;
                         if(canAttack) new AlertDialog.Builder(CampaignActivity.this)
-                            .setTitle("الهجوم على "+COUNTRIES[continent][i])
+                            .setTitle("الهجوم على "+COUNTRIES[continent][targetCountry])
                             .setMessage("ستبدأ معركة ضد جنيرال للسيطرة على هذه الدولة. هل أنت مستعد؟")
                             .setNegativeButton("إلغاء",null)
-                            .setPositiveButton("ابدأ الحرب",(d,which)->launchCountryBattle(i)).show();
+                            .setPositiveButton("ابدأ الحرب",(d,which)->launchCountryBattle(targetCountry)).show();
                         else new AlertDialog.Builder(CampaignActivity.this)
                             .setTitle(COUNTRIES[continent][i])
                             .setMessage("لا يمكنك مهاجمة هذه الدولة حالياً. يجب أن تكون مجاورة لدولة تسيطر عليها.")
