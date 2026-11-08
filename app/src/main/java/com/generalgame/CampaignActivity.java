@@ -17,6 +17,12 @@ import android.graphics.Shader;
 import android.view.MotionEvent;
 import android.view.View;
 import android.content.SharedPreferences;
+import android.graphics.Typeface;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.view.Gravity;
+import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,19 +50,20 @@ public class CampaignActivity extends Activity {
                 boolean defense=data.getBooleanExtra("campaign_defense",false);
                 boolean playerWon=data.getBooleanExtra("campaign_won",false);
                 if(defense) {
-                    // The blue player has just defended during General's turn.
-                    // Defense does not start another General turn or consume blue's turn.
                     if(playerWon) {
                         view.selected=country;
                         view.campaignReport="نجحت في صد هجوم جنيرال على "+COUNTRIES[c][country];
+                    } else if(view.isPlayerGate(c,country)) {
+                        view.collapseContinent(c);
                     } else {
                         view.captureCountry(c,country,RED,"خسرت معركة الدفاع وانتقلت "+COUNTRIES[c][country]+" إلى جنيرال");
                     }
                 } else {
-                    if(playerWon)view.captureCountry(c,country,BLUE,"انتصرت واحتللت "+COUNTRIES[c][country]);
-                    else {view.selected=country;view.campaignReport="لم تنجح في احتلال "+COUNTRIES[c][country];}
-                    // Blue was the attacker, so General now takes exactly one turn.
-                    view.runGeneralCampaignAttacks(c);
+                    if(playerWon) {
+                        view.captureCountry(c,country,BLUE,"انتصرت واحتللت "+COUNTRIES[c][country]);
+                        if(view.isPlayerGate(c,country)) view.prefs.edit().putBoolean("continent_closed_"+c,false).apply();
+                    } else {view.selected=country;view.campaignReport="لم تنجح في احتلال "+COUNTRIES[c][country];}
+                    if(!view.isContinentClosed(c)) view.runGeneralCampaignAttacks(c);
                 }
                 view.invalidate();
             }
@@ -158,7 +165,44 @@ public class CampaignActivity extends Activity {
                 });
             }
         }
+        private static final int BLUE_GATE=0, RED_GATE=14;
+        private boolean isPlayerGate(int c,int country) { return c>0 && country==BLUE_GATE; }
+        private boolean isGate(int c,int country) { return c==0?country==RED_GATE:(country==BLUE_GATE||country==RED_GATE); }
+        private boolean isContinentClosed(int c) { return prefs.getBoolean("continent_closed_"+c,false); }
+        private boolean previousContinentComplete(int c) {
+            if(c<=0)return true;
+            for(int i=0;i<15;i++) if(owners[c-1][i]!=BLUE)return false;
+            return true;
+        }
         private int initialOwner(int i) { return i==0?BLUE:(i==14?RED:NEUTRAL); }
+        private void collapseContinent(int c) {
+            if(c<=0||c>=4)return;
+            for(int i=0;i<15;i++) if(owners[c][i]==BLUE) {
+                flashFrom[c][i]=BLUE;flashTo[c][i]=NEUTRAL;
+                flashUntil[c][i]=System.currentTimeMillis()+1500L;
+                owners[c][i]=NEUTRAL;
+            }
+            prefs.edit().putBoolean("continent_closed_"+c,true).apply();
+            unlocked=Math.min(unlocked,c-1);
+            save();
+            continent=c-1;screen=1;selected=-1;
+            campaignReport="سقطت البوابة! تمردت أراضي "+CONTINENTS[c]+" وعادت إلى الحياد. احتفظ جنيرال بدوله.";
+            invalidate();
+        }
+        private void showGateWarning(final int c,final int country,final boolean playerAttacking) {
+            String body="تتعرض البوابة الحدودية لهجوم، وهي شريان الاتصال بين القارات. احمِ هذه البوابة بكل قوتك! سقوطها لن يعني خسارة موقع عسكري فحسب، بل سيشعل تمردًا واسعًا في البلاد، وستخرج أراضي القارة عن سيطرتك، وتعود الدول التي كسبتها فيها إلى حالة الحياد، بينما يحتفظ جنيرال بالدول التي استولى عليها. خسارة البوابة قد تعني ضياع قارة كاملة!";
+            SpannableString styled=new SpannableString(body);
+            int[] palette={Color.rgb(39,112,205),Color.rgb(202,62,55),Color.rgb(245,190,65),Color.WHITE};
+            for(int i=0;i<styled.length();i++) if(!Character.isWhitespace(styled.charAt(i)))
+                styled.setSpan(new ForegroundColorSpan(palette[i%palette.length]),i,i+1,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            TextView message=new TextView(CampaignActivity.this);
+            message.setText(styled);message.setTextSize(17);message.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
+            message.setGravity(Gravity.CENTER);message.setPadding(28,24,28,24);
+            new AlertDialog.Builder(CampaignActivity.this).setTitle("تحذير عسكري – بوابة استراتيجية").setView(message)
+                .setNegativeButton("إلغاء",null)
+                .setPositiveButton(playerAttacking?"متابعة الهجوم":"الاستعداد للدفاع",
+                    (d,which)->launchCountryBattle(country,owners[c][country],!playerAttacking)).show();
+        }
         private void save() {
             SharedPreferences.Editor e=prefs.edit().putInt("unlocked",unlocked);
             for(int c=0;c<4;c++) for(int i=0;i<15;i++) e.putInt("owner_"+c+"_"+i,owners[c][i]);
@@ -342,12 +386,29 @@ public class CampaignActivity extends Activity {
             }
 
             java.util.Random random=new java.util.Random();
-            int target=targets.get(random.nextInt(targets.size()));
+            int target;
+            if(c==1||c==2) {
+                int gateTarget=-1;
+                for(int candidate:targets) if(candidate==BLUE_GATE){gateTarget=candidate;break;}
+                if(gateTarget>=0 && random.nextInt(100)<62) target=gateTarget;
+                else {
+                    float[][] sites=countrySites(c);
+                    float best=Float.MAX_VALUE;int chosen=targets.get(0);
+                    for(int candidate:targets) {
+                        float dx=sites[candidate][0]-sites[BLUE_GATE][0];
+                        float dy=sites[candidate][1]-sites[BLUE_GATE][1];
+                        float score=(float)Math.hypot(dx,dy)+(random.nextFloat()*.16f);
+                        if(score<best){best=score;chosen=candidate;}
+                    }
+                    target=chosen;
+                }
+            } else target=targets.get(random.nextInt(targets.size()));
             if(owners[c][target]==BLUE) {
                 campaignReport="استعد للدفاع! هناك هجوم على "+COUNTRIES[c][target];
                 selected=target;
                 invalidate();
-                launchCountryBattle(target,RED,true);
+                if(isPlayerGate(c,target)) showGateWarning(c,target,false);
+                else launchCountryBattle(target,RED,true);
                 return;
             }
 
@@ -392,8 +453,8 @@ public class CampaignActivity extends Activity {
                 panel(c,left,top,right,bottom,Color.rgb(43,49,48));
                 drawContinentButtonShape(c,i,tile);
                 text(c,CONTINENTS[i],(left+right)/2,top+h*.155f,h*.035f,Color.WHITE);
-                boolean continentUnlocked=i<=unlocked;
-                text(c,continentUnlocked?(i==0?"متاحة — ابدأ حملتك":"متاحة — تابع حملتك"):"مغلقة حالياً",(left+right)/2,top+h*.202f,h*.021f,
+                boolean continentUnlocked=(i<=unlocked)||(i==unlocked+1&&previousContinentComplete(i));
+                text(c,continentUnlocked?(i==0?"متاحة — ابدأ حملتك":(isContinentClosed(i)?"مغلقة حتى استعادة البوابة":"متاحة — بوابة الدخول")):"مغلقة حالياً",(left+right)/2,top+h*.202f,h*.021f,
                     continentUnlocked?Color.rgb(125,220,145):Color.LTGRAY);
             }
             text(c,"القارات تُفتح بالتتابع بعد إكمال القارة السابقة",w*.5f,h*.90f,h*.025f,Color.LTGRAY);
@@ -567,6 +628,15 @@ public class CampaignActivity extends Activity {
                 paint.setColor(Color.rgb(255,226,153));
                 c.drawText(COUNTRIES[continent][i],tx,ty+labelSize*.34f,paint);
                 paint.setFakeBoldText(false);
+                if(isGate(continent,i)) {
+                    paint.setStyle(Paint.Style.FILL);
+                    paint.setColor(i==BLUE_GATE&&continent>0?Color.rgb(39,112,205):Color.rgb(202,62,55));
+                    c.drawCircle(map.left+sites[i][0]*map.width(),map.top+sites[i][1]*map.height(),h*.012f,paint);
+                    paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(Math.max(2,h*.0025f));
+                    paint.setColor(Color.WHITE);
+                    c.drawCircle(map.left+sites[i][0]*map.width(),map.top+sites[i][1]*map.height(),h*.016f,paint);
+                    paint.setStyle(Paint.Style.FILL);
+                }
                 if(selected==i) {
                     paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(h*.008f);paint.setColor(Color.rgb(255,219,110));
                     c.drawPath(country,paint);paint.setStyle(Paint.Style.FILL);
@@ -649,9 +719,12 @@ public class CampaignActivity extends Activity {
                 for(int i=0;i<4;i++) {
                     float l=w*(.08f+(i%2)*.44f),t=h*(.25f+(i/2)*.30f);
                     if(x>=l&&x<=l+w*.40f&&y>=t&&y<=t+h*.23f) {
-                        if(i<=unlocked) {
+                        boolean canEnter=(i<=unlocked)||(i==unlocked+1&&previousContinentComplete(i));
+                        if(canEnter) {
                             continent=i;screen=1;selected=-1;
-                            campaignReport="تابع حملتك في "+CONTINENTS[i];
+                            campaignReport=isContinentClosed(i)
+                                ?"استعد بوابة الدخول أولاً لفتح القارة من جديد"
+                                :(i>0&&owners[i][BLUE_GATE]!=BLUE?"هاجم البوابة الزرقاء لبدء التوسع في "+CONTINENTS[i]:"تابع حملتك في "+CONTINENTS[i]);
                             invalidate();
                         } else {
                             new AlertDialog.Builder(CampaignActivity.this)
@@ -668,15 +741,18 @@ public class CampaignActivity extends Activity {
                     selected=i;
                     if(owners[continent][i]!=BLUE) {
                         final int targetCountry=i;
-                        boolean canAttack=hasAdjacentOwnedCountry(targetCountry,BLUE);
-                        if(canAttack) new AlertDialog.Builder(CampaignActivity.this)
-                            .setTitle("الهجوم على "+COUNTRIES[continent][targetCountry])
-                            .setMessage("ستبدأ معركة للسيطرة على هذه الدولة. هل أنت مستعد؟")
-                            .setNegativeButton("إلغاء",null)
-                            .setPositiveButton("ابدأ الحرب",(d,which)->launchCountryBattle(targetCountry,owners[continent][targetCountry],false)).show();
-                        else new AlertDialog.Builder(CampaignActivity.this)
+                        boolean gateEntry=isPlayerGate(continent,targetCountry)&&previousContinentComplete(continent);
+                        boolean canAttack=gateEntry||hasAdjacentOwnedCountry(targetCountry,BLUE);
+                        if(canAttack) {
+                            if(isGate(continent,targetCountry)) showGateWarning(continent,targetCountry,true);
+                            else new AlertDialog.Builder(CampaignActivity.this)
+                                .setTitle("الهجوم على "+COUNTRIES[continent][targetCountry])
+                                .setMessage("ستبدأ معركة للسيطرة على هذه الدولة. هل أنت مستعد؟")
+                                .setNegativeButton("إلغاء",null)
+                                .setPositiveButton("ابدأ الحرب",(d,which)->launchCountryBattle(targetCountry,owners[continent][targetCountry],false)).show();
+                        } else new AlertDialog.Builder(CampaignActivity.this)
                             .setTitle(COUNTRIES[continent][i])
-                            .setMessage("لا يمكنك مهاجمة هذه الدولة حالياً. يجب أن تكون مجاورة لدولة تسيطر عليها.")
+                            .setMessage("لا يمكنك مهاجمة هذه الدولة حالياً. يجب أن تكون مجاورة لدولة تسيطر عليها، أو أن تكون بوابة الدخول بعد السيطرة على القارة السابقة.")
                             .setPositiveButton("حسناً",null).show();
                     }
                     invalidate();return true;
