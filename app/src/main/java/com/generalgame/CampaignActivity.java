@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.graphics.Canvas;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Movie;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -144,7 +145,7 @@ public class CampaignActivity extends Activity {
                     ? "تم التحقق من السيطرة وفتح قارة "+CONTINENTS[completedInOrder]
                     : "مبروك! أكملت حملة السيطرة على العالم";
                 int completed=completedInOrder-1;
-                if(!prefs.getBoolean("celebration_seen_"+completed,false)) {
+                if(completed>=0 && !prefs.getBoolean("celebration_seen_"+completed,false)) {
                     pendingCelebrationContinent=completed;
                     post(() -> {
                         if(pendingCelebrationContinent>=0) {
@@ -233,6 +234,7 @@ public class CampaignActivity extends Activity {
             private final String title,subtitle,unlockLine,playerName;
             private final boolean worldComplete;
             private final Bitmap avatar;
+            private final Movie victoryMovie;
             private final long started=System.currentTimeMillis();
             private final int[] colors={Color.rgb(255,205,72),Color.rgb(255,92,72),
                 Color.rgb(72,190,255),Color.rgb(160,105,255),Color.rgb(95,225,155),Color.WHITE};
@@ -247,7 +249,15 @@ public class CampaignActivity extends Activity {
                     loaded=BitmapFactory.decodeStream(getAssets().open(file));
                 } catch(Exception ignored) {}
                 avatar=loaded;
+                Movie victory=null;
+                try { victory=Movie.decodeStream(getAssets().open("vehicles/Win.gif")); } catch(Exception ignored) {}
+                victoryMovie=victory;
                 setLayerType(View.LAYER_TYPE_SOFTWARE,null);
+            }
+            @Override protected void onMeasure(int widthMeasureSpec,int heightMeasureSpec) {
+                float density=getResources().getDisplayMetrics().density;
+                int desiredWidth=(int)(760*density),desiredHeight=(int)(420*density);
+                setMeasuredDimension(resolveSize(desiredWidth,widthMeasureSpec),resolveSize(desiredHeight,heightMeasureSpec));
             }
             private void centered(Canvas c,String value,float x,float y,float size,int color) {
                 fx.setShader(null);fx.setStyle(Paint.Style.FILL);fx.setColor(color);
@@ -282,6 +292,14 @@ public class CampaignActivity extends Activity {
                     float x=ww*(.16f+(b%2)*.68f);
                     float y=hh*(.17f+(b/2)*.20f);
                     burst(c,x,y,radius,colors[(b+(int)(elapsed/700))%colors.length],age);
+                }
+                if(victoryMovie!=null) {
+                    int duration=Math.max(1,victoryMovie.duration());
+                    victoryMovie.setTime((int)(elapsed%duration));
+                    float fw=ww*.43f,fh=hh*.43f;
+                    c.save();c.translate((ww-fw)*.5f,hh*.17f);
+                    c.scale(fw/Math.max(1,victoryMovie.width()),fh/Math.max(1,victoryMovie.height()));
+                    victoryMovie.draw(c,0,0);c.restore();
                 }
                 fx.setStyle(Paint.Style.STROKE);fx.setStrokeWidth(Math.max(2,hh*.006f));
                 fx.setColor(Color.rgb(226,178,66));
