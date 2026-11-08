@@ -2036,7 +2036,7 @@ public class MainActivity extends Activity {
             return "["+rankNames[rankIndex(points)]+"] ";
         }        private String rankedPlayerName(String name) { return playerRankPrefix()+name; }
         private void awardProgressPoints() {
-            if(pointsAwarded || mode!=2 || winner!=1)return;
+            if(pointsAwarded || !isGeneralOpponent() || winner!=1)return;
             int[] base={10,20,35,50}, perfectBonus={5,10,20,30};
             int level=Math.max(0,Math.min(3,difficulty));
             int earned=base[level]+(perfectWin?perfectBonus[level]:0);
@@ -2054,7 +2054,7 @@ public class MainActivity extends Activity {
         private void finishMatch() {
             if(winner==0)return;
             awardProgressPoints();
-            if(mode==2 && missionManager.isTrackedMatchActive()) {
+            if(isGeneralOpponent() && missionManager.isTrackedMatchActive()) {
                 int lostWeapons=missionManager.getPlayerLostWeaponCount();
                 missionManager.finishTrackedMatch(winner==1,difficulty,lostWeapons,winner==1 && perfectWin);
             }
@@ -2070,7 +2070,7 @@ public class MainActivity extends Activity {
                 clearBattleCardEffects();
             }
             bonusAttempt=false;battleIntro=false;die=0;choosing=false;resultRevealReady=false;
-            if(mode==2)message=winner==1?"انتهت المباراة — أنت الفائز!":"انتهت المباراة — فاز جنيرال!";
+            if(mode==2)message=winner==1?"انتهت المباراة — أنت الفائز!":"انتهت المباراة — فاز "+computerOpponentName()+"!";
             else message="انتهت المباراة — الفائز: "+(winner==1?playerNames[0]:playerNames[1]);
             saveMatchResult();
             final int finishedEpoch=matchEpoch;
@@ -2117,11 +2117,12 @@ public class MainActivity extends Activity {
             iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
             txt(c,"استعدوا للحرب",w*.5f,h*.25f,h*.055f,Color.rgb(245,190,65),true);
             if(mode==2) {
-                drawGeneralAvatar(c,w*.30f,h*.45f,h*.120f,false,false);
+                if(isGeneralOpponent())drawGeneralAvatar(c,w*.30f,h*.45f,h*.120f,false,false);
+                else drawAvatar(c,1,w*.30f,h*.45f,h*.115f,false,true);
                 drawAvatar(c,avatars[0],w*.70f,h*.45f,h*.115f,true);
-                txt(c,"جنيرال",w*.30f,h*.61f,h*.036f,Color.WHITE,true);
+                txt(c,computerOpponentName(),w*.30f,h*.61f,h*.036f,Color.WHITE,true);
                 txt(c,rankedPlayerName(playerNames[0]),w*.70f,h*.61f,h*.036f,Color.WHITE,true);
-                drawIntroCardRow(c,true,w*.30f,h*.665f);
+                if(isGeneralOpponent())drawIntroCardRow(c,true,w*.30f,h*.665f);
                 drawIntroCardRow(c,false,w*.70f,h*.665f);
             } else {
                 drawAvatar(c,avatars[1],w*.30f,h*.45f,h*.115f,false);
@@ -2295,9 +2296,9 @@ public class MainActivity extends Activity {
             try {
                 JSONArray old=loadHistory(), updated=new JSONArray();
                 JSONObject item=new JSONObject();
-                String opponent=mode==2?"جنيرال":(winner==1?playerNames[1]:playerNames[0]);
-                String winnerName=winner==1?playerNames[0]:(mode==2?"جنيرال":playerNames[1]);
-                String loserName=winner==1?(mode==2?"جنيرال":playerNames[1]):playerNames[0];
+                String opponent=mode==2?computerOpponentName():(winner==1?playerNames[1]:playerNames[0]);
+                String winnerName=winner==1?playerNames[0]:(mode==2?computerOpponentName():playerNames[1]);
+                String loserName=winner==1?(mode==2?computerOpponentName():playerNames[1]):playerNames[0];
                 item.put("opponent",opponent); item.put("winner",winnerName); item.put("loser",loserName);
                 if(mode==2) item.put("result",winner==1?"فوز":"خسارة");
                 else {
@@ -2306,8 +2307,8 @@ public class MainActivity extends Activity {
                     item.put("winnerSide",winner);
                 }
                 item.put("mode",mode);
-                item.put("points",mode==2 && winner==1?matchPoints:0);
-                item.put("perfectWin",mode==2 && winner==1 && perfectWin);
+                item.put("points",isGeneralOpponent() && winner==1?matchPoints:0);
+                item.put("perfectWin",isGeneralOpponent() && winner==1 && perfectWin);
                 item.put("difficulty",difficulty);
                 item.put("date",new SimpleDateFormat("EEEE dd/MM/yyyy HH:mm",new Locale("ar","JO")).format(new Date()));
                 updated.put(item);
@@ -2471,7 +2472,7 @@ public class MainActivity extends Activity {
                         pos2[lane]=Math.min(15,pos2[lane]+3);
                         if(pos2[lane]>=15) {
                             dead1[lane]=true;redWinEffect[lane]=true;
-                            if(mode==2)missionManager.recordPlayerWeaponDestroyed(lane);
+                            if(isGeneralOpponent())missionManager.recordPlayerWeaponDestroyed(lane);
                             smokeActive[1][lane]=false;smokeTurns[1][lane]=0;
                             if(mineTargetSide==1&&mineLane==lane){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}
                             spawnExplosion(w*.925f,new float[]{h*.29f,h*.49f,h*.69f}[lane]);playGameSound(3);
@@ -2548,7 +2549,7 @@ public class MainActivity extends Activity {
             stage=0; firstRoll=0; player=1; die=0; winner=0; resultRevealReady=false; choosing=false; recorded=false; explosionAt=0;airstrikeStartedAt=0;
             bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;
             clearBattleCardEffects();
-            if(mode==2)prepareGeneralCards();
+            if(isGeneralOpponent())prepareGeneralCards();
             openingRoll1=0; openingRoll2=0; openingToss=false;
             battleDialogueText="";battleDialogueReplyText="";dialogueSequence[0]=dialogueSequence[1]=dialogueSequence[2]=0;
             if(mode==3 && lanSession!=null && lanSession.isConnected()) {
@@ -2948,7 +2949,7 @@ public class MainActivity extends Activity {
                     if(side==1){
                         dead2[lane]=true;smokeActive[2][lane]=false;smokeTurns[2][lane]=0;
                         if(mineTargetSide==2&&mineLane==lane){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}
-                        if(mode==2)missionManager.recordGeneralWeaponDestroyed(lane);
+                        if(isGeneralOpponent())missionManager.recordGeneralWeaponDestroyed(lane);
                         blueWinEffect[lane]=true;setBattleDialogue(1,2);
                         spawnExplosion(w*.075f,laneY);playGameSound(3);
                     } else {
@@ -3044,7 +3045,7 @@ public class MainActivity extends Activity {
                         if(positions(attackerSide)[targetLane]>=15) {
                             destroyed(targetSide)[targetLane]=true;
                             if(attackerSide==1)blueWinEffect[targetLane]=true;else redWinEffect[targetLane]=true;
-                            if(mode==2 && targetSide==2)missionManager.recordGeneralWeaponDestroyed(targetLane);
+                            if(isGeneralOpponent() && targetSide==2)missionManager.recordGeneralWeaponDestroyed(targetLane);
                             smokeActive[targetSide][targetLane]=false;smokeTurns[targetSide][targetLane]=0;
                             if(mineTargetSide==targetSide&&mineLane==targetLane){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;mineTurns=0;}
                         }
@@ -3314,9 +3315,10 @@ public class MainActivity extends Activity {
                     boolean generalWon=winner==2;
                     float generalX=w*.34f,playerX=w*.66f;
                     drawWinnerGif(c,generalWon?generalX:playerX,portraitY-h*.045f);
-                    drawGeneralAvatar(c,generalX,portraitY,portraitR,generalWon,!generalWon);
+                    if(isGeneralOpponent())drawGeneralAvatar(c,generalX,portraitY,portraitR,generalWon,!generalWon);
+                    else drawAvatar(c,1,generalX,portraitY,portraitR,generalWon,!generalWon);
                     drawAvatar(c,avatars[0],playerX,portraitY,portraitR,!generalWon,generalWon);
-                    txt(c,"جنيرال",generalX,h*.505f,h*.034f,dark,true);
+                    txt(c,computerOpponentName(),generalX,h*.505f,h*.034f,dark,true);
                     txt(c,playerNames[0],playerX,h*.505f,h*.034f,blue,true);
                 } else {
                     String loserName=winner==1?playerNames[1]:playerNames[0];
@@ -3337,7 +3339,7 @@ public class MainActivity extends Activity {
                     txt(c,playerNames[0]+": "+blueWins+" أسلحة",w*.66f,h*.615f,h*.032f,blue,true);
                 }
                 txt(c,"الفائز: "+winnerName,w*.5f,h*.685f,h*.040f,winner==1?blue:red,true);
-                if(mode==2 && winner==1) {
+                if(isGeneralOpponent() && winner==1) {
                     txt(c,"النقاط المكتسبة: "+matchPoints,w*.5f,h*.715f,h*.022f,Color.rgb(35,125,72),true);
                     int earnedTypes=0;for(int n:matchRewardCounts)if(n>0)earnedTypes++;
                     if(earnedTypes>0) {
@@ -3375,11 +3377,11 @@ public class MainActivity extends Activity {
             float[] rows={h*.29f,h*.49f,h*.69f};
             // Move portraits to the extreme upper corners and keep names immediately inward.
             drawAvatar(c,avatars[0],w*.965f,h*.075f,h*.060f,false);
-            if(mode==2) drawGeneralAvatar(c,w*.035f,h*.075f,h*.060f,false,false); else drawAvatar(c,avatars[1],w*.035f,h*.075f,h*.060f,false);
+            if(mode==2 && isGeneralOpponent())drawGeneralAvatar(c,w*.035f,h*.075f,h*.060f,false,false); else drawAvatar(c,mode==2?1:avatars[1],w*.035f,h*.075f,h*.060f,false,mode==2&&!campaignGeneralOpponent);
             namePlate(c,rankedPlayerName(playerNames[0]),w*.835f,h*.075f,blue);
-            namePlate(c,mode==2?"جنيرال":rankedPlayerName(playerNames[1]),w*.165f,h*.075f,red);
+            namePlate(c,mode==2?computerOpponentName():rankedPlayerName(playerNames[1]),w*.165f,h*.075f,red);
             drawDestroyedStars(c,1,rankedPlayerName(playerNames[0]),w*.835f);
-            drawDestroyedStars(c,2,mode==2?"جنيرال":rankedPlayerName(playerNames[1]),w*.165f);
+            drawDestroyedStars(c,2,mode==2?computerOpponentName():rankedPlayerName(playerNames[1]),w*.165f);
             if(openingToss){
                 float ds=h*.075f;
                 // اللاعب الأول (الأزرق) على اليمين، والثاني (الأحمر) على اليسار.
