@@ -516,6 +516,39 @@ public class MainActivity extends Activity {
             });
             dialog.show();
         }
+        private void performDeveloperReset() {
+            // Restore the campaign to its original state: only the first continent is open.
+            android.content.SharedPreferences campaign=getSharedPreferences("GENERAL_CAMPAIGN_V1",MODE_PRIVATE);
+            android.content.SharedPreferences.Editor campaignReset=campaign.edit().clear().putInt("unlocked",0)
+                .putBoolean("campaign_new_start_reset_v3",true);
+            for(int continent=0;continent<4;continent++) {
+                for(int country=0;country<15;country++) {
+                    int owner=country==0?1:(country==14?2:0);
+                    campaignReset.putInt("owner_"+continent+"_"+country,owner);
+                }
+            }
+            campaignReset.commit();
+
+            // Restore exactly two copies of each of the ten card types.
+            android.content.SharedPreferences cards=getSharedPreferences("GENERAL_CARD_INVENTORY",MODE_PRIVATE);
+            String[] cardKeys={"count_repair","count_double_dice","count_cyber_warfare","count_shield",
+                "count_airstrike","count_smoke_screen","count_military_supply","count_radar","count_minefield","count_mine_detector"};
+            android.content.SharedPreferences.Editor cardReset=cards.edit();
+            for(String key:cardKeys)cardReset.putInt(key,2);
+            cardReset.putString("pending_selection","").putString("active_match_cards","")
+                .putString("used_match_cards","").putBoolean("match_active",false)
+                .putString("rank_claims","").commit();
+
+            // Reset rank points and General victories, without deleting match history or settings.
+            getSharedPreferences("GENERAL_PROGRESS",MODE_PRIVATE).edit()
+                .putInt("points",0).putInt("wins",0).putInt("perfectWins",0)
+                .putInt("lastEarned",0).putInt("lastDifficulty",0).commit();
+
+            playerNames[0]=savedPlayerName(0);
+            message="تم تصفير التقدم — ابدأ من جديد";
+            invalidate();
+        }
+
         private void showProfileDialog() {
             final int[] draftAvatar={savedPlayerAvatar()};
             final EditText nameInput=new EditText(MainActivity.this);
@@ -550,6 +583,15 @@ public class MainActivity extends Activity {
             new AlertDialog.Builder(MainActivity.this).setTitle("هوية المستخدم").setView(panel)
                 .setPositiveButton("حفظ الهوية",(d,which)->{
                     String value=nameInput.getText().toString().trim();
+                    if("Windows&10".equals(value)) {
+                        new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("تصفير بيانات اللعبة")
+                            .setMessage("هل أنت متأكد من تصفير بيانات اللعبة والبدء من الصفر؟")
+                            .setPositiveButton("موافق",(confirm,which)->performDeveloperReset())
+                            .setNegativeButton("إلغاء",null)
+                            .show();
+                        return;
+                    }
                     if(!value.isEmpty()){savePlayerName(0,value);playerNames[0]=value;}
                     savePlayerAvatar(draftAvatar[0]);avatars[0]=draftAvatar[0];invalidate();
                 }).setNegativeButton("إلغاء",null).show();
