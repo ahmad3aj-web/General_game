@@ -27,6 +27,21 @@ public class CampaignActivity extends Activity {
         setContentView(new CampaignView());
     }
 
+    @Override protected void onActivityResult(int requestCode,int resultCode,android.content.Intent data) {
+        super.onActivityResult(requestCode,resultCode,data);
+        if(requestCode==701 && resultCode==RESULT_OK && data!=null && data.getBooleanExtra("campaign_won",false)) {
+            int c=data.getIntExtra("campaign_continent",-1);
+            int country=data.getIntExtra("campaign_country",-1);
+            if(c>=0&&c<4&&country>=0&&country<15) {
+                CampaignView view=(CampaignView)((android.view.ViewGroup)findViewById(android.R.id.content)).getChildAt(0);
+                view.owners[c][country]=BLUE;
+                view.save();
+                view.selected=country;
+                view.invalidate();
+            }
+        }
+    }
+
     private static final String PREFS = "GENERAL_CAMPAIGN_V1";
     private static final String[] CONTINENTS = {"أزمارا","ثلجور","فيردان","كاردوم"};
     private static final String[] THEMES = {"الصحراء","الجليد","الغابات","الجبال"};
@@ -116,6 +131,13 @@ public class CampaignActivity extends Activity {
             panel(c,w*.42f,h*.925f,w*.58f,h*.985f,Color.rgb(95,53,43));
             text(c,"عودة",w*.5f,h*.965f,h*.027f,Color.WHITE);
         }
+        private void launchCountryBattle(int country) {
+            android.content.Intent battle=new android.content.Intent(CampaignActivity.this,MainActivity.class);
+            battle.putExtra("campaign_battle",true);
+            battle.putExtra("campaign_continent",continent);
+            battle.putExtra("campaign_country",country);
+            CampaignActivity.this.startActivityForResult(battle,701);
+        }
         private boolean adjacent(int a,int b) {
             int ar=a/5,ac=a%5,br=b/5,bc=b%5;
             return Math.abs(ar-br)+Math.abs(ac-bc)==1;
@@ -138,13 +160,18 @@ public class CampaignActivity extends Activity {
                 if(y>=h*.925f&&x<=w*.18f){screen=0;selected=-1;invalidate();return true;}
                 for(int i=0;i<15;i++) if(countryRects[i]!=null&&countryRects[i].contains(x,y)) {
                     selected=i;
-                    if(owners[continent][i]==NEUTRAL) {
+                    if(owners[continent][i]!=BLUE) {
                         boolean canAttack=false;
                         for(int j=0;j<15;j++)if(owners[continent][j]==BLUE&&adjacent(i,j))canAttack=true;
                         if(canAttack) new AlertDialog.Builder(CampaignActivity.this)
+                            .setTitle("الهجوم على "+COUNTRIES[continent][i])
+                            .setMessage("ستبدأ معركة ضد جنيرال للسيطرة على هذه الدولة. هل أنت مستعد؟")
+                            .setNegativeButton("إلغاء",null)
+                            .setPositiveButton("ابدأ الحرب",(d,which)->launchCountryBattle(i)).show();
+                        else new AlertDialog.Builder(CampaignActivity.this)
                             .setTitle(COUNTRIES[continent][i])
-                            .setMessage("هذه الدولة محايدة ومجاورة لأرض تسيطر عليها. سيُربط بدء الحرب بنظام المعارك الحالي في خطوة الدمج التالية.")
-                            .setNegativeButton("إلغاء",null).setPositiveButton("حسناً",(d,which)->invalidate()).show();
+                            .setMessage("لا يمكنك مهاجمة هذه الدولة حالياً. يجب أن تكون مجاورة لدولة تسيطر عليها.")
+                            .setPositiveButton("حسناً",null).show();
                     }
                     invalidate();return true;
                 }
