@@ -1296,7 +1296,7 @@ public class MainActivity extends Activity {
                 .setTitle("اللعب أون لاين")
                 .setItems(choices,(d,which)->{
                     mode=4; setup=true; setupSide=1; onlineJoinCode=null;
-                    playerNames[0]=savedPlayerName(0); avatars[0]=0;
+                    playerNames[0]=savedPlayerName(0); avatars[0]=savedPlayerAvatar();
                     onlineLocalSide=1; onlineQuickMatch=false; onlineInvitePending=false;
                     if(which==0) {
                         onlineQuickMatch=true;
@@ -1341,7 +1341,7 @@ public class MainActivity extends Activity {
             if(code==null || !code.matches("[A-Za-z0-9]{8}"))return;
             onlineJoinCode=code.toUpperCase(Locale.ROOT);
             onlineLocalSide=2; onlineQuickMatch=false; onlineInvitePending=false;
-            mode=4; setup=true; setupSide=2;            playerNames[1]=savedPlayerName(1); avatars[1]=1;
+            mode=4; setup=true; setupSide=2;            playerNames[1]=savedPlayerName(0); avatars[1]=savedPlayerAvatar();
             message="وصلتك دعوة للعب عبر الإنترنت";
             invalidate();
         }
@@ -1376,7 +1376,7 @@ public class MainActivity extends Activity {
                     }
                     onlineJoinCode=code; onlineLocalSide=2; mode=4; setup=true; setupSide=2;
                     onlineQuickMatch=false; onlineInvitePending=false;
-                    playerNames[1]=savedPlayerName(1); avatars[1]=1; invalidate();
+                    playerNames[1]=savedPlayerName(0); avatars[1]=savedPlayerAvatar(); invalidate();
                 }).setNegativeButton("إلغاء",null).show();
         }
         private void showLanHostAddress() {
@@ -1954,13 +1954,13 @@ public class MainActivity extends Activity {
                 if(mode==4) {
                     txt(c,onlineLocalSide==1?"إعداد الاتصال — اللاعب المضيف":"إعداد الاتصال — اللاعب المنضم",w*.5f,h*.20f,h*.036f,Color.rgb(242,196,94),true);
                     float portraitY=h*.43f;
-                    drawAvatar(c,avatars[idx],w*.5f,portraitY,h*.125f,true);arrowButton(c,w*.39f,portraitY,true);arrowButton(c,w*.61f,portraitY,false);
+                    drawAvatar(c,avatars[idx],w*.5f,portraitY,h*.125f,true);
                     txt(c,"الشخصية "+(avatars[idx]+1)+" من 17",w*.5f,portraitY+h*.16f,h*.027f,Color.rgb(242,196,94),true);
                     box(c,w*.27f,h*.62f,w*.73f,h*.71f,Color.rgb(32,39,32));
                     p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(Math.max(3,h*.004f));p.setColor(Color.rgb(105,27,48));
                     c.drawRoundRect(new RectF(w*.27f,h*.62f,w*.73f,h*.71f),h*.018f,h*.018f,p);p.setStyle(Paint.Style.FILL);
                     txt(c,playerNames[idx],w*.5f,h*.675f,h*.043f,Color.rgb(242,196,94),true);
-                    txt(c,"اضغط على الاسم لتعديله",w*.5f,h*.745f,h*.024f,Color.rgb(242,196,94),false);
+                    txt(c,"هويتك الثابتة",w*.5f,h*.745f,h*.024f,Color.rgb(242,196,94),false);
                 } else {
                     txt(c,setupSide==1?"اللاعب الأول — الأزرق":"اللاعب الثاني — الأحمر",w*.5f,h*.20f,h*.040f,setupSide==1?blue:red,true);
                     float portraitY=h*.43f;drawAvatar(c,avatars[idx],w*.5f,portraitY,h*.125f,true);arrowButton(c,w*.39f,portraitY,true);arrowButton(c,w*.61f,portraitY,false);
@@ -3549,8 +3549,8 @@ public class MainActivity extends Activity {
                         }
                     }
                 }
-                else if(mode!=2 && x>=w*.27f && x<=w*.73f && y>=h*.62f && y<=h*.75f) { showNameDialog(); return true; }
-                else if(mode!=2 && y>=h*.30f && y<=h*.62f && x>=w*.36f && x<=w*.64f) { if(x<=w*.43f)avatars[idx]=nextAvatar(avatars[idx],-1);else if(x>=w*.57f)avatars[idx]=nextAvatar(avatars[idx],1); }
+                else if(mode==1 && x>=w*.27f && x<=w*.73f && y>=h*.62f && y<=h*.75f) { showNameDialog(); return true; }
+                else if(mode==1 && y>=h*.30f && y<=h*.62f && x>=w*.36f && x<=w*.64f) { if(x<=w*.43f)avatars[idx]=nextAvatar(avatars[idx],-1);else if(x>=w*.57f)avatars[idx]=nextAvatar(avatars[idx],1); }
                 else if(x>=w*.37f && x<=w*.63f && y>=h*.91f && y<=h*.985f) {
                     if(setupSide==1 && mode==1) setupSide=2;
                     else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}clearWinEffects();stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
