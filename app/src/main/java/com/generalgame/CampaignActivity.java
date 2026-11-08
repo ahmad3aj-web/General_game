@@ -764,7 +764,7 @@ public class CampaignActivity extends Activity {
                         boolean gateEntry=isPlayerGate(continent,targetCountry)&&previousContinentComplete(continent);
                         boolean canAttack=gateEntry||hasAdjacentOwnedCountry(targetCountry,BLUE);
                         if(canAttack) {
-                            if(isGate(continent,targetCountry)) showGateWarning(continent,targetCountry,true);
+                            if(isGate(continent,targetCountry)) launchCountryBattle(targetCountry,owners[continent][targetCountry],false);
                             else new AlertDialog.Builder(CampaignActivity.this)
                                 .setTitle("الهجوم على "+COUNTRIES[continent][targetCountry])
                                 .setMessage("ستبدأ معركة للسيطرة على هذه الدولة. هل أنت مستعد؟")
