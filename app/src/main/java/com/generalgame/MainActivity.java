@@ -1545,7 +1545,6 @@ public class MainActivity extends Activity {
                 menuButton(c,"?","شرح اللعبة",c3-w*.15f,h*.59f,c3+w*.15f,h*.88f,Color.rgb(55,91,72));
                 p.setShader(null);p.setStyle(Paint.Style.FILL);p.setTextAlign(Paint.Align.CENTER);p.setFakeBoldText(true);
                 p.setTextSize(h*.020f);p.setColor(Color.WHITE);
-                menuButton(c,"♜","حملة السيطرة على العالم",w*.34f,h*.885f,w*.66f,h*.93f,Color.rgb(155,105,28));
                 c.drawText("© 2026 أحمد جرادات",w*.5f,h*.945f,p);
                 p.setTextSize(h*.018f);
                 c.drawText("ahmad3aj@gmail.com",w*.5f,h*.975f,p);
@@ -1705,7 +1704,6 @@ public class MainActivity extends Activity {
                 else if(y>=h*.59f&&y<=h*.89f&&x>=w*.075f&&x<=w*.285f)historyScreen=true;
                 else if(y>=h*.59f&&y<=h*.89f&&x>=w*.3975f&&x<=w*.6025f)progressScreen=true;
                 else if(y>=h*.59f&&y<=h*.89f&&x>=w*.7175f&&x<=w*.9225f)helpScreen=true;
-                else if(y>=h*.885f&&y<=h*.93f&&x>=w*.34f&&x<=w*.66f)startActivity(new android.content.Intent(MainActivity.this,CampaignActivity.class));
                 invalidate();return true;
             }
             if(setup) {
