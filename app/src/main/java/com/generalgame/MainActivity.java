@@ -70,6 +70,7 @@ public class MainActivity extends Activity {
         private boolean warMenuScreen=false;
         private boolean campaignBattle=false;
         private boolean campaignGeneralOpponent=false;
+        private boolean campaignDefense=false;
         private String campaignOpponentName="جنيرال";
         private boolean weeklyMissionTab=false;
         private final HashMap<String,Bitmap> art = new HashMap<>();
@@ -1357,9 +1358,11 @@ public class MainActivity extends Activity {
             if(intent.getBooleanExtra("campaign_battle",false)) {
                 campaignBattle=true;
                 campaignGeneralOpponent=intent.getBooleanExtra("campaign_general",false);
+                campaignDefense=intent.getBooleanExtra("campaign_defense",false);
                 campaignOpponentName=intent.getStringExtra("campaign_opponent_name");
                 if(campaignOpponentName==null||campaignOpponentName.trim().isEmpty())campaignOpponentName="خصم الحملة";
                 int campaignContinent=intent.getIntExtra("campaign_continent",0);
+                // General's campaign level remains tied to the continent.
                 difficulty=campaignGeneralOpponent?Math.max(0,Math.min(3,campaignContinent)):0;
                 titleScreen=false;
                 mode=2;setup=true;setupSide=1;
@@ -1367,6 +1370,14 @@ public class MainActivity extends Activity {
                 playerNames[0]=savedPlayerName(0);playerNames[1]=computerOpponentName();
                 avatars[0]=savedPlayerAvatar();avatars[1]=1;
                 message="حرب الحملة — استعد للمعركة";
+                if(campaignDefense) {
+                    new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("استعد للدفاع")
+                        .setMessage("هناك هجوم على "+campaignOpponentName+"، دافع عن بلادك!")
+                        .setPositiveButton("موافق",(dialog,which)->invalidate())
+                        .setCancelable(false)
+                        .show();
+                }
                 invalidate();
                 return;
             }
@@ -3681,6 +3692,7 @@ public class MainActivity extends Activity {
                         if(campaignBattle) {
                             android.content.Intent result=new android.content.Intent();
                             result.putExtra("campaign_won",winner==1);
+                            result.putExtra("campaign_defense",campaignDefense);
                             result.putExtra("campaign_continent",MainActivity.this.getIntent().getIntExtra("campaign_continent",-1));
                             result.putExtra("campaign_country",MainActivity.this.getIntent().getIntExtra("campaign_country",-1));
                             setResult(RESULT_OK,result);finish();return true;
