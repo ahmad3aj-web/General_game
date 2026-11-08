@@ -65,6 +65,8 @@ public class CampaignActivity extends Activity {
         private final SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         private int screen=0, continent=0, selected=-1;
         private int unlocked=prefs.getInt("unlocked",0);
+        // معاينة مؤقتة: اعرض كل القارات دون تغيير تقدم الفتح المحفوظ.
+        private final boolean previewAllContinents=true;
         private int[][] owners=new int[4][15];
         private float w,h;
         private final Region[] countryHitRegions=new Region[15];
@@ -108,10 +110,10 @@ public class CampaignActivity extends Activity {
             for(int i=0;i<4;i++) {
                 float left=w*(.08f+(i%2)*.44f), top=h*(.25f+(i/2)*.30f);
                 float right=left+w*.40f,bottom=top+h*.23f;
-                panel(c,left,top,right,bottom,i<=unlocked?CONTINENT_COLORS[i]:Color.rgb(65,69,67));
+                panel(c,left,top,right,bottom,(i<=unlocked||previewAllContinents)?CONTINENT_COLORS[i]:Color.rgb(65,69,67));
                 text(c,CONTINENTS[i],(left+right)/2,top+h*.085f,h*.042f,Color.WHITE);
                 text(c,THEMES[i],(left+right)/2,top+h*.145f,h*.026f,Color.WHITE);
-                text(c,i<=unlocked?"متاحة":"🔒 مغلقة",(left+right)/2,top+h*.195f,h*.024f,Color.WHITE);
+                text(c,(i<=unlocked||previewAllContinents)?"متاحة":"🔒 مغلقة",(left+right)/2,top+h*.195f,h*.024f,Color.WHITE);
             }
             text(c,"القارات تُفتح بالتتابع بعد إكمال القارة السابقة",w*.5f,h*.90f,h*.025f,Color.LTGRAY);
             panel(c,w*.42f,h*.925f,w*.58f,h*.985f,Color.rgb(95,53,43));
@@ -225,7 +227,7 @@ public class CampaignActivity extends Activity {
         private void drawContinent(Canvas c) {
             text(c,CONTINENTS[continent]+"  •  "+THEMES[continent],w*.5f,h*.145f,h*.040f,Color.WHITE);
             text(c,"أزرق: أنت     أحمر: العدو (جنيرال)     رمادي: محايد",w*.5f,h*.205f,h*.023f,Color.LTGRAY);
-            RectF map=new RectF(w*.075f,h*.225f,w*.925f,h*.835f);
+            RectF map=new RectF(w*.035f,h*.225f,w*.965f,h*.835f);
             Path outline=continentOutline(map);
             Region clip=new Region((int)map.left,(int)map.top,(int)map.right,(int)map.bottom);
             Region land=new Region();land.setPath(outline,clip);
@@ -300,7 +302,7 @@ public class CampaignActivity extends Activity {
             if(len<.0001f)return false;
             float mx=(sites[a][0]+sites[b][0])*.5f,my=(sites[a][1]+sites[b][1])*.5f;
             float px=-dy/len,py=dx/len;
-            float left=w*.075f,top=h*.225f,mapW=w*.85f,mapH=h*.61f;
+            float left=w*.035f,top=h*.225f,mapW=w*.93f,mapH=h*.61f;
             for(int n=-100;n<=100;n++) {
                 float t=n*.012f;
                 float nx=mx+px*t,ny=my+py*t;
@@ -335,7 +337,7 @@ public class CampaignActivity extends Activity {
                 for(int i=0;i<4;i++) {
                     float l=w*(.08f+(i%2)*.44f),t=h*(.25f+(i/2)*.30f);
                     if(x>=l&&x<=l+w*.40f&&y>=t&&y<=t+h*.23f) {
-                        if(i<=unlocked){continent=i;screen=1;selected=-1;invalidate();}
+                        if(i<=unlocked||previewAllContinents){continent=i;screen=1;selected=-1;invalidate();}
                         else new AlertDialog.Builder(CampaignActivity.this).setMessage("أكمل القارة السابقة لفتح هذه القارة.").setPositiveButton("حسناً",null).show();
                         return true;
                     }
