@@ -57,6 +57,10 @@ public class MainActivity extends Activity {
 
     @Override protected void onPause() { if(gameView!=null)gameView.pauseMusic(); super.onPause(); }
     @Override protected void onResume() { super.onResume(); if(gameView!=null)gameView.resumeMusic(); }
+    @Override public void onBackPressed() {
+        if(gameView!=null) gameView.showExitConfirmation();
+        else super.onBackPressed();
+    }
 
     private class GameView extends View {
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -3516,9 +3520,12 @@ public class MainActivity extends Activity {
             if(battleIntro){if(x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f){battleIntro=false;setup=true;setupSide=(mode==1?2:1);}invalidate();return true;}
             float diceSize=h*.14f, diceCx=player==1?w*.80f:w*.20f, diceCy=h*.865f;
             boolean diceTapped=Math.abs(x-diceCx)<=diceSize*.65f && Math.abs(y-diceCy)<=diceSize*.65f;
-            if(y>=h*.765f && y<=h*.925f && x>=w*.025f && x<=w*.095f) {
-                if(y<=h*.835f)showSettingsDialog(); else showExitConfirmation();
-                invalidate();return true;
+            // تطابق مناطق اللمس مع زري الإعدادات والخروج المرسومين أسفل يسار ساحة المعركة.
+            if(x>=w*.025f && x<=w*.095f && y>=h*.765f && y<=h*.835f) {
+                showSettingsDialog();invalidate();return true;
+            }
+            if(x>=w*.025f && x<=w*.095f && y>=h*.855f && y<=h*.925f) {
+                showExitConfirmation();invalidate();return true;
             }
             if(mode==0) {
                 if(isRewardPopupVisible()) {
