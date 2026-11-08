@@ -60,10 +60,9 @@ final class CampaignBattleSimulator {
     }
 
     private Result run() {
-        int first;
-        do { first=random.nextInt(6)+1>random.nextInt(6)+1?1:0; }
-        while(random.nextInt(6)+1==random.nextInt(6)+1);
-        int side=first;
+        int tossA,tossB;
+        do { tossA=random.nextInt(6)+1;tossB=random.nextInt(6)+1; } while(tossA==tossB);
+        int side=tossA>tossB?1:0;
         while(turns<700) {
             turns++;
             useBeforeRoll(side);
@@ -163,7 +162,7 @@ final class CampaignBattleSimulator {
             int target=mostAdvanced(other,true);
             if(target>=0&&take(side,MINEFIELD)){mineSide=other;mineLane=target;mineTurns=4;}
         }
-        if(has(side,DETECTOR)&&mineSide==side&&take(side,DETECTOR)) {
+        if(has(side,DETECTOR)&&mineSide==other&&take(side,DETECTOR)) {
             mineSide=-1;mineLane=-1;mineTurns=0;
         }
         if(has(side,RADAR)&&radarOwner<0&&take(side,RADAR))radarOwner=side;
