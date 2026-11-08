@@ -3564,8 +3564,8 @@ public class MainActivity extends Activity {
                         if(campaignBattle) {
                             android.content.Intent result=new android.content.Intent();
                             result.putExtra("campaign_won",winner==1);
-                            result.putExtra("campaign_continent",getIntent().getIntExtra("campaign_continent",-1));
-                            result.putExtra("campaign_country",getIntent().getIntExtra("campaign_country",-1));
+                            result.putExtra("campaign_continent",MainActivity.this.getIntent().getIntExtra("campaign_continent",-1));
+                            result.putExtra("campaign_country",MainActivity.this.getIntent().getIntExtra("campaign_country",-1));
                             setResult(RESULT_OK,result);finish();return true;
                         }
                         matchEpoch++; timerlessCloseLan(); timerlessCloseOnline(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; battleIntro=false; progressScreen=false; explosionAt=0; message="اختر طريقة اللعب";
