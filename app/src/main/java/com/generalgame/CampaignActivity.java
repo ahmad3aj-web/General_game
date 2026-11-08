@@ -71,9 +71,8 @@ public class CampaignActivity extends Activity {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         private int screen=0, continent=0, selected=-1;
-        private int unlocked=prefs.getInt("unlocked",0);
-        // معاينة مؤقتة: اعرض كل القارات دون تغيير تقدم الفتح المحفوظ.
-        private final boolean previewAllContinents=true;
+        private int unlocked=prefs.getInt("unlocked",-1);
+        private final boolean previewAllContinents=false;
         private int[][] owners=new int[4][15];
         private final long[][] flashUntil=new long[4][15];
         private final int[][] flashFrom=new int[4][15];
@@ -84,12 +83,12 @@ public class CampaignActivity extends Activity {
 
         CampaignView() {
             super(CampaignActivity.this);
-            if(!prefs.getBoolean("campaign_reset_before_general_ai_v1",false)) {
-                SharedPreferences.Editor reset=prefs.edit().putInt("unlocked",0);
+            if(!prefs.getBoolean("campaign_locked_reset_v2",false)) {
+                SharedPreferences.Editor reset=prefs.edit().putInt("unlocked",-1);
                 for(int c=0;c<4;c++) for(int i=0;i<15;i++)
                     reset.putInt("owner_"+c+"_"+i,initialOwner(i));
-                reset.putBoolean("campaign_reset_before_general_ai_v1",true).commit();
-                unlocked=0;
+                reset.putBoolean("campaign_locked_reset_v2",true).commit();
+                unlocked=-1;
             }
             for(int c=0;c<4;c++) for(int i=0;i<15;i++)
                 owners[c][i]=prefs.getInt("owner_"+c+"_"+i, initialOwner(i));
@@ -181,14 +180,37 @@ public class CampaignActivity extends Activity {
             for(int i=0;i<4;i++) {
                 float left=w*(.08f+(i%2)*.44f), top=h*(.25f+(i/2)*.30f);
                 float right=left+w*.40f,bottom=top+h*.23f;
-                panel(c,left,top,right,bottom,(i<=unlocked||previewAllContinents)?CONTINENT_COLORS[i]:Color.rgb(65,69,67));
-                text(c,CONTINENTS[i],(left+right)/2,top+h*.085f,h*.042f,Color.WHITE);
-                text(c,THEMES[i],(left+right)/2,top+h*.145f,h*.026f,Color.WHITE);
-                text(c,(i<=unlocked||previewAllContinents)?"متاحة":"🔒 مغلقة",(left+right)/2,top+h*.195f,h*.024f,Color.WHITE);
+                RectF tile=new RectF(left,top,right,bottom);
+                panel(c,left,top,right,bottom,Color.rgb(43,49,48));
+                drawContinentButtonShape(c,i,tile);
+                text(c,CONTINENTS[i],(left+right)/2,top+h*.155f,h*.035f,Color.WHITE);
+                text(c,"مغلقة حالياً",(left+right)/2,top+h*.202f,h*.021f,Color.LTGRAY);
             }
             text(c,"القارات تُفتح بالتتابع بعد إكمال القارة السابقة",w*.5f,h*.90f,h*.025f,Color.LTGRAY);
             panel(c,w*.42f,h*.925f,w*.58f,h*.985f,Color.rgb(95,53,43));
             text(c,"عودة",w*.5f,h*.965f,h*.027f,Color.WHITE);
+        }
+        private void drawContinentButtonShape(Canvas c,int index,RectF tile) {
+            float[][] points=outlinePoints(index);
+            float minX=1,maxX=0,minY=1,maxY=0;
+            for(float[] p:points){minX=Math.min(minX,p[0]);maxX=Math.max(maxX,p[0]);minY=Math.min(minY,p[1]);maxY=Math.max(maxY,p[1]);}
+            float scale=Math.min(tile.width()*.72f/Math.max(.01f,maxX-minX),tile.height()*.70f/Math.max(.01f,maxY-minY));
+            float cx=(tile.left+tile.right)*.5f,cy=tile.top+tile.height()*.43f;
+            float ox=cx-(maxX-minX)*scale*.5f,oy=cy-(maxY-minY)*scale*.5f;
+            Path shape=new Path();
+            for(int p=0;p<points.length;p++){
+                float x=ox+(points[p][0]-minX)*scale,y=oy+(points[p][1]-minY)*scale;
+                if(p==0)shape.moveTo(x,y);else shape.lineTo(x,y);
+            }
+            shape.close();
+            paint.setShader(null);paint.setStyle(Paint.Style.FILL);
+            paint.setColor(shade(CONTINENT_COLORS[index],.58f));c.drawPath(shape,paint);
+            paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(Math.max(2,h*.004f));
+            paint.setColor(shade(CONTINENT_COLORS[index],1.25f));c.drawPath(shape,paint);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(Color.argb(145,12,17,17));
+            c.drawCircle(cx,cy,Math.min(tile.width(),tile.height())*.075f,paint);
+            text(c,"🔒",cx,cy+h*.012f,h*.030f,Color.WHITE);
         }
         private float[][] countrySites(int continentIndex) {
             float[][] sites=new float[15][2];
@@ -249,10 +271,11 @@ public class CampaignActivity extends Activity {
             }
             return out;
         }
-        private float[][] outlinePoints() {
-            if(continent==0)return new float[][]{{.43f,.02f},{.61f,.08f},{.75f,.22f},{.71f,.39f},{.64f,.56f},{.56f,.77f},{.46f,.98f},{.35f,.82f},{.27f,.64f},{.18f,.43f},{.25f,.20f}};
-            if(continent==1)return new float[][]{{.05f,.25f},{.16f,.12f},{.34f,.16f},{.48f,.04f},{.66f,.10f},{.83f,.17f},{.98f,.30f},{.90f,.48f},{.80f,.60f},{.73f,.78f},{.55f,.92f},{.40f,.80f},{.25f,.74f},{.12f,.56f}};
-            if(continent==2)return new float[][]{{.20f,.15f},{.35f,.07f},{.48f,.12f},{.60f,.05f},{.78f,.15f},{.90f,.30f},{.82f,.45f},{.93f,.57f},{.77f,.72f},{.62f,.67f},{.53f,.89f},{.39f,.78f},{.25f,.83f},{.14f,.62f},{.08f,.42f}};
+        private float[][] outlinePoints() { return outlinePoints(continent); }
+        private float[][] outlinePoints(int continentIndex) {
+            if(continentIndex==0)return new float[][]{{.43f,.02f},{.61f,.08f},{.75f,.22f},{.71f,.39f},{.64f,.56f},{.56f,.77f},{.46f,.98f},{.35f,.82f},{.27f,.64f},{.18f,.43f},{.25f,.20f}};
+            if(continentIndex==1)return new float[][]{{.05f,.25f},{.16f,.12f},{.34f,.16f},{.48f,.04f},{.66f,.10f},{.83f,.17f},{.98f,.30f},{.90f,.48f},{.80f,.60f},{.73f,.78f},{.55f,.92f},{.40f,.80f},{.25f,.74f},{.12f,.56f}};
+            if(continentIndex==2)return new float[][]{{.20f,.15f},{.35f,.07f},{.48f,.12f},{.60f,.05f},{.78f,.15f},{.90f,.30f},{.82f,.45f},{.93f,.57f},{.77f,.72f},{.62f,.67f},{.53f,.89f},{.39f,.78f},{.25f,.83f},{.14f,.62f},{.08f,.42f}};
             return new float[][]{{.18f,.05f},{.40f,.08f},{.57f,.17f},{.69f,.27f},{.62f,.40f},{.53f,.49f},{.58f,.61f},{.51f,.76f},{.43f,.98f},{.33f,.83f},{.28f,.66f},{.20f,.52f},{.10f,.34f}};
         }
         private Path countryPath(RectF b,float[][] sites,int index) {
@@ -414,8 +437,9 @@ public class CampaignActivity extends Activity {
                 for(int i=0;i<4;i++) {
                     float l=w*(.08f+(i%2)*.44f),t=h*(.25f+(i/2)*.30f);
                     if(x>=l&&x<=l+w*.40f&&y>=t&&y<=t+h*.23f) {
-                        if(i<=unlocked||previewAllContinents){continent=i;screen=1;selected=-1;invalidate();}
-                        else new AlertDialog.Builder(CampaignActivity.this).setMessage("أكمل القارة السابقة لفتح هذه القارة.").setPositiveButton("حسناً",null).show();
+                        new AlertDialog.Builder(CampaignActivity.this)
+                            .setMessage("هذه القارة مغلقة حالياً، وسيتم فتحها لاحقاً.")
+                            .setPositiveButton("حسناً",null).show();
                         return true;
                     }
                 }
