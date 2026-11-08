@@ -33,12 +33,16 @@ public class CampaignActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode,int resultCode,android.content.Intent data) {
         super.onActivityResult(requestCode,resultCode,data);
-        if(requestCode==701 && resultCode==RESULT_OK && data!=null && data.getBooleanExtra("campaign_won",false)) {
+        if(requestCode==701 && resultCode==RESULT_OK && data!=null) {
             int c=data.getIntExtra("campaign_continent",-1);
             int country=data.getIntExtra("campaign_country",-1);
             if(c>=0&&c<4&&country>=0&&country<15) {
                 CampaignView view=(CampaignView)((android.view.ViewGroup)findViewById(android.R.id.content)).getChildAt(0);
-                view.captureCountry(c,country,BLUE,"انتصار اللاعب واحتلال "+COUNTRIES[c][country]);
+                boolean playerWon=data.getBooleanExtra("campaign_won",false);
+                if(playerWon)view.captureCountry(c,country,BLUE,"انتصرت واحتللت "+COUNTRIES[c][country]);
+                else {view.selected=country;view.campaignReport="لم تنجح في احتلال "+COUNTRIES[c][country];}
+                view.runGeneralCampaignAttacks(c);
+                view.invalidate();
             }
         }
     }
@@ -120,6 +124,35 @@ public class CampaignActivity extends Activity {
         private void captureCountry(int c,int country,int owner,String report) {
             if(c<0||c>=4||country<0||country>=15)return;
             changeOwnerWithFlash(c,country,owner);selected=country;campaignReport=report;invalidate();
+        }
+        private void runGeneralCampaignAttacks(int c) {
+            int attacks=c==3?2:1;
+            boolean[] attempted=new boolean[15];
+            StringBuilder report=new StringBuilder("جنيرال: ");
+            java.util.Random random=new java.util.Random();
+            int completed=0;
+            for(int turn=0;turn<attacks;turn++) {
+                ArrayList<Integer> targets=new ArrayList<>();
+                for(int target=0;target<15;target++)
+                    if(!attempted[target]&&owners[c][target]!=RED&&hasAdjacentOwnedCountry(target,RED))
+                        targets.add(target);
+                if(targets.isEmpty()) {
+                    if(completed==0)report.append("لا توجد دولة مجاورة متاحة للهجوم");
+                    else report.append("لا توجد دولة ثانية متاحة");
+                    break;
+                }
+                int target=targets.get(random.nextInt(targets.size()));
+                attempted[target]=true;
+                CampaignBattleSimulator.Result result=CampaignBattleSimulator.play(c,random);
+                completed++;
+                if(result.generalWon) {
+                    changeOwnerWithFlash(c,target,RED);
+                    report.append(COUNTRIES[c][target]).append(" احتلها");
+                } else report.append(COUNTRIES[c][target]).append(" صمدت أمام الهجوم");
+                if(turn<attacks-1)report.append(" | ");
+            }
+            campaignReport=report.toString();
+            invalidate();
         }
         private int shade(int color,float factor) {
             return Color.rgb(Math.min(255,Math.max(0,(int)(Color.red(color)*factor))),
@@ -276,10 +309,12 @@ public class CampaignActivity extends Activity {
             paint.setStyle(Paint.Style.FILL);c.drawPath(outline,paint);paint.setShader(null);
             c.save();c.clipPath(outline);
             float[][] sites=countrySites(continent);
+            boolean flashing=false;
             for(int i=0;i<15;i++) {
                 Path country=countryPath(map,sites,i);
                 Region hit=new Region();hit.setPath(country,land);countryHitRegions[i]=hit;
                 long now=System.currentTimeMillis();
+                if(now<flashUntil[continent][i])flashing=true;
                 int countryColor=displayedCountryColor(continent,i,now);
                 paint.setShader(new LinearGradient(map.left,map.top,map.right,map.bottom,
                     shade(countryColor,1.22f),shade(countryColor,.72f),Shader.TileMode.CLAMP));
@@ -312,15 +347,15 @@ public class CampaignActivity extends Activity {
                 c.drawPath(ridge,paint);
             }
             c.restore();
+            if(flashing)postInvalidateDelayed(45L);
             paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(h*.009f);paint.setColor(Color.rgb(105,27,48));c.drawPath(outline,paint);
             paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(h*.0025f);paint.setColor(Color.rgb(231,190,105));c.drawPath(outline,paint);paint.setStyle(Paint.Style.FILL);
             if(selected>=0) {
                 String owner=owners[continent][selected]==BLUE?"ملك اللاعب":owners[continent][selected]==RED?"ملك جنيرال":"دولة محايدة";
-                panel(c,w*.30f,h*.825f,w*.70f,h*.91f,Color.rgb(49,35,32));
-                text(c,COUNTRIES[continent][selected]+"  •  "+owner,w*.5f,h*.88f,h*.027f,Color.rgb(245,190,65));
-            }
-            panel(c,w*.19f,h*.925f,w*.81f,h*.985f,Color.rgb(35,48,43));
-            text(c,campaignReport,w*.5f,h*.965f,h*.020f,Color.WHITE);
+                panel(c,w*.035f,h*.84f,w*.965f,h*.915f,Color.rgb(49,35,32));
+                text(c,COUNTRIES[continent][selected]+"  •  "+owner,w*.5f,h*.87f,h*.025f,Color.rgb(245,190,65));
+                text(c,campaignReport,w*.5f,h*.902f,h*.019f,Color.WHITE);
+            } else text(c,campaignReport,w*.5f,h*.895f,h*.019f,Color.WHITE);
             panel(c,w*.025f,h*.925f,w*.17f,h*.985f,Color.rgb(75,79,74));
             text(c,"القارات",w*.097f,h*.965f,h*.024f,Color.WHITE);
             panel(c,w*.42f,h*.925f,w*.58f,h*.985f,Color.rgb(95,53,43));
