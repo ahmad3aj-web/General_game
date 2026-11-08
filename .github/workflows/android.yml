@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ "feature/cards-system-design", "feature/menu-gold-burgundy-screens" ]
   push:
-    branches: [ "main", "feature/cards-system-design", "feature/menu-gold-burgundy-screens", "feature/gameplay-agreed-fixes" ]
+    branches: [ "main", "feature/cards-system-design", "feature/menu-gold-burgundy-screens", "feature/gameplay-agreed-fixes", "feature/campaign-from-current-gameplay" ]
 
 permissions:
   contents: read
