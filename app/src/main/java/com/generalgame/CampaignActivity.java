@@ -144,17 +144,18 @@ public class CampaignActivity extends Activity {
                 campaignReport=completedInOrder<4
                     ? "تم التحقق من السيطرة وفتح قارة "+CONTINENTS[completedInOrder]
                     : "مبروك! أكملت حملة السيطرة على العالم";
-                int completed=completedInOrder-1;
-                if(completed>=0 && !prefs.getBoolean("celebration_seen_"+completed,false)) {
-                    pendingCelebrationContinent=completed;
-                    post(() -> {
-                        if(pendingCelebrationContinent>=0) {
-                            int celebrate=pendingCelebrationContinent;
-                            pendingCelebrationContinent=-1;
-                            showContinentCelebration(celebrate);
-                        }
-                    });
-                }
+            }
+            // Show the celebration even if an earlier build already repaired the unlock value.
+            int completed=completedInOrder-1;
+            if(completed>=0 && !prefs.getBoolean("celebration_seen_"+completed,false)) {
+                pendingCelebrationContinent=completed;
+                post(() -> {
+                    if(pendingCelebrationContinent>=0) {
+                        int celebrate=pendingCelebrationContinent;
+                        pendingCelebrationContinent=-1;
+                        showContinentCelebration(celebrate);
+                    }
+                });
             }
         }
         private int initialOwner(int i) { return i==0?BLUE:(i==14?RED:NEUTRAL); }
