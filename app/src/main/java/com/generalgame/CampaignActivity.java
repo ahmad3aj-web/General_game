@@ -121,6 +121,26 @@ public class CampaignActivity extends Activity {
             }
             for(int c=0;c<4;c++) for(int i=0;i<15;i++)
                 owners[c][i]=prefs.getInt("owner_"+c+"_"+i, initialOwner(i));
+            // Reconcile saved ownership on every campaign entry. This also repairs
+            // older saves where all 15 countries were captured but the unlock check
+            // was not triggered at the moment of the final battle.
+            reconcileUnlockedContinents();
+        }
+        private void reconcileUnlockedContinents() {
+            int completedInOrder=0;
+            for(int c=0;c<4;c++) {
+                boolean complete=true;
+                for(int i=0;i<15;i++) if(owners[c][i]!=BLUE) { complete=false; break; }
+                if(!complete) break;
+                completedInOrder++;
+            }
+            if(completedInOrder>unlocked) {
+                unlocked=completedInOrder;
+                save();
+                campaignReport=completedInOrder<4
+                    ? "تم التحقق من السيطرة وفتح قارة "+CONTINENTS[completedInOrder]
+                    : "مبروك! أكملت حملة السيطرة على العالم";
+            }
         }
         private int initialOwner(int i) { return i==0?BLUE:(i==14?RED:NEUTRAL); }
         private void save() {
