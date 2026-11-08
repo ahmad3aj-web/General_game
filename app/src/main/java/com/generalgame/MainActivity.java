@@ -1962,10 +1962,12 @@ public class MainActivity extends Activity {
                     txt(c,playerNames[idx],w*.5f,h*.675f,h*.043f,Color.rgb(242,196,94),true);
                     txt(c,"هويتك الثابتة",w*.5f,h*.745f,h*.024f,Color.rgb(242,196,94),false);
                 } else {
-                    txt(c,setupSide==1?"اللاعب الأول — الأزرق":"اللاعب الثاني — الأحمر",w*.5f,h*.20f,h*.040f,setupSide==1?blue:red,true);
-                    float portraitY=h*.43f;drawAvatar(c,avatars[idx],w*.5f,portraitY,h*.125f,true);arrowButton(c,w*.39f,portraitY,true);arrowButton(c,w*.61f,portraitY,false);
+                    txt(c,setupSide==1?"المستخدم — الأزرق":"اللاعب الثاني — الأحمر",w*.5f,h*.20f,h*.040f,setupSide==1?blue:red,true);
+                    float portraitY=h*.43f;drawAvatar(c,avatars[idx],w*.5f,portraitY,h*.125f,true);
+                    if(setupSide==2){arrowButton(c,w*.39f,portraitY,true);arrowButton(c,w*.61f,portraitY,false);}
                     txt(c,"الشخصية "+(avatars[idx]+1)+" من 17",w*.5f,portraitY+h*.16f,h*.027f,dark,true);
-                    box(c,w*.27f,h*.62f,w*.73f,h*.71f,Color.rgb(248,250,239));txt(c,playerNames[idx],w*.5f,h*.675f,h*.043f,dark,true);txt(c,"اضغط على الاسم لتعديله",w*.5f,h*.745f,h*.024f,dark,false);
+                    box(c,w*.27f,h*.62f,w*.73f,h*.71f,Color.rgb(248,250,239));txt(c,playerNames[idx],w*.5f,h*.675f,h*.043f,dark,true);
+                    txt(c,setupSide==1?"هويتك الثابتة":"اضغط على الاسم لتعديله",w*.5f,h*.745f,h*.024f,dark,false);
                 }
             }
             String startLabel=setupSide==1 && mode==1?"التالي":(mode==4 && onlineQuickMatch?"ابحث عن لاعب":(mode==4 && onlineInvitePending?"إنشاء الدعوة":(mode==4 && onlineLocalSide==1?"إنشاء الغرفة":"ابدأ المباراة")));
@@ -3549,8 +3551,8 @@ public class MainActivity extends Activity {
                         }
                     }
                 }
-                else if(mode==1 && x>=w*.27f && x<=w*.73f && y>=h*.62f && y<=h*.75f) { showNameDialog(); return true; }
-                else if(mode==1 && y>=h*.30f && y<=h*.62f && x>=w*.36f && x<=w*.64f) { if(x<=w*.43f)avatars[idx]=nextAvatar(avatars[idx],-1);else if(x>=w*.57f)avatars[idx]=nextAvatar(avatars[idx],1); }
+                else if(mode==1 && setupSide==2 && x>=w*.27f && x<=w*.73f && y>=h*.62f && y<=h*.75f) { showNameDialog(); return true; }
+                else if(mode==1 && setupSide==2 && y>=h*.30f && y<=h*.62f && x>=w*.36f && x<=w*.64f) { if(x<=w*.43f)avatars[idx]=nextAvatar(avatars[idx],-1);else if(x>=w*.57f)avatars[idx]=nextAvatar(avatars[idx],1); }
                 else if(x>=w*.37f && x<=w*.63f && y>=h*.91f && y<=h*.985f) {
                     if(setupSide==1 && mode==1) setupSide=2;
                     else if(mode==3){setup=false;matchEpoch++;for(int i=0;i<3;i++){pos1[i]=pos2[i]=0;dead1[i]=dead2[i]=false;}clearWinEffects();stage=0;winner=0;die=0;choosing=false;recorded=false;openingToss=false;lanOpeningStarted=false;bonusAttempt=false;perfectWin=false;pointsAwarded=false;matchPoints=0;battleIntro=false;introStep=0;if(lanHostPending){lanHostPending=false;startLanHost();}else if(lanJoinAddress!=null){String address=lanJoinAddress;lanJoinAddress=null;startLanJoin(address);} }
@@ -3678,7 +3680,7 @@ public class MainActivity extends Activity {
                             if(epoch!=matchEpoch || (winner!=0 && !bonusAttempt))return;
                             if(mode==2){
                                 finishCardTurnEffects(1);
-                                die=0;player=2;message="دور جنيرال";invalidate();
+                                die=0;player=2;message="دور "+computerOpponentName();invalidate();
                                 postDelayed(new Runnable(){@Override public void run(){
                                     if(epoch==matchEpoch && mode==2 && winner==0 && player==2)computerTurn();
                                 }},500);
