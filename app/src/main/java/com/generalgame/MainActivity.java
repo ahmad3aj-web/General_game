@@ -2580,7 +2580,7 @@ public class MainActivity extends Activity {
                 player=openingRoll1>openingRoll2?1:2;
                 openingToss=false; stage=2;
                 setBattleDialogue(player,0);
-                message=player==1?(mode==2?"أنت تبدأ — دورك":"اللاعب الأول يبدأ"):(mode==2?"جنيرال يبدأ":"اللاعب الثاني يبدأ");
+                message=player==1?(mode==2?"أنت تبدأ — دورك":"اللاعب الأول يبدأ"):(mode==2?computerOpponentName()+" يبدأ":"اللاعب الثاني يبدأ");
                 invalidate();
                 if(mode==2 && player==2)computerTurn();
             }},2600);
@@ -2641,7 +2641,7 @@ public class MainActivity extends Activity {
                     doubleDiceDisplayValue=die;
                     die*=2;message=computerOpponentName()+" فعّل بطاقة مضاعفة النرد!";
                 } else message=computerOpponentName()+" يرمي النرد...";
-            } else message="جنيرال يرمي النرد...";
+            } else message=computerOpponentName()+" يرمي النرد...";
             if(isGeneralOpponent())generalUseAfterRoll();
             invalidate();
             postDelayed(new Runnable(){ @Override public void run(){
