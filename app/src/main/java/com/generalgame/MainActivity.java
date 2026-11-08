@@ -1911,7 +1911,7 @@ public class MainActivity extends Activity {
         }
 
         private void drawSetup(Canvas c) {
-            txt(c,mode==4?"إعداد اللعب أون لاين":"إعداد اللاعبين",w*.5f,h*.105f,h*.060f,mode==4?Color.rgb(242,196,94):dark,true);
+            txt(c,mode==4?"إعداد اللعب أون لاين":(campaignBattle?"تجهيز بطاقات الحملة":"إعداد اللاعبين"),w*.5f,h*.105f,h*.060f,mode==4||campaignBattle?Color.rgb(242,196,94):dark,true);
             iconButton(c,w*.025f,h*.065f,w*.125f,h*.155f,dark,"↩");
             int idx=setupSide-1;
             if(mode==2) {
@@ -2104,7 +2104,7 @@ public class MainActivity extends Activity {
                             startOpeningToss();
                             return;
                         }
-                        message=player==1?(mode==2?"أنت تبدأ — دورك":"اللاعب الأول يبدأ"):(mode==2?"جنيرال يبدأ":"اللاعب الثاني يبدأ");
+                        message=player==1?(mode==2?"أنت تبدأ — دورك":"اللاعب الأول يبدأ"):(mode==2?computerOpponentName()+" يبدأ":"اللاعب الثاني يبدأ");
                         invalidate();
                         if(mode==2 && player==2)computerTurn();
                     },800);
@@ -2631,22 +2631,22 @@ public class MainActivity extends Activity {
             if(mode!=2 || winner!=0 || player!=2)return;
             final int epoch=matchEpoch;
             choosing=false;
-            generalUseBeforeRoll();
+            if(isGeneralOpponent())generalUseBeforeRoll();
             if(winner!=0)return;
             die=random.nextInt(6)+1;
-            if(generalDoubleDiceAvailable(die)) {
+            if(isGeneralOpponent() && generalDoubleDiceAvailable(die)) {
                 int lane=-1,best=-1;
                 for(int i=0;i<3;i++)if(canMove(2,i)&&pos2[i]+die*2<=15&&pos2[i]>best){best=pos2[i];lane=i;}
                 if(lane>=0 && generalUseCard(CardInventory.DOUBLE_DICE)) {
                     doubleDiceDisplayValue=die;
-                    die*=2;message="جنيرال فعّل بطاقة مضاعفة النرد!";
-                } else message="جنيرال يرمي النرد...";
+                    die*=2;message=computerOpponentName()+" فعّل بطاقة مضاعفة النرد!";
+                } else message=computerOpponentName()+" يرمي النرد...";
             } else message="جنيرال يرمي النرد...";
-            generalUseAfterRoll();
+            if(isGeneralOpponent())generalUseAfterRoll();
             invalidate();
             postDelayed(new Runnable(){ @Override public void run(){
                 if(epoch!=matchEpoch || mode!=2 || winner!=0 || player!=2)return;
-                message="جنيرال حصل على "+die;
+                message=computerOpponentName()+" حصل على "+die;
                 invalidate();
                 postDelayed(new Runnable(){ @Override public void run(){
                     if(epoch!=matchEpoch || mode!=2 || winner!=0 || player!=2)return;
@@ -2669,7 +2669,7 @@ public class MainActivity extends Activity {
                         }
                     }
                     if(pick>=0) {
-                        message="جنيرال اختار "+names[pick];
+                        message=computerOpponentName()+" اختار "+names[pick];
                         invalidate();
                         final int selected=pick;
                         postDelayed(new Runnable(){ @Override public void run(){
@@ -2677,7 +2677,7 @@ public class MainActivity extends Activity {
                         }},650);
                     } else {
                         setNoMoveDialogue(2);
-                        message="لا توجد حركة متاحة لجنيرال — نتيجة النرد: "+die+" — تم تجاوز الدور";
+                        message="لا توجد حركة متاحة لـ"+computerOpponentName()+" — نتيجة النرد: "+die+" — تم تجاوز الدور";
                         invalidate();
                         postDelayed(new Runnable(){ @Override public void run(){
                             if(epoch==matchEpoch && mode==2 && winner==0 && player==2) {
@@ -2955,7 +2955,7 @@ public class MainActivity extends Activity {
                     } else {
                         dead1[lane]=true;smokeActive[1][lane]=false;smokeTurns[1][lane]=0;
                         if(mineTargetSide==1&&mineLane==lane){mineTargetSide=0;mineOwnerSide=0;mineLane=-1;}
-                        if(mode==2)missionManager.recordPlayerWeaponDestroyed(lane);
+                        if(isGeneralOpponent())missionManager.recordPlayerWeaponDestroyed(lane);
                         redWinEffect[lane]=true;setBattleDialogue(2,2);
                         spawnExplosion(w*.925f,laneY);playGameSound(3);
                     }
@@ -2964,7 +2964,7 @@ public class MainActivity extends Activity {
                 if(winner==0){
                     if(mode==2 && side==1){
                         finishCardTurnEffects(1);
-                        player=2;setBattleDialogue(2,1);die=0;message="دور جنيرال";
+                        player=2;setBattleDialogue(2,1);die=0;message="دور "+computerOpponentName();
                         postDelayed(()->{if(epoch==matchEpoch && mode==2 && winner==0 && player==2){computerTurn();invalidate();}},650);
                     } else if(mode==2 && side==2){
                         finishCardTurnEffects(2);
@@ -3304,7 +3304,7 @@ public class MainActivity extends Activity {
             }
             if(winner!=0 && !bonusAttempt && resultRevealReady) {
                 box(c,w*.12f,h*.19f,w*.88f,h*.88f,Color.rgb(245,249,239));
-                String winnerName=winner==1?playerNames[0]:(mode==2?"جنيرال":playerNames[1]);
+                String winnerName=winner==1?playerNames[0]:(mode==2?computerOpponentName():playerNames[1]);
                 int blueWins=0,redWins=0;
                 for(int i=0;i<3;i++) {
                     if(dead2[i] && !dead1[i])blueWins++;
@@ -3332,7 +3332,7 @@ public class MainActivity extends Activity {
                 }
                 txt(c,"الأسلحة التي دمّرها كل لاعب",w*.5f,h*.555f,h*.027f,dark,true);
                 if(mode==2) {
-                    txt(c,"جنيرال: "+redWins+" أسلحة",w*.34f,h*.615f,h*.032f,red,true);
+                    txt(c,computerOpponentName()+": "+redWins+" أسلحة",w*.34f,h*.615f,h*.032f,red,true);
                     txt(c,playerNames[0]+": "+blueWins+" أسلحة",w*.66f,h*.615f,h*.032f,blue,true);
                 } else {
                     txt(c,playerNames[1]+": "+redWins+" أسلحة",w*.34f,h*.615f,h*.032f,red,true);
@@ -3559,7 +3559,7 @@ public class MainActivity extends Activity {
                         else if(onlineInvitePending)startOnlineHost(playerNames[0],avatars[0]);
                         else if(onlineLocalSide==1)startOnlineHost(playerNames[0],avatars[0]);
                         else startOnlineJoin(onlineJoinCode,playerNames[1],avatars[1]);}
-                    else { if(mode==2 && !cardInventory.beginMatch()){message="تعذر تجهيز البطاقات — تحقق من المخزن";invalidate();return true;}if(mode==2)missionManager.beginTrackedMatch();cardMatchSettled=false;clearBattleCardEffects();setup=false;resetMatch(); }
+                    else { if(mode==2 && !cardInventory.beginMatch()){message="تعذر تجهيز البطاقات — تحقق من المخزن";invalidate();return true;}if(isGeneralOpponent())missionManager.beginTrackedMatch();cardMatchSettled=false;clearBattleCardEffects();setup=false;resetMatch(); }
                 }
                 invalidate();return true;
             }
