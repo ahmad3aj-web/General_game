@@ -204,14 +204,20 @@ public class CampaignActivity extends Activity {
             invalidate();
         }
         private void showGateWarning(final int c,final int country,final boolean playerAttacking) {
-            String body="تتعرض البوابة الحدودية لهجوم، وهي شريان الاتصال بين القارات. احمِ هذه البوابة بكل قوتك! سقوطها لن يعني خسارة موقع عسكري فحسب، بل سيشعل تمردًا واسعًا في البلاد، وستخرج أراضي القارة عن سيطرتك، وتعود الدول التي كسبتها فيها إلى حالة الحياد، بينما يحتفظ جنيرال بالدول التي استولى عليها. خسارة البوابة قد تعني ضياع قارة كاملة!";
-            SpannableString styled=new SpannableString(body);
-            int[] palette={Color.rgb(39,112,205),Color.rgb(202,62,55),Color.rgb(245,190,65),Color.WHITE};
-            for(int i=0;i<styled.length();i++) if(!Character.isWhitespace(styled.charAt(i)))
-                styled.setSpan(new ForegroundColorSpan(palette[i%palette.length]),i,i+1,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            final String body="تتعرض البوابة الحدودية لهجوم، وهي شريان الاتصال بين القارات. احمِ هذه البوابة بكل قوتك! سقوطها لن يعني خسارة موقع عسكري فحسب، بل سيشعل تمردًا واسعًا في البلاد، وستخرج أراضي القارة عن سيطرتك، وتعود الدول التي كسبتها فيها إلى حالة الحياد، بينما يحتفظ جنيرال بالدول التي استولى عليها. خسارة البوابة قد تعني ضياع قارة كاملة!";
             TextView message=new TextView(CampaignActivity.this);
-            message.setText(styled);message.setTextSize(17);message.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
+            message.setText("");message.setTextColor(Color.rgb(255,205,75));
+            message.setTextSize(17);message.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
             message.setGravity(Gravity.CENTER);message.setPadding(28,24,28,24);
+            // Reveal the warning progressively, one golden character at a time.
+            final int[] shown={0};
+            final Runnable[] reveal={null};
+            reveal[0]=()->{
+                shown[0]=Math.min(body.length(),shown[0]+1);
+                message.setText(body.substring(0,shown[0]));
+                if(shown[0]<body.length())message.postDelayed(reveal[0],24L);
+            };
+            message.post(reveal[0]);
             new AlertDialog.Builder(CampaignActivity.this).setTitle("تحذير عسكري – بوابة استراتيجية").setView(message)
                 .setNegativeButton("إلغاء",null)
                 .setPositiveButton(playerAttacking?"متابعة الهجوم":"الاستعداد للدفاع",
@@ -304,7 +310,7 @@ public class CampaignActivity extends Activity {
                 this.worldComplete=worldComplete;
                 Bitmap loaded=null;
                 try {
-                    String file=String.format(java.util.Locale.US,"character_%02d.png",Math.floorMod(avatarIndex,18)+1);
+                    String file=String.format(java.util.Locale.US,"characters/character_%02d.png",Math.floorMod(avatarIndex,18)+1);
                     loaded=BitmapFactory.decodeStream(getAssets().open(file));
                 } catch(Exception ignored) {}
                 avatar=loaded;
