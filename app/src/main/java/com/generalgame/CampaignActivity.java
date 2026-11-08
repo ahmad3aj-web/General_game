@@ -151,7 +151,33 @@ public class CampaignActivity extends Activity {
         }
         private void captureCountry(int c,int country,int owner,String report) {
             if(c<0||c>=4||country<0||country>=15)return;
-            changeOwnerWithFlash(c,country,owner);selected=country;campaignReport=report;invalidate();
+            changeOwnerWithFlash(c,country,owner);
+            selected=country;
+            campaignReport=report;
+            checkContinentCompletion(c);
+            invalidate();
+        }
+        private void checkContinentCompletion(int c) {
+            if(c<0||c>=4)return;
+            for(int i=0;i<15;i++) if(owners[c][i]!=BLUE)return;
+            if(unlocked<c+1 && c<3) {
+                unlocked=c+1;
+                save();
+                campaignReport="مبروك! سيطرت على "+CONTINENTS[c]+" وفتحت قارة "+CONTINENTS[c+1];
+                new AlertDialog.Builder(CampaignActivity.this)
+                    .setTitle("تم فتح القارة التالية!")
+                    .setMessage("أحسنت! أكملت السيطرة على "+CONTINENTS[c]+". أصبحت قارة "+CONTINENTS[c+1]+" متاحة الآن.")
+                    .setPositiveButton("موافق",null)
+                    .show();
+            } else if(c==3) {
+                save();
+                campaignReport="مبروك! أكملت حملة السيطرة على العالم";
+                new AlertDialog.Builder(CampaignActivity.this)
+                    .setTitle("انتصار الحملة!")
+                    .setMessage("سيطرت على جميع القارات وأكملت الحملة.")
+                    .setPositiveButton("ممتاز",null)
+                    .show();
+            }
         }
         private void runGeneralCampaignAttacks(int c) {
             // Every battle consumes only the attacker's turn: General gets one attack,
@@ -217,8 +243,9 @@ public class CampaignActivity extends Activity {
                 panel(c,left,top,right,bottom,Color.rgb(43,49,48));
                 drawContinentButtonShape(c,i,tile);
                 text(c,CONTINENTS[i],(left+right)/2,top+h*.155f,h*.035f,Color.WHITE);
-                text(c,i==0?"متاحة — ابدأ حملتك":"مغلقة حالياً",(left+right)/2,top+h*.202f,h*.021f,
-                    i==0?Color.rgb(125,220,145):Color.LTGRAY);
+                boolean continentUnlocked=i<=unlocked;
+                text(c,continentUnlocked?(i==0?"متاحة — ابدأ حملتك":"متاحة — تابع حملتك"):"مغلقة حالياً",(left+right)/2,top+h*.202f,h*.021f,
+                    continentUnlocked?Color.rgb(125,220,145):Color.LTGRAY);
             }
             text(c,"القارات تُفتح بالتتابع بعد إكمال القارة السابقة",w*.5f,h*.90f,h*.025f,Color.LTGRAY);
             panel(c,w*.42f,h*.925f,w*.58f,h*.985f,Color.rgb(95,53,43));
@@ -473,8 +500,9 @@ public class CampaignActivity extends Activity {
                 for(int i=0;i<4;i++) {
                     float l=w*(.08f+(i%2)*.44f),t=h*(.25f+(i/2)*.30f);
                     if(x>=l&&x<=l+w*.40f&&y>=t&&y<=t+h*.23f) {
-                        if(i==0 && unlocked>=0) {
-                            continent=0;screen=1;selected=-1;campaignReport="ابدأ حملتك من أزمارا";
+                        if(i<=unlocked) {
+                            continent=i;screen=1;selected=-1;
+                            campaignReport="تابع حملتك في "+CONTINENTS[i];
                             invalidate();
                         } else {
                             new AlertDialog.Builder(CampaignActivity.this)
