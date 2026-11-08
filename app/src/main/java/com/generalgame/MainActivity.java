@@ -64,6 +64,7 @@ public class MainActivity extends Activity {
         private final MissionManager missionManager;
         private boolean missionsScreen=false;
         private boolean warMenuScreen=false;
+        private boolean campaignBattle=false;
         private boolean weeklyMissionTab=false;
         private final HashMap<String,Bitmap> art = new HashMap<>();
         private Movie fireMovie;
@@ -1271,7 +1272,18 @@ public class MainActivity extends Activity {
         }
 
         private void handleInviteIntent(android.content.Intent intent) {
-            if(intent==null || intent.getData()==null)return;
+            if(intent==null)return;
+            if(intent.getBooleanExtra("campaign_battle",false)) {
+                campaignBattle=true;
+                titleScreen=false;
+                mode=2;setup=true;setupSide=1;
+                playerNames[0]=savedPlayerName(0);playerNames[1]="جنيرال";
+                avatars[0]=0;avatars[1]=1;
+                message="حرب الحملة — استعد للمعركة";
+                invalidate();
+                return;
+            }
+            if(intent.getData()==null)return;
             android.net.Uri uri=intent.getData();
             if(!"generalgame".equals(uri.getScheme()) || !"join".equals(uri.getHost()))return;
             String code=uri.getQueryParameter("room");
@@ -3446,7 +3458,8 @@ public class MainActivity extends Activity {
             }
             if(setup) {
                 if(x>=w*.025f&&x<=w*.125f&&y>=h*.065f&&y<=h*.155f){
-                    if(setupSide==2 && mode==1)setupSide=1;
+                    if(campaignBattle){setResult(RESULT_CANCELED);finish();return true;}
+                    else if(setupSide==2 && mode==1)setupSide=1;
                     else {if(mode==2)cardInventory.clearSelection();setup=false;mode=0;message="اختر طريقة اللعب";}
                     invalidate();return true;
                 }
@@ -3547,7 +3560,16 @@ public class MainActivity extends Activity {
             if(winner!=0 && !bonusAttempt && !resultRevealReady) return true;
             if(winner!=0 && !bonusAttempt && resultRevealReady) {
                 if(y>=h*.885f&&y<=h*.985f) {
-                    if(x>=w*.36f&&x<=w*.64f) { matchEpoch++; timerlessCloseLan(); timerlessCloseOnline(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; battleIntro=false; progressScreen=false; explosionAt=0; message="اختر طريقة اللعب"; }
+                    if(x>=w*.36f&&x<=w*.64f) {
+                        if(campaignBattle) {
+                            android.content.Intent result=new android.content.Intent();
+                            result.putExtra("campaign_won",winner==1);
+                            result.putExtra("campaign_continent",getIntent().getIntExtra("campaign_continent",-1));
+                            result.putExtra("campaign_country",getIntent().getIntExtra("campaign_country",-1));
+                            setResult(RESULT_OK,result);finish();return true;
+                        }
+                        matchEpoch++; timerlessCloseLan(); timerlessCloseOnline(); lanHostPending=false; lanJoinAddress=null; mode=0; setup=false; stage=0; winner=0; die=0; choosing=false; openingToss=false; battleIntro=false; progressScreen=false; explosionAt=0; message="اختر طريقة اللعب";
+                    }
                 }
                 invalidate();return true;
             }
